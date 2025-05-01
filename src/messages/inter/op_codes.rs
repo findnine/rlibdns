@@ -26,4 +26,12 @@ impl OpCodes {
             Self::Status => 2
         }
     }
+
+    pub fn to_string(&self) -> String {
+        match self {
+            Self::Query => "Query",
+            Self::IQuery => "IQuery",
+            Self::Status => "Status"
+        }.to_string()
+    }
 }

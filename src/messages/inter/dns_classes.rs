@@ -28,4 +28,13 @@ impl DnsClasses {
             Self::Hs => 4
         }
     }
+
+    pub fn to_string(&self) -> String {
+        match self {
+            Self::In => "In",
+            Self::Cs => "Unasigned",
+            Self::Ch => "Chaos",
+            Self::Hs => "Hesiod"
+        }.to_string()
+    }
 }

@@ -57,4 +57,28 @@ impl OptCodes {
             Self::MultiUserClientSubnet => 21
         }
     }
+
+    pub fn to_string(&self) -> String {
+        match self {
+            Self::Llq => "",
+            Self::Ul => "",
+            Self::Nsid => "",
+            Self::Dau => "",
+            Self::Dhu => "",
+            Self::N3u => "",
+            Self::Ecs => "",
+            Self::Expire => "Expire",
+            Self::Cookie => "Cookie",
+            Self::TcpKeepalive => "TCP Keepalive",
+            Self::Padding => "Padding",
+            Self::Chain => "Chain",
+            Self::KeyTag => "Key Tag",
+            Self::EdnsError => "",
+            Self::DnsSecTrustedKey => "",
+            Self::DnsSecValidated => "",
+            Self::AdaptiveDnsDiscovery => "",
+            Self::DoH => "",
+            Self::MultiUserClientSubnet => ""
+        }.to_string()
+    }
 }

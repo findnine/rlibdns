@@ -32,4 +32,15 @@ impl ResponseCodes {
             Self::Refused => 5
         }
     }
+
+    pub fn to_string(&self) -> String {
+        match self {
+            Self::NoError => "No Error",
+            Self::FormatError => "Format Error",
+            Self::ServerFailure => "Server Failure",
+            Self::NameError => "Name Error",
+            Self::NotImplemented => "Not Implemented",
+            Self::Refused => "Refused"
+        }.to_string()
+    }
 }
