@@ -31,7 +31,7 @@ impl DnsClasses {
 
     pub fn to_string(&self) -> String {
         match self {
-            Self::In => "In",
+            Self::In => "Internet",
             Self::Cs => "Unasigned",
             Self::Ch => "Chaos",
             Self::Hs => "Hesiod"

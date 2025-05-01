@@ -1,4 +1,3 @@
-
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum OptCodes {
     Llq,
@@ -60,25 +59,25 @@ impl OptCodes {
 
     pub fn to_string(&self) -> String {
         match self {
-            Self::Llq => "",
-            Self::Ul => "",
-            Self::Nsid => "",
-            Self::Dau => "",
-            Self::Dhu => "",
-            Self::N3u => "",
-            Self::Ecs => "",
+            Self::Llq => "Long-Lived Queries",
+            Self::Ul => "Update Leases",
+            Self::Nsid => "Name Server Identifier",
+            Self::Dau => "DNSSEC Algorithm Understood",
+            Self::Dhu => "DS Hash Understood",
+            Self::N3u => "NSEC3 Hash Understood",
+            Self::Ecs => "EDNS Client Subnet",
             Self::Expire => "Expire",
             Self::Cookie => "Cookie",
             Self::TcpKeepalive => "TCP Keepalive",
             Self::Padding => "Padding",
             Self::Chain => "Chain",
             Self::KeyTag => "Key Tag",
-            Self::EdnsError => "",
-            Self::DnsSecTrustedKey => "",
-            Self::DnsSecValidated => "",
-            Self::AdaptiveDnsDiscovery => "",
-            Self::DoH => "",
-            Self::MultiUserClientSubnet => ""
+            Self::EdnsError => "EDNS Version 1 Error",
+            Self::DnsSecTrustedKey => "DNSSEC Trusted Key",
+            Self::DnsSecValidated => "DNSSEC Validated",
+            Self::AdaptiveDnsDiscovery => "Adaptive DNS Discovery",
+            Self::DoH => "DNS over HTTPS",
+            Self::MultiUserClientSubnet => "Multi-User Client Subnet"
         }.to_string()
     }
 }
