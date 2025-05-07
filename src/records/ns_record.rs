@@ -9,7 +9,7 @@ use crate::utils::domain_utils::{pack_domain, unpack_domain};
 pub struct NsRecord {
     dns_class: Option<DnsClasses>,
     ttl: u32,
-    domain: Option<String>
+    server: Option<String>
 }
 
 impl Default for NsRecord {
@@ -18,7 +18,7 @@ impl Default for NsRecord {
         Self {
             dns_class: None,
             ttl: 0,
-            domain: None
+            server: None
         }
     }
 }
@@ -31,12 +31,12 @@ impl RecordBase for NsRecord {
 
         let z = u16::from_be_bytes([buf[off+6], buf[off+7]]);
 
-        let (domain, _) = unpack_domain(buf, off+8);
+        let (server, _) = unpack_domain(buf, off+8);
 
         Self {
             dns_class,
             ttl,
-            domain: Some(domain)
+            server: Some(server)
         }
     }
 
@@ -47,7 +47,7 @@ impl RecordBase for NsRecord {
         buf.splice(2..4, self.dns_class.unwrap().get_code().to_be_bytes());
         buf.splice(4..8, self.ttl.to_be_bytes());
 
-        buf.extend_from_slice(&pack_domain(self.domain.as_ref().unwrap().as_str(), label_map, off+12));
+        buf.extend_from_slice(&pack_domain(self.server.as_ref().unwrap().as_str(), label_map, off+12));
 
         buf.splice(8..10, ((buf.len()-10) as u16).to_be_bytes());
 
@@ -79,17 +79,17 @@ impl RecordBase for NsRecord {
     }
 
     fn to_string(&self) -> String {
-        format!("[RECORD] type {:?}, class {:?}, domain {}", self.get_type(), self.dns_class.unwrap(), self.domain.as_ref().unwrap())
+        format!("[RECORD] type {:?}, class {:?}, server {}", self.get_type(), self.dns_class.unwrap(), self.server.as_ref().unwrap())
     }
 }
 
 impl NsRecord {
 
-    pub fn new(dns_classes: DnsClasses, ttl: u32, domain: &str) -> Self {
+    pub fn new(dns_classes: DnsClasses, ttl: u32, server: &str) -> Self {
         Self {
             dns_class: Some(dns_classes),
             ttl,
-            domain: Some(domain.to_string())
+            server: Some(server.to_string())
         }
     }
 
@@ -112,11 +112,11 @@ impl NsRecord {
         self.ttl
     }
 
-    pub fn set_domain(&mut self, domain: &str) {
-        self.domain = Some(domain.to_string());
+    pub fn set_server(&mut self, server: &str) {
+        self.server = Some(server.to_string());
     }
 
-    pub fn get_domain(&self) -> Option<String> {
-        self.domain.clone()
+    pub fn get_server(&self) -> Option<String> {
+        self.server.clone()
     }
 }

@@ -9,7 +9,7 @@ pub struct TxtRecord {
     dns_class: Option<DnsClasses>,
     cache_flush: bool,
     ttl: u32,
-    records: Vec<String>
+    content: Vec<String>
 }
 
 impl Default for TxtRecord {
@@ -19,7 +19,7 @@ impl Default for TxtRecord {
             dns_class: None,
             cache_flush: false,
             ttl: 0,
-            records: Vec::new()
+            content: Vec::new()
         }
     }
 }
@@ -37,12 +37,12 @@ impl RecordBase for TxtRecord {
         let data_length = off+8+u16::from_be_bytes([buf[off+6], buf[off+7]]) as usize;
         off += 8;
 
-        let mut records = Vec::new();
+        let mut content = Vec::new();
 
         while off < data_length {
             let length = buf[off] as usize;
             let record = String::from_utf8(buf[off + 1..off + 1 + length].to_vec()).unwrap();
-            records.push(record);
+            content.push(record);
             off += length+1;
         }
 
@@ -50,7 +50,7 @@ impl RecordBase for TxtRecord {
             dns_class,
             cache_flush,
             ttl,
-            records
+            content
         }
     }
 
@@ -67,7 +67,7 @@ impl RecordBase for TxtRecord {
         buf.splice(2..4, dns_class.to_be_bytes());
         buf.splice(4..8, self.ttl.to_be_bytes());
 
-        for record in &self.records {
+        for record in &self.content {
             buf.push(record.len() as u8);
             buf.extend_from_slice(record.as_bytes());
         }
@@ -108,12 +108,12 @@ impl RecordBase for TxtRecord {
 
 impl TxtRecord {
 
-    pub fn new(dns_classes: DnsClasses, cache_flush: bool, ttl: u32, records: Vec<String>) -> Self {
+    pub fn new(dns_classes: DnsClasses, cache_flush: bool, ttl: u32, content: Vec<String>) -> Self {
         Self {
             dns_class: Some(dns_classes),
             cache_flush,
             ttl,
-            records
+            content
         }
     }
 

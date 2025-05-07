@@ -10,7 +10,7 @@ pub struct MxRecord {
     dns_class: Option<DnsClasses>,
     ttl: u32,
     priority: u16,
-    domain: Option<String>
+    server: Option<String>
 }
 
 impl Default for MxRecord {
@@ -20,7 +20,7 @@ impl Default for MxRecord {
             dns_class: None,
             ttl: 0,
             priority: 0,
-            domain: None
+            server: None
         }
     }
 }
@@ -35,13 +35,13 @@ impl RecordBase for MxRecord {
 
         let priority = u16::from_be_bytes([buf[off+8], buf[off+9]]);
 
-        let (domain, _) = unpack_domain(buf, off+10);
+        let (server, _) = unpack_domain(buf, off+10);
 
         Self {
             dns_class,
             ttl,
             priority,
-            domain: Some(domain)
+            server: Some(server)
         }
     }
 
@@ -54,7 +54,7 @@ impl RecordBase for MxRecord {
 
         buf.splice(10..12, self.priority.to_be_bytes());
 
-        buf.extend_from_slice(&pack_domain(self.domain.as_ref().unwrap().as_str(), label_map, off+14));
+        buf.extend_from_slice(&pack_domain(self.server.as_ref().unwrap().as_str(), label_map, off+14));
 
         buf.splice(8..10, ((buf.len()-10) as u16).to_be_bytes());
 
@@ -86,18 +86,18 @@ impl RecordBase for MxRecord {
     }
 
     fn to_string(&self) -> String {
-        format!("[RECORD] type {:?}, class {:?}, priority {}, domain {}", self.get_type(), self.dns_class.unwrap(), self.priority, self.domain.as_ref().unwrap())
+        format!("[RECORD] type {:?}, class {:?}, priority {}, server {}", self.get_type(), self.dns_class.unwrap(), self.priority, self.server.as_ref().unwrap())
     }
 }
 
 impl MxRecord {
 
-    pub fn new(dns_classes: DnsClasses, ttl: u32, priority: u16, domain: &str) -> Self {
+    pub fn new(dns_classes: DnsClasses, ttl: u32, priority: u16, server: &str) -> Self {
         Self {
             dns_class: Some(dns_classes),
             ttl,
             priority,
-            domain: Some(domain.to_string())
+            server: Some(server.to_string())
         }
     }
 
@@ -120,11 +120,11 @@ impl MxRecord {
         self.ttl
     }
 
-    pub fn set_domain(&mut self, domain: &str) {
-        self.domain = Some(domain.to_string());
+    pub fn set_server(&mut self, server: &str) {
+        self.server = Some(server.to_string());
     }
 
-    pub fn get_domain(&self) -> Option<String> {
-        self.domain.clone()
+    pub fn get_server(&self) -> Option<String> {
+        self.server.clone()
     }
 }
