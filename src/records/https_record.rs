@@ -10,7 +10,7 @@ use crate::utils::ordered_map::OrderedMap;
 pub struct HttpsRecord {
     dns_class: Option<DnsClasses>,
     ttl: u32,
-    svc_priority: u16,
+    priority: u16,
     target: Option<String>,
     params: OrderedMap<u16, Vec<u8>>
 }
@@ -21,7 +21,7 @@ impl Default for HttpsRecord {
         Self {
             dns_class: None,
             ttl: 0,
-            svc_priority: 0,
+            priority: 0,
             target: None,
             params: OrderedMap::new()
         }
@@ -36,7 +36,7 @@ impl RecordBase for HttpsRecord {
         let dns_class = Some(DnsClasses::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap());
         let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
 
-        let svc_priority = u16::from_be_bytes([buf[off+8], buf[off+9]]);
+        let priority = u16::from_be_bytes([buf[off+8], buf[off+9]]);
 
         let (target, length) = unpack_domain(&buf, off+10);
 
@@ -54,7 +54,7 @@ impl RecordBase for HttpsRecord {
         Self {
             dns_class,
             ttl,
-            svc_priority,
+            priority,
             target: Some(target),
             params
         }
@@ -67,7 +67,7 @@ impl RecordBase for HttpsRecord {
         buf.splice(2..4, self.dns_class.unwrap().get_code().to_be_bytes());
         buf.splice(4..8, self.ttl.to_be_bytes());
 
-        buf.splice(10..12, self.svc_priority.to_be_bytes());
+        buf.splice(10..12, self.priority.to_be_bytes());
 
         let target = pack_domain(self.target.as_ref().unwrap().as_str(), label_map, off+12);
         buf.extend_from_slice(&target);
@@ -114,11 +114,11 @@ impl RecordBase for HttpsRecord {
 
 impl HttpsRecord {
 
-    pub fn new(dns_classes: DnsClasses, ttl: u32, svc_priority: u16, target: &str, params: OrderedMap<u16, Vec<u8>>) -> Self {
+    pub fn new(dns_classes: DnsClasses, ttl: u32, priority: u16, target: &str, params: OrderedMap<u16, Vec<u8>>) -> Self {
         Self {
             dns_class: Some(dns_classes),
             ttl,
-            svc_priority,
+            priority,
             target: Some(target.to_string()),
             params
         }
