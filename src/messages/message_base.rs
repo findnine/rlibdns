@@ -3,7 +3,7 @@ use std::io;
 use std::net::SocketAddr;
 use crate::messages::inter::op_codes::OpCodes;
 use crate::messages::inter::response_codes::ResponseCodes;
-use crate::messages::inter::types::Types;
+use crate::messages::inter::record_types::RecordTypes;
 use crate::records::a_record::ARecord;
 use crate::records::aaaa_record::AAAARecord;
 use crate::records::cname_record::CNameRecord;
@@ -188,56 +188,56 @@ impl MessageBase {
                 }
             };
 
-            let record = match Types::from_code(u16::from_be_bytes([buf[pos], buf[pos+1]])).unwrap() {
-                Types::A => {
+            let record = match RecordTypes::from_code(u16::from_be_bytes([buf[pos], buf[pos+1]])).unwrap() {
+                RecordTypes::A => {
                     ARecord::from_bytes(buf, pos+2).dyn_clone()
                 }
-                Types::Aaaa => {
+                RecordTypes::Aaaa => {
                     AAAARecord::from_bytes(buf, pos+2).dyn_clone()
                 }
-                Types::Ns => {
+                RecordTypes::Ns => {
                     NsRecord::from_bytes(buf, pos+2).dyn_clone()
                 }
-                Types::Cname => {
+                RecordTypes::Cname => {
                     CNameRecord::from_bytes(buf, pos+2).dyn_clone()
                 }
-                Types::Soa => {
+                RecordTypes::Soa => {
                     SoaRecord::from_bytes(buf, pos+2).dyn_clone()
                 }
-                Types::Ptr => {
+                RecordTypes::Ptr => {
                     PtrRecord::from_bytes(buf, pos+2).dyn_clone()
                 }
-                Types::Mx => {
+                RecordTypes::Mx => {
                     MxRecord::from_bytes(buf, pos+2).dyn_clone()
                 }
-                Types::Txt => {
+                RecordTypes::Txt => {
                     TxtRecord::from_bytes(buf, pos+2).dyn_clone()
                 }
-                Types::Srv => {
+                RecordTypes::Srv => {
                     SrvRecord::from_bytes(buf, pos+2).dyn_clone()
                 }
-                Types::Opt => {
+                RecordTypes::Opt => {
                     OptRecord::from_bytes(buf, pos+2).dyn_clone()
                 }
-                Types::Rrsig => {
+                RecordTypes::Rrsig => {
                     RRSigRecord::from_bytes(buf, pos+2).dyn_clone()
                 }
-                Types::Nsec => {
+                RecordTypes::Nsec => {
                     NsecRecord::from_bytes(buf, pos+2).dyn_clone()
                 }
-                Types::DnsKey => {
+                RecordTypes::DnsKey => {
                     DNSKeyRecord::from_bytes(buf, pos+2).dyn_clone()
                 }
-                Types::Https => {
+                RecordTypes::Https => {
                     HttpsRecord::from_bytes(buf, pos+2).dyn_clone()
                 }
-                Types::Spf => {
+                RecordTypes::Spf => {
                     todo!()
                 }
-                Types::Tsig => {
+                RecordTypes::Tsig => {
                     todo!()
                 }
-                Types::Caa => {
+                RecordTypes::Caa => {
                     todo!()
                 }
                 _ => {

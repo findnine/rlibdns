@@ -1,7 +1,7 @@
 use std::any::Any;
 use std::collections::HashMap;
 use crate::messages::inter::dns_classes::DnsClasses;
-use crate::messages::inter::types::Types;
+use crate::messages::inter::record_types::RecordTypes;
 use crate::records::inter::record_base::RecordBase;
 use crate::utils::domain_utils::{pack_domain_uncompressed, unpack_domain};
 
@@ -105,8 +105,8 @@ impl RecordBase for RRSigRecord {
         Ok(buf)
     }
 
-    fn get_type(&self) -> Types {
-        Types::Rrsig
+    fn get_type(&self) -> RecordTypes {
+        RecordTypes::Rrsig
     }
 
     fn as_any(&self) -> &dyn Any {

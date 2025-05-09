@@ -1,7 +1,7 @@
 use std::any::Any;
 use std::collections::{BTreeMap, HashMap};
 use crate::messages::inter::dns_classes::DnsClasses;
-use crate::messages::inter::types::Types;
+use crate::messages::inter::record_types::RecordTypes;
 use crate::records::inter::record_base::RecordBase;
 use crate::utils::domain_utils::{pack_domain, unpack_domain};
 
@@ -115,8 +115,8 @@ impl RecordBase for NsecRecord {
         Ok(buf)
     }
 
-    fn get_type(&self) -> Types {
-        Types::Nsec
+    fn get_type(&self) -> RecordTypes {
+        RecordTypes::Nsec
     }
 
     fn as_any(&self) -> &dyn Any {

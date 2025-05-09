@@ -1,7 +1,6 @@
 use std::any::Any;
 use std::collections::HashMap;
-use crate::messages::inter::dns_classes::DnsClasses;
-use crate::messages::inter::types::Types;
+use crate::messages::inter::record_types::RecordTypes;
 
 pub trait RecordBase {
 
@@ -9,7 +8,7 @@ pub trait RecordBase {
 
     fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String>;
 
-    fn get_type(&self) -> Types;
+    fn get_type(&self) -> RecordTypes;
 
     fn as_any(&self) -> &dyn Any;
 

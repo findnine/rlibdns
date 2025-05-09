@@ -1,12 +1,12 @@
 use std::collections::HashMap;
 use crate::messages::inter::dns_classes::DnsClasses;
-use crate::messages::inter::types::Types;
+use crate::messages::inter::record_types::RecordTypes;
 use crate::utils::domain_utils::{pack_domain, unpack_domain};
 
 #[derive(Clone)]
 pub struct DnsQuery {
     query: Option<String>,
-    _type: Types,
+    _type: RecordTypes,
     dns_class: DnsClasses,
     length: usize
 }
@@ -16,7 +16,7 @@ impl Default for DnsQuery {
     fn default() -> Self {
         Self {
             query: None,
-            _type: Types::A,
+            _type: RecordTypes::A,
             dns_class: DnsClasses::In,
             length: 4
         }
@@ -25,7 +25,7 @@ impl Default for DnsQuery {
 
 impl DnsQuery {
 
-    pub fn new(query: &str, _type: Types, dns_class: DnsClasses) -> Self {
+    pub fn new(query: &str, _type: RecordTypes, dns_class: DnsClasses) -> Self {
         Self {
             query: Some(query.to_string()),
             _type,
@@ -38,7 +38,7 @@ impl DnsQuery {
         let (query, length) = unpack_domain(buf, off);
         let off = off+length;
 
-        let _type = Types::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
+        let _type = RecordTypes::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
         let dns_class = DnsClasses::from_code(u16::from_be_bytes([buf[off+2], buf[off+3]])).unwrap();
 
         Self {
@@ -71,11 +71,11 @@ impl DnsQuery {
         self.query.as_ref()
     }
 
-    pub fn set_type(&mut self, _type: Types) {
+    pub fn set_type(&mut self, _type: RecordTypes) {
         self._type = _type;
     }
 
-    pub fn get_type(&self) -> Types {
+    pub fn get_type(&self) -> RecordTypes {
         self._type
     }
 

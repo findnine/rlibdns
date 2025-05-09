@@ -2,7 +2,7 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::net::Ipv4Addr;
 use crate::messages::inter::dns_classes::DnsClasses;
-use crate::messages::inter::types::Types;
+use crate::messages::inter::record_types::RecordTypes;
 use crate::records::inter::record_base::RecordBase;
 
 #[derive(Clone)]
@@ -69,8 +69,8 @@ impl RecordBase for ARecord {
         Ok(buf)
     }
 
-    fn get_type(&self) -> Types {
-        Types::A
+    fn get_type(&self) -> RecordTypes {
+        RecordTypes::A
     }
 
     fn as_any(&self) -> &dyn Any {

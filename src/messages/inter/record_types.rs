@@ -1,5 +1,5 @@
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
-pub enum Types {
+pub enum RecordTypes {
     A,
     Aaaa,
     Ns,
@@ -20,7 +20,7 @@ pub enum Types {
     Caa
 }
 
-impl Types {
+impl RecordTypes {
 
     pub fn from_code(code: u16) -> Result<Self, String> {
         for c in [Self::A, Self::Aaaa, Self::Ns, Self::Cname, Self::Soa, Self::Ptr, Self::Mx, Self::Txt, Self::Opt, Self::Rrsig, Self::Nsec, Self::DnsKey, Self::Https, Self::Srv, Self::Spf, Self::Tsig, Self::Any, Self::Caa] {
