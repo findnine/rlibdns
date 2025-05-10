@@ -429,7 +429,7 @@ impl MessageBase {
         self.queries.clone()
     }
 
-    pub fn has_answer(&self) -> bool {
+    pub fn has_answers(&self) -> bool {
         self.answers.len() > 0
     }
 
