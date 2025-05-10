@@ -433,7 +433,7 @@ impl MessageBase {
         self.answers.len() > 0
     }
 
-    pub fn add_answers(&mut self, query: &str, record: Box<dyn RecordBase>) {
+    pub fn add_answer(&mut self, query: &str, record: Box<dyn RecordBase>) {
         if self.answers.contains_key(&query.to_string()) {
             self.answers.get_mut(&query.to_string()).unwrap().push(record);
             return;
@@ -450,7 +450,7 @@ impl MessageBase {
         self.answers.len() > 0
     }
 
-    pub fn add_name_servers(&mut self, query: &str, record: Box<dyn RecordBase>) {
+    pub fn add_name_server(&mut self, query: &str, record: Box<dyn RecordBase>) {
         if self.name_servers.contains_key(&query.to_string()) {
             self.name_servers.get_mut(&query.to_string()).unwrap().push(record);
             return;
@@ -467,7 +467,7 @@ impl MessageBase {
         self.answers.len() > 0
     }
 
-    pub fn add_additional_records(&mut self, query: &str, record: Box<dyn RecordBase>) {
+    pub fn add_additional_record(&mut self, query: &str, record: Box<dyn RecordBase>) {
         if self.additional_records.contains_key(&query.to_string()) {
             self.additional_records.get_mut(&query.to_string()).unwrap().push(record);
             return;
