@@ -190,46 +190,46 @@ impl MessageBase {
 
             let record = match RecordTypes::from_code(u16::from_be_bytes([buf[pos], buf[pos+1]])).unwrap() {
                 RecordTypes::A => {
-                    ARecord::from_bytes(buf, pos+2).dyn_clone()
+                    ARecord::from_bytes(buf, pos+2).upcast()
                 }
                 RecordTypes::Aaaa => {
-                    AAAARecord::from_bytes(buf, pos+2).dyn_clone()
+                    AAAARecord::from_bytes(buf, pos+2).upcast()
                 }
                 RecordTypes::Ns => {
-                    NsRecord::from_bytes(buf, pos+2).dyn_clone()
+                    NsRecord::from_bytes(buf, pos+2).upcast()
                 }
                 RecordTypes::Cname => {
-                    CNameRecord::from_bytes(buf, pos+2).dyn_clone()
+                    CNameRecord::from_bytes(buf, pos+2).upcast()
                 }
                 RecordTypes::Soa => {
-                    SoaRecord::from_bytes(buf, pos+2).dyn_clone()
+                    SoaRecord::from_bytes(buf, pos+2).upcast()
                 }
                 RecordTypes::Ptr => {
-                    PtrRecord::from_bytes(buf, pos+2).dyn_clone()
+                    PtrRecord::from_bytes(buf, pos+2).upcast()
                 }
                 RecordTypes::Mx => {
-                    MxRecord::from_bytes(buf, pos+2).dyn_clone()
+                    MxRecord::from_bytes(buf, pos+2).upcast()
                 }
                 RecordTypes::Txt => {
-                    TxtRecord::from_bytes(buf, pos+2).dyn_clone()
+                    TxtRecord::from_bytes(buf, pos+2).upcast()
                 }
                 RecordTypes::Srv => {
-                    SrvRecord::from_bytes(buf, pos+2).dyn_clone()
+                    SrvRecord::from_bytes(buf, pos+2).upcast()
                 }
                 RecordTypes::Opt => {
-                    OptRecord::from_bytes(buf, pos+2).dyn_clone()
+                    OptRecord::from_bytes(buf, pos+2).upcast()
                 }
                 RecordTypes::Rrsig => {
-                    RRSigRecord::from_bytes(buf, pos+2).dyn_clone()
+                    RRSigRecord::from_bytes(buf, pos+2).upcast()
                 }
                 RecordTypes::Nsec => {
-                    NsecRecord::from_bytes(buf, pos+2).dyn_clone()
+                    NsecRecord::from_bytes(buf, pos+2).upcast()
                 }
                 RecordTypes::DnsKey => {
-                    DNSKeyRecord::from_bytes(buf, pos+2).dyn_clone()
+                    DNSKeyRecord::from_bytes(buf, pos+2).upcast()
                 }
                 RecordTypes::Https => {
-                    HttpsRecord::from_bytes(buf, pos+2).dyn_clone()
+                    HttpsRecord::from_bytes(buf, pos+2).upcast()
                 }
                 RecordTypes::Spf => {
                     todo!()

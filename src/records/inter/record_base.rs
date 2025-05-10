@@ -10,15 +10,11 @@ pub trait RecordBase {
 
     fn get_type(&self) -> RecordTypes;
 
+    fn upcast(self) -> Box<dyn RecordBase>;
+
     fn as_any(&self) -> &dyn Any;
 
     fn as_any_mut(&mut self) -> &mut dyn Any;
-
-    fn upcast(&self) -> &dyn RecordBase;
-
-    fn upcast_mut(&mut self) -> &mut dyn RecordBase;
-
-    fn dyn_clone(&self) -> Box<dyn RecordBase>;
 
     fn to_string(&self) -> String;
 }

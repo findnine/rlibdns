@@ -85,24 +85,16 @@ impl RecordBase for DNSKeyRecord {
         RecordTypes::DnsKey
     }
 
+    fn upcast(self) -> Box<dyn RecordBase> {
+        Box::new(self)
+    }
+
     fn as_any(&self) -> &dyn Any {
         self
     }
 
     fn as_any_mut(&mut self) -> &mut dyn Any {
         self
-    }
-
-    fn upcast(&self) -> &dyn RecordBase {
-        self
-    }
-
-    fn upcast_mut(&mut self) -> &mut dyn RecordBase {
-        self
-    }
-
-    fn dyn_clone(&self) -> Box<dyn RecordBase> {
-        Box::new(self.clone())
     }
 
     fn to_string(&self) -> String {

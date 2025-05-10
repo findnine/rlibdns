@@ -66,16 +66,8 @@ impl RecordBase for CNameRecord {
         self
     }
 
-    fn upcast(&self) -> &dyn RecordBase {
-        self
-    }
-
-    fn upcast_mut(&mut self) -> &mut dyn RecordBase {
-        self
-    }
-
-    fn dyn_clone(&self) -> Box<dyn RecordBase> {
-        Box::new(self.clone())
+    fn upcast(self) -> Box<dyn RecordBase> {
+        Box::new(self)
     }
 
     fn to_string(&self) -> String {
