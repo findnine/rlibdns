@@ -94,10 +94,10 @@ impl MessageBase {
         }
     }
 
-    pub fn from_bytes(buf: &[u8], off: usize) -> io::Result<Self> {
-        let id = u16::from_be_bytes([buf[off], buf[off+1]]);
+    pub fn from_bytes(buf: &[u8]) -> io::Result<Self> {
+        let id = u16::from_be_bytes([buf[0], buf[1]]);
 
-        let flags = u16::from_be_bytes([buf[off+2], buf[off+3]]);
+        let flags = u16::from_be_bytes([buf[2], buf[3]]);
 
         let qr = (flags & 0x8000) != 0;
         let op_code = OpCodes::from_code(((flags >> 11) & 0x0F) as u8)?;
@@ -124,10 +124,10 @@ impl MessageBase {
                 response_code);
                 */
 
-        let qd_count = u16::from_be_bytes([buf[off+4], buf[off+5]]);
-        let an_count = u16::from_be_bytes([buf[off+6], buf[off+7]]);
-        let ns_count = u16::from_be_bytes([buf[off+8], buf[off+9]]);
-        let ar_count = u16::from_be_bytes([buf[off+10], buf[off+11]]);
+        let qd_count = u16::from_be_bytes([buf[4], buf[5]]);
+        let an_count = u16::from_be_bytes([buf[6], buf[7]]);
+        let ns_count = u16::from_be_bytes([buf[8], buf[9]]);
+        let ar_count = u16::from_be_bytes([buf[10], buf[11]]);
 
         //println!("{} {} {} {}", qd_count, an_count, ns_count, ar_count);
 
