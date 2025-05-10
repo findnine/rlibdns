@@ -429,6 +429,10 @@ impl MessageBase {
         self.queries.clone()
     }
 
+    pub fn has_answer(&self) -> bool {
+        self.answers.len() > 0
+    }
+
     pub fn add_answers(&mut self, query: &str, record: Box<dyn RecordBase>) {
         if self.answers.contains_key(&query.to_string()) {
             self.answers.get_mut(&query.to_string()).unwrap().push(record);
@@ -442,6 +446,10 @@ impl MessageBase {
         &self.answers
     }
 
+    pub fn has_name_servers(&self) -> bool {
+        self.answers.len() > 0
+    }
+
     pub fn add_name_servers(&mut self, query: &str, record: Box<dyn RecordBase>) {
         if self.name_servers.contains_key(&query.to_string()) {
             self.name_servers.get_mut(&query.to_string()).unwrap().push(record);
@@ -453,6 +461,10 @@ impl MessageBase {
 
     pub fn get_name_servers(&self) -> &OrderedMap<String, Vec<Box<dyn RecordBase>>> {
         &self.name_servers
+    }
+
+    pub fn has_additional_records(&self) -> bool {
+        self.answers.len() > 0
     }
 
     pub fn add_additional_records(&mut self, query: &str, record: Box<dyn RecordBase>) {
