@@ -5,7 +5,7 @@ use crate::utils::domain_utils::{pack_domain, unpack_domain};
 
 #[derive(Clone)]
 pub struct DnsQuery {
-    query: Option<String>,
+    name: Option<String>,
     _type: RecordTypes,
     dns_class: DnsClasses,
     length: usize
@@ -15,7 +15,7 @@ impl Default for DnsQuery {
 
     fn default() -> Self {
         Self {
-            query: None,
+            name: None,
             _type: RecordTypes::A,
             dns_class: DnsClasses::In,
             length: 4
@@ -25,24 +25,24 @@ impl Default for DnsQuery {
 
 impl DnsQuery {
 
-    pub fn new(query: &str, _type: RecordTypes, dns_class: DnsClasses) -> Self {
+    pub fn new(name: &str, _type: RecordTypes, dns_class: DnsClasses) -> Self {
         Self {
-            query: Some(query.to_string()),
+            name: Some(name.to_string()),
             _type,
             dns_class,
-            length: query.len()+6
+            length: name.len()+6
         }
     }
 
     pub fn from_bytes(buf: &[u8], off: usize) -> Self {
-        let (query, length) = unpack_domain(buf, off);
+        let (name, length) = unpack_domain(buf, off);
         let off = off+length;
 
         let _type = RecordTypes::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
         let dns_class = DnsClasses::from_code(u16::from_be_bytes([buf[off+2], buf[off+3]])).unwrap();
 
         Self {
-            query: Some(query),
+            name: Some(name),
             _type,
             dns_class,
             length: length+4
@@ -52,7 +52,7 @@ impl DnsQuery {
     pub fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Vec<u8> {
         let mut buf = vec![0u8; self.length];
 
-        let address = pack_domain(self.query.as_ref().unwrap().as_str(), label_map, off);
+        let address = pack_domain(self.name.as_ref().unwrap().as_str(), label_map, off);
         buf[0..address.len()].copy_from_slice(&address);
 
         let length = address.len();
@@ -63,12 +63,12 @@ impl DnsQuery {
         buf
     }
 
-    pub fn set_query(&mut self, query: String) {
-        self.query = Some(query);
+    pub fn set_name(&mut self, name: String) {
+        self.name = Some(name);
     }
 
-    pub fn get_query(&self) -> Option<&String> {
-        self.query.as_ref()
+    pub fn get_name(&self) -> Option<&String> {
+        self.name.as_ref()
     }
 
     pub fn set_type(&mut self, _type: RecordTypes) {
@@ -92,6 +92,6 @@ impl DnsQuery {
     }
 
     pub fn to_string(&self) -> String {
-        format!("[QUERY] {}: type {:?}, class {:?}", self.query.as_ref().unwrap(), self._type, self.dns_class)
+        format!("[QUERY] {}: type {:?}, class {:?}", self.name.as_ref().unwrap(), self._type, self.dns_class)
     }
 }
