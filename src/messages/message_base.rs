@@ -438,8 +438,30 @@ impl MessageBase {
         self.answers.insert(query.to_string(), vec![record]);
     }
 
+    pub fn get_answers(&self) -> &OrderedMap<String, Vec<Box<dyn RecordBase>>> {
+        &self.answers
+    }
+
+    pub fn add_name_servers(&mut self, query: &str, record: Box<dyn RecordBase>) {
+        if self.name_servers.contains_key(&query.to_string()) {
+            self.name_servers.get_mut(&query.to_string()).unwrap().push(record);
+            return;
+        }
+
+        self.name_servers.insert(query.to_string(), vec![record]);
+    }
+
     pub fn get_name_servers(&self) -> &OrderedMap<String, Vec<Box<dyn RecordBase>>> {
         &self.name_servers
+    }
+
+    pub fn add_additional_records(&mut self, query: &str, record: Box<dyn RecordBase>) {
+        if self.additional_records.contains_key(&query.to_string()) {
+            self.additional_records.get_mut(&query.to_string()).unwrap().push(record);
+            return;
+        }
+
+        self.additional_records.insert(query.to_string(), vec![record]);
     }
 
     pub fn get_additional_records(&self) -> &OrderedMap<String, Vec<Box<dyn RecordBase>>> {
