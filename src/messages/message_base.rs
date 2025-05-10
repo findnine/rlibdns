@@ -446,6 +446,10 @@ impl MessageBase {
         &self.answers
     }
 
+    pub fn get_answers_mut(&mut self) -> &mut OrderedMap<String, Vec<Box<dyn RecordBase>>> {
+        &mut self.answers
+    }
+
     pub fn has_name_servers(&self) -> bool {
         self.answers.len() > 0
     }
@@ -463,6 +467,10 @@ impl MessageBase {
         &self.name_servers
     }
 
+    pub fn get_name_servers_mut(&mut self) -> &mut OrderedMap<String, Vec<Box<dyn RecordBase>>> {
+        &mut self.name_servers
+    }
+
     pub fn has_additional_records(&self) -> bool {
         self.answers.len() > 0
     }
@@ -478,5 +486,9 @@ impl MessageBase {
 
     pub fn get_additional_records(&self) -> &OrderedMap<String, Vec<Box<dyn RecordBase>>> {
         &self.additional_records
+    }
+
+    pub fn get_additional_records_mut(&mut self) -> &mut OrderedMap<String, Vec<Box<dyn RecordBase>>> {
+        &mut self.additional_records
     }
 }

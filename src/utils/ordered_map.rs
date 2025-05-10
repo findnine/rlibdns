@@ -9,7 +9,10 @@ pub struct OrderedMap<K: Eq + Hash, V> {
     keys: Vec<K>,
 }
 
-impl<K, V> OrderedMap<K, V> where K: Eq + Hash + Clone {
+impl<K, V> OrderedMap<K, V>
+where
+    K: Eq + Hash + Clone
+{
 
     pub fn new() -> Self {
         OrderedMap {
@@ -78,6 +81,12 @@ impl<K, V> OrderedMap<K, V> where K: Eq + Hash + Clone {
 
     pub fn is_empty(&self) -> bool {
         self.map.is_empty()
+    }
+
+    pub fn drain(&mut self) -> impl Iterator<Item = (K, V)> + use<'_, K, V> {
+        self.keys
+            .drain(..)
+            .filter_map(|key| self.map.remove(&key).map(|v| (key, v)))
     }
 }
 /*
