@@ -5,29 +5,17 @@ use crate::utils::domain_utils::{pack_domain, unpack_domain};
 
 #[derive(Clone)]
 pub struct DnsQuery {
-    name: Option<String>,
+    name: String,
     _type: RecordTypes,
     dns_class: DnsClasses,
     length: usize
-}
-
-impl Default for DnsQuery {
-
-    fn default() -> Self {
-        Self {
-            name: None,
-            _type: RecordTypes::A,
-            dns_class: DnsClasses::In,
-            length: 4
-        }
-    }
 }
 
 impl DnsQuery {
 
     pub fn new(name: &str, _type: RecordTypes, dns_class: DnsClasses) -> Self {
         Self {
-            name: Some(name.to_string()),
+            name: name.to_string(),
             _type,
             dns_class,
             length: name.len()+6
@@ -42,7 +30,7 @@ impl DnsQuery {
         let dns_class = DnsClasses::from_code(u16::from_be_bytes([buf[off+2], buf[off+3]])).unwrap();
 
         Self {
-            name: Some(name),
+            name,
             _type,
             dns_class,
             length: length+4
@@ -52,7 +40,7 @@ impl DnsQuery {
     pub fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Vec<u8> {
         let mut buf = vec![0u8; self.length];
 
-        let address = pack_domain(self.name.as_ref().unwrap().as_str(), label_map, off);
+        let address = pack_domain(self.name.as_str(), label_map, off);
         buf[0..address.len()].copy_from_slice(&address);
 
         let length = address.len();
@@ -63,12 +51,12 @@ impl DnsQuery {
         buf
     }
 
-    pub fn set_name(&mut self, name: String) {
-        self.name = Some(name);
+    pub fn set_name(&mut self, name: &str) {
+        self.name = name.to_string();
     }
 
-    pub fn get_name(&self) -> Option<&String> {
-        self.name.as_ref()
+    pub fn get_name(&self) -> &String {
+        &self.name
     }
 
     pub fn set_type(&mut self, _type: RecordTypes) {
@@ -92,6 +80,6 @@ impl DnsQuery {
     }
 
     pub fn to_string(&self) -> String {
-        format!("[QUERY] {}: type {:?}, class {:?}", self.name.as_ref().unwrap(), self._type, self.dns_class)
+        format!("[QUERY] {}: type {:?}, class {:?}", self.name, self._type, self.dns_class)
     }
 }
