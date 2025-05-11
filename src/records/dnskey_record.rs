@@ -1,5 +1,7 @@
 use std::any::Any;
 use std::collections::HashMap;
+use std::fmt;
+use std::fmt::Formatter;
 use crate::messages::inter::dns_classes::DnsClasses;
 use crate::messages::inter::record_types::RecordTypes;
 use crate::records::inter::record_base::RecordBase;
@@ -96,10 +98,6 @@ impl RecordBase for DnsKeyRecord {
     fn as_any_mut(&mut self) -> &mut dyn Any {
         self
     }
-
-    fn to_string(&self) -> String {
-        format!("[RECORD] type {:?}, class {:?}", self.get_type(), self.dns_class.unwrap())
-    }
 }
 
 impl DnsKeyRecord {
@@ -119,11 +117,8 @@ impl DnsKeyRecord {
         self.dns_class = Some(dns_class);
     }
 
-    pub fn get_dns_class(&self) -> Result<DnsClasses, String> {
-        match self.dns_class {
-            Some(ref dns_class) => Ok(dns_class.clone()),
-            None => Err("No dns class returned".to_string())
-        }
+    pub fn get_dns_class(&self) -> Option<&DnsClasses> {
+        self.dns_class.as_ref()
     }
 
     pub fn set_ttl(&mut self, ttl: u32) {
@@ -132,5 +127,12 @@ impl DnsKeyRecord {
 
     pub fn get_ttl(&self) -> u32 {
         self.ttl
+    }
+}
+
+impl fmt::Display for DnsKeyRecord {
+
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "type {:?}, class {:?}", self.get_type(), self.dns_class.unwrap())
     }
 }

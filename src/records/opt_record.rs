@@ -1,5 +1,7 @@
 use std::any::Any;
 use std::collections::HashMap;
+use std::fmt;
+use std::fmt::Formatter;
 use crate::messages::inter::record_types::RecordTypes;
 use crate::records::inter::opt_codes::OptCodes;
 use crate::records::inter::record_base::RecordBase;
@@ -93,10 +95,6 @@ impl RecordBase for OptRecord {
     fn as_any_mut(&mut self) -> &mut dyn Any {
         self
     }
-
-    fn to_string(&self) -> String {
-        format!("[RECORD] type {:?} payload_size {}", self.get_type(), self.payload_size)
-    }
 }
 
 impl OptRecord {
@@ -109,5 +107,12 @@ impl OptRecord {
             flags,
             options: OrderedMap::new()
         }
+    }
+}
+
+impl fmt::Display for OptRecord {
+
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "type {:?}, payload_size {}", self.get_type(), self.payload_size)
     }
 }

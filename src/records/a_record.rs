@@ -1,5 +1,7 @@
 use std::any::Any;
 use std::collections::HashMap;
+use std::fmt;
+use std::fmt::Formatter;
 use std::net::Ipv4Addr;
 use crate::messages::inter::dns_classes::DnsClasses;
 use crate::messages::inter::record_types::RecordTypes;
@@ -84,10 +86,6 @@ impl RecordBase for ARecord {
     fn as_any_mut(&mut self) -> &mut dyn Any {
         self
     }
-
-    fn to_string(&self) -> String {
-        format!("[RECORD] type {:?}, class {:?}, addr: {}", self.get_type(), self.dns_class.unwrap(), self.address.unwrap().to_string())
-    }
 }
 
 impl ARecord {
@@ -105,11 +103,8 @@ impl ARecord {
         self.dns_class = Some(dns_class);
     }
 
-    pub fn get_dns_class(&self) -> Result<DnsClasses, String> {
-        match self.dns_class {
-            Some(ref dns_class) => Ok(dns_class.clone()),
-            None => Err("No dns class returned".to_string())
-        }
+    pub fn get_dns_class(&self) -> Option<&DnsClasses> {
+        self.dns_class.as_ref()
     }
 
     pub fn set_ttl(&mut self, ttl: u32) {
@@ -126,5 +121,12 @@ impl ARecord {
 
     pub fn get_address(&self) -> Option<Ipv4Addr> {
         self.address
+    }
+}
+
+impl fmt::Display for ARecord {
+
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "type {:?}, class {:?}, addr: {}", self.get_type(), self.dns_class.unwrap(), self.address.unwrap())
     }
 }
