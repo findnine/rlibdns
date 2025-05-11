@@ -5,7 +5,7 @@ use crate::messages::inter::record_types::RecordTypes;
 use crate::records::inter::record_base::RecordBase;
 
 #[derive(Clone)]
-pub struct DNSKeyRecord {
+pub struct DnsKeyRecord {
     dns_class: Option<DnsClasses>,
     ttl: u32,
     flags: u16,
@@ -14,7 +14,7 @@ pub struct DNSKeyRecord {
     public_key: Vec<u8>
 }
 
-impl Default for DNSKeyRecord {
+impl Default for DnsKeyRecord {
 
     fn default() -> Self {
         Self {
@@ -28,7 +28,7 @@ impl Default for DNSKeyRecord {
     }
 }
 
-impl RecordBase for DNSKeyRecord {
+impl RecordBase for DnsKeyRecord {
 
     fn from_bytes(buf: &[u8], off: usize) -> Self {
         let mut off = off;
@@ -102,7 +102,7 @@ impl RecordBase for DNSKeyRecord {
     }
 }
 
-impl DNSKeyRecord {
+impl DnsKeyRecord {
 
     pub fn new(dns_classes: DnsClasses, ttl: u32, flags: u16, protocol: u8, algorithm: u8, public_key: Vec<u8>) -> Self {
         Self {

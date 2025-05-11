@@ -5,14 +5,14 @@ use crate::messages::inter::op_codes::OpCodes;
 use crate::messages::inter::response_codes::ResponseCodes;
 use crate::messages::inter::record_types::RecordTypes;
 use crate::records::a_record::ARecord;
-use crate::records::aaaa_record::AAAARecord;
+use crate::records::aaaa_record::AaaaRecord;
 use crate::records::cname_record::CNameRecord;
-use crate::records::dnskey_record::DNSKeyRecord;
+use crate::records::dnskey_record::DnsKeyRecord;
 use crate::records::https_record::HttpsRecord;
 use crate::records::inter::record_base::RecordBase;
 use crate::records::mx_record::MxRecord;
 use crate::records::ns_record::NsRecord;
-use crate::records::nsec_record::NsecRecord;
+use crate::records::nsec_record::NSecRecord;
 use crate::records::opt_record::OptRecord;
 use crate::records::ptr_record::PtrRecord;
 use crate::records::rrsig_record::RRSigRecord;
@@ -193,7 +193,7 @@ impl MessageBase {
                     ARecord::from_bytes(buf, pos+2).upcast()
                 }
                 RecordTypes::Aaaa => {
-                    AAAARecord::from_bytes(buf, pos+2).upcast()
+                    AaaaRecord::from_bytes(buf, pos+2).upcast()
                 }
                 RecordTypes::Ns => {
                     NsRecord::from_bytes(buf, pos+2).upcast()
@@ -223,10 +223,10 @@ impl MessageBase {
                     RRSigRecord::from_bytes(buf, pos+2).upcast()
                 }
                 RecordTypes::Nsec => {
-                    NsecRecord::from_bytes(buf, pos+2).upcast()
+                    NSecRecord::from_bytes(buf, pos+2).upcast()
                 }
                 RecordTypes::DnsKey => {
-                    DNSKeyRecord::from_bytes(buf, pos+2).upcast()
+                    DnsKeyRecord::from_bytes(buf, pos+2).upcast()
                 }
                 RecordTypes::Https => {
                     HttpsRecord::from_bytes(buf, pos+2).upcast()

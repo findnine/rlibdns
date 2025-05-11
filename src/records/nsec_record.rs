@@ -6,7 +6,7 @@ use crate::records::inter::record_base::RecordBase;
 use crate::utils::domain_utils::{pack_domain, unpack_domain};
 
 #[derive(Clone)]
-pub struct NsecRecord {
+pub struct NSecRecord {
     dns_class: Option<DnsClasses>,
     cache_flush: bool,
     ttl: u32,
@@ -14,7 +14,7 @@ pub struct NsecRecord {
     rr_types: Vec<u16>
 }
 
-impl Default for NsecRecord {
+impl Default for NSecRecord {
 
     fn default() -> Self {
         Self {
@@ -27,7 +27,7 @@ impl Default for NsecRecord {
     }
 }
 
-impl RecordBase for NsecRecord {
+impl RecordBase for NSecRecord {
 
     fn from_bytes(buf: &[u8], off: usize) -> Self {
         let mut off = off;
@@ -136,7 +136,7 @@ impl RecordBase for NsecRecord {
     }
 }
 
-impl NsecRecord {
+impl NSecRecord {
 
     pub fn new(dns_classes: DnsClasses, cache_flush: bool, ttl: u32, domain: &str, rr_types: Vec<u16>) -> Self {
         Self {

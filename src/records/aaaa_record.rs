@@ -6,14 +6,14 @@ use crate::messages::inter::record_types::RecordTypes;
 use crate::records::inter::record_base::RecordBase;
 
 #[derive(Clone)]
-pub struct AAAARecord {
+pub struct AaaaRecord {
     dns_class: Option<DnsClasses>,
     cache_flush: bool,
     ttl: u32,
     address: Option<Ipv6Addr>
 }
 
-impl Default for AAAARecord {
+impl Default for AaaaRecord {
 
     fn default() -> Self {
         Self {
@@ -25,7 +25,7 @@ impl Default for AAAARecord {
     }
 }
 
-impl RecordBase for AAAARecord {
+impl RecordBase for AaaaRecord {
 
     fn from_bytes(buf: &[u8], off: usize) -> Self {
         let dns_class = u16::from_be_bytes([buf[off], buf[off+1]]);
@@ -90,7 +90,7 @@ impl RecordBase for AAAARecord {
     }
 }
 
-impl AAAARecord {
+impl AaaaRecord {
 
     pub fn new(dns_classes: DnsClasses, cache_flush: bool, ttl: u32, address: Ipv6Addr) -> Self {
         Self {
