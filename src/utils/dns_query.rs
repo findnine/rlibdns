@@ -45,7 +45,7 @@ impl DnsQuery {
 
         let length = address.len();
 
-        buf.splice(length..length+2, self.dns_class.get_code().to_be_bytes());
+        buf.splice(length..length+2, self._type.get_code().to_be_bytes());
         buf.splice(length+2..length+4, self.dns_class.get_code().to_be_bytes());
 
         buf
