@@ -3,7 +3,7 @@ use crate::messages::inter::dns_classes::DnsClasses;
 use crate::messages::inter::record_types::RecordTypes;
 use crate::utils::domain_utils::{pack_domain, unpack_domain};
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct DnsQuery {
     name: String,
     _type: RecordTypes,
