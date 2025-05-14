@@ -1,6 +1,7 @@
 pub mod messages;
 pub mod records;
 pub mod utils;
+pub mod zone;
 
 #[cfg(test)]
 mod tests {
