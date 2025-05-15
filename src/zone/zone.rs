@@ -1,6 +1,7 @@
 use std::fs::File;
 use std::io;
 use std::io::{BufRead, BufReader};
+use crate::messages::inter::dns_classes::DnsClasses;
 use crate::records::inter::record_base::RecordBase;
 
 pub struct Zone {
@@ -81,6 +82,14 @@ impl Zone {
             }
 
             println!("{:?}", tokens);
+
+
+
+            //if let Some(a) = DnsClasses::from_abbreviation(tokens[0]).ok() {
+            //    println!("DNS CLASS: {a}");
+            //}
+
+
 
             //TTL CAN EXIST -
 

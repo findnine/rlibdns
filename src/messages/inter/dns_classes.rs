@@ -30,15 +30,24 @@ impl DnsClasses {
         }
     }
 
-    /*
-    pub fn (&self) -> String {
+    pub fn from_abbreviation(value: &str) -> io::Result<Self> {
+        for c in [Self::In, Self::Cs, Self::Ch, Self::Hs] {
+            if c.to_abbreviation() == value {
+                return Ok(c);
+            }
+        }
+
+        Err(io::Error::new(io::ErrorKind::InvalidInput, format!("Couldn't find for value: {}", value)))
+    }
+
+    pub fn to_abbreviation(&self) -> String {
         match self {
-            Self::In => "Internet",
-            Self::Cs => "Unasigned",
-            Self::Ch => "Chaos",
-            Self::Hs => "Hesiod"
+            Self::In => "IN",
+            Self::Cs => "CS",
+            Self::Ch => "CH",
+            Self::Hs => "HS"
         }.to_string()
-    }*/
+    }
 }
 
 impl fmt::Display for DnsClasses {

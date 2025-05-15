@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{fmt, io};
 use std::fmt::Formatter;
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
@@ -75,6 +75,35 @@ impl RecordTypes {
             Self::Any => 255,
             Self::Caa => 257
         }
+    }
+
+    pub fn from_string(value: &str) -> io::Result<Self> {
+        for c in [
+            Self::A,
+            Self::Aaaa,
+            Self::Ns,
+            Self::Cname,
+            Self::Soa,
+            Self::Ptr,
+            Self::Mx,
+            Self::Txt,
+            Self::Srv,
+            Self::Opt,
+            Self::Rrsig,
+            Self::Nsec,
+            Self::DnsKey,
+            Self::Https,
+            Self::Spf,
+            Self::Tsig,
+            Self::Any,
+            Self::Caa
+        ] {
+            if c.to_string() == value {
+                return Ok(c);
+            }
+        }
+
+        Err(io::Error::new(io::ErrorKind::InvalidInput, format!("Couldn't find for value: {}", value)))
     }
 }
 
