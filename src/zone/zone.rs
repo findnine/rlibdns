@@ -27,7 +27,7 @@ impl Zone {
 
         let default_origin = "find9.net";
 
-        let mut origin = default_origin.trim_end_matches('.').to_string();
+        let mut origin = default_origin.to_string();
         let mut default_ttl: Option<u32> = None;
 
         let mut is_indented = false;
@@ -43,13 +43,15 @@ impl Zone {
             //let is_indented = line.chars().next().map_or(false, |c| c.is_whitespace());
             //let mut line = line.split(';').next().unwrap_or("").trim().to_string();
 
-            if line.is_empty() {
-                continue;
-            }
-
             if !multiline.is_empty() {
+                line = line.split(';').next().unwrap_or("").trim().to_string();
+
+                if line.is_empty() {
+                    continue;
+                }
+
                 multiline.push(' ');
-                multiline.push_str(&line.split(';').next().unwrap_or("").trim().to_string());
+                multiline.push_str(&line);
 
                 if !line.contains(')') {
                     continue;
@@ -66,9 +68,13 @@ impl Zone {
             } else {
                 is_indented = line.chars().next().map_or(false, |c| c.is_whitespace());
                 line = line.split(';').next().unwrap_or("").trim().to_string();
+
+                if line.is_empty() {
+                    continue;
+                }
             }
 
-            let tokens: Vec<&str> = line.split_whitespace().collect();
+            let mut tokens: Vec<&str> = line.split_whitespace().collect();
             
             if line.starts_with('$') {
                 match tokens[0] {
@@ -84,6 +90,12 @@ impl Zone {
             }
 
             if is_indented {
+                //WE KNOW TO USE PREVIOUS ORIGIN...
+                //tokens.insert(0, &origin);
+
+            } else {
+                //ORIGIN WILL BE SET
+                origin = tokens[0].to_string();
 
             }
 
