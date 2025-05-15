@@ -6,6 +6,7 @@ pub mod zone;
 #[cfg(test)]
 mod tests {
     use crate::messages::message_base::MessageBase;
+    use crate::zone::zone::Zone;
 
     #[test]
     fn encode_and_decode() {
@@ -17,5 +18,9 @@ mod tests {
         let message = MessageBase::from_bytes(&x).unwrap();
 
         assert_eq!(x, message.to_bytes());
+
+
+        let zone = Zone::from_file("/home/brad/Downloads/find9.net.zone").unwrap();
+
     }
 }
