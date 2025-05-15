@@ -30,17 +30,18 @@ impl Zone {
         let mut origin = default_origin.trim_end_matches('.').to_string();
         let mut default_ttl: Option<u32> = None;
 
+        let mut is_indented = false;
         let mut multiline = String::new();
 
 
 
         for line in reader.lines() {
-            let line = line?;
+            let mut line = line?;
 
             //TRIMMING WILL REMOVE CHECK IF WE ARE UTILIZING LAST LINE NAME REFERENCE
             //https://datatracker.ietf.org/doc/html/rfc2308#section-10
-            //let indented = line.chars().next().is_whitespace();
-            let mut line = line.split(';').next().unwrap_or("").trim().to_string();
+            //let is_indented = line.chars().next().map_or(false, |c| c.is_whitespace());
+            //let mut line = line.split(';').next().unwrap_or("").trim().to_string();
 
             if line.is_empty() {
                 continue;
@@ -48,7 +49,7 @@ impl Zone {
 
             if !multiline.is_empty() {
                 multiline.push(' ');
-                multiline.push_str(&line);
+                multiline.push_str(&line.split(';').next().unwrap_or("").trim().to_string());
 
                 if !line.contains(')') {
                     continue;
@@ -58,8 +59,13 @@ impl Zone {
                 multiline.clear();
 
             } else if line.contains('(') && !line.contains(')') {
-                multiline = line.to_string();
+                is_indented = line.chars().next().map_or(false, |c| c.is_whitespace());
+                multiline = line.split(';').next().unwrap_or("").trim().to_string();
                 continue;
+
+            } else {
+                is_indented = line.chars().next().map_or(false, |c| c.is_whitespace());
+                line = line.split(';').next().unwrap_or("").trim().to_string();
             }
 
             let tokens: Vec<&str> = line.split_whitespace().collect();
@@ -77,17 +83,21 @@ impl Zone {
                 continue;
             }
 
+            if is_indented {
+
+            }
+
             //if tokens.len() < 3 {
             //    continue;
             //}
 
-            println!("{:?}", tokens);
+            println!("{} {:?}", is_indented, tokens);
 
-            
+
             //@ = $ORIGIN
-            
+
             //
-            
+
 
 
             //if let Some(a) = DnsClasses::from_abbreviation(tokens[0]).ok() {
