@@ -77,12 +77,17 @@ impl Zone {
                 continue;
             }
 
-            if tokens.len() < 3 {
-                continue;
-            }
+            //if tokens.len() < 3 {
+            //    continue;
+            //}
 
             println!("{:?}", tokens);
 
+            
+            //@ = $ORIGIN
+            
+            //
+            
 
 
             //if let Some(a) = DnsClasses::from_abbreviation(tokens[0]).ok() {
