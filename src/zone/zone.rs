@@ -35,6 +35,9 @@ impl Zone {
 
         for line in reader.lines() {
             let line = line?;
+
+            //TRIMMING WILL REMOVE CHECK IF WE ARE UTILIZING LAST LINE NAME REFERENCE
+            //https://datatracker.ietf.org/doc/html/rfc2308#section-10
             let mut line = line.split(';').next().unwrap_or("").trim().to_string();
 
             if line.is_empty() {
@@ -77,6 +80,9 @@ impl Zone {
             }
 
             println!("{:?}", tokens);
+
+            //TTL CAN EXIST - 
+
 
             /*
             if continued {
