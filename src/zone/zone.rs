@@ -57,8 +57,26 @@ impl Zone {
                 continue;
             }
 
-            println!("{}", line);
+            let tokens: Vec<&str> = line.split_whitespace().collect();
+            
+            if line.starts_with('$') {
+                match tokens[0] {
+                    "$ORIGIN" if tokens.len() > 1 => {
+                        origin = tokens[1].trim_end_matches('.').to_string();
+                    }
+                    "$TTL" if tokens.len() > 1 => {
+                        default_ttl = tokens[1].parse().ok();
+                    }
+                    _ => {}
+                }
+                continue;
+            }
 
+            if tokens.len() < 3 {
+                continue;
+            }
+
+            println!("{:?}", tokens);
 
             /*
             if continued {
