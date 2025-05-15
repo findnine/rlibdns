@@ -1,3 +1,6 @@
+use std::fmt;
+use std::fmt::Formatter;
+
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum RecordTypes {
     A,
@@ -23,7 +26,26 @@ pub enum RecordTypes {
 impl RecordTypes {
 
     pub fn from_code(code: u16) -> Result<Self, String> {
-        for c in [Self::A, Self::Aaaa, Self::Ns, Self::Cname, Self::Soa, Self::Ptr, Self::Mx, Self::Txt, Self::Opt, Self::Rrsig, Self::Nsec, Self::DnsKey, Self::Https, Self::Srv, Self::Spf, Self::Tsig, Self::Any, Self::Caa] {
+        for c in [
+            Self::A,
+            Self::Aaaa,
+            Self::Ns,
+            Self::Cname,
+            Self::Soa,
+            Self::Ptr,
+            Self::Mx,
+            Self::Txt,
+            Self::Srv,
+            Self::Opt,
+            Self::Rrsig,
+            Self::Nsec,
+            Self::DnsKey,
+            Self::Https,
+            Self::Spf,
+            Self::Tsig,
+            Self::Any,
+            Self::Caa
+        ] {
             if c.get_code() == code {
                 return Ok(c);
             }
@@ -53,5 +75,31 @@ impl RecordTypes {
             Self::Any => 255,
             Self::Caa => 257
         }
+    }
+}
+
+impl fmt::Display for RecordTypes {
+
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
+            Self::A => "A",
+            Self::Aaaa => "AAAA",
+            Self::Ns => "NS",
+            Self::Cname => "CNAME",
+            Self::Soa => "SOA",
+            Self::Ptr => "PTR",
+            Self::Mx => "MX",
+            Self::Txt => "TXT",
+            Self::Srv => "SRV",
+            Self::Opt => "OPT",
+            Self::Rrsig => "RRSIG",
+            Self::Nsec => "NSEC",
+            Self::DnsKey => "DNSKEY",
+            Self::Https => "HTTPS",
+            Self::Spf => "SPF",
+            Self::Tsig => "TSIG",
+            Self::Any => "ANY",
+            Self::Caa => "CAA"
+        })
     }
 }

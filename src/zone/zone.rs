@@ -38,6 +38,7 @@ impl Zone {
 
             //TRIMMING WILL REMOVE CHECK IF WE ARE UTILIZING LAST LINE NAME REFERENCE
             //https://datatracker.ietf.org/doc/html/rfc2308#section-10
+            //let indented = line.chars().next().is_whitespace();
             let mut line = line.split(';').next().unwrap_or("").trim().to_string();
 
             if line.is_empty() {
@@ -81,7 +82,7 @@ impl Zone {
 
             println!("{:?}", tokens);
 
-            //TTL CAN EXIST - 
+            //TTL CAN EXIST -
 
 
             /*

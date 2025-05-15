@@ -1,4 +1,5 @@
-use std::io;
+use std::{fmt, io};
+use std::fmt::Formatter;
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum ResponseCodes {
@@ -51,9 +52,12 @@ impl ResponseCodes {
             Self::NotZone => 9
         }
     }
+}
 
-    pub fn to_string(&self) -> String {
-        match self {
+impl fmt::Display for ResponseCodes {
+
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
             Self::NoError => "No Error",
             Self::FormErr => "Format Error",
             Self::ServFail => "Server Failure",
@@ -64,6 +68,6 @@ impl ResponseCodes {
             Self::XrrSet => "RRset Should Not Exist",
             Self::NotAuth => "Not Authoritative",
             Self::NotZone => "Name Not In Zone"
-        }.to_string()
+        })
     }
 }

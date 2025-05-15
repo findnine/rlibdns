@@ -1,4 +1,5 @@
-use std::io;
+use std::{fmt, io};
+use std::fmt::Formatter;
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum OptCodes {
@@ -26,7 +27,27 @@ pub enum OptCodes {
 impl OptCodes {
 
     pub fn from_code(code: u16) -> io::Result<Self> {
-        for c in [Self::Llq, Self::Ul, Self::Nsid, Self::Dau, Self::Dhu, Self::N3u, Self::Ecs, Self::Expire, Self::Cookie, Self::TcpKeepalive, Self::Padding, Self::Chain, Self::KeyTag, Self::EdnsError, Self::DnsSecTrustedKey, Self::DnsSecValidated, Self::AdaptiveDnsDiscovery, Self::DoH, Self::MultiUserClientSubnet] {
+        for c in [
+            Self::Llq,
+            Self::Ul,
+            Self::Nsid,
+            Self::Dau,
+            Self::Dhu,
+            Self::N3u,
+            Self::Ecs,
+            Self::Expire,
+            Self::Cookie,
+            Self::TcpKeepalive,
+            Self::Padding,
+            Self::Chain,
+            Self::KeyTag,
+            Self::EdnsError,
+            Self::DnsSecTrustedKey,
+            Self::DnsSecValidated,
+            Self::AdaptiveDnsDiscovery,
+            Self::DoH,
+            Self::MultiUserClientSubnet
+        ] {
             if c.get_code() == code {
                 return Ok(c);
             }
@@ -58,9 +79,12 @@ impl OptCodes {
             Self::MultiUserClientSubnet => 21
         }
     }
+}
 
-    pub fn to_string(&self) -> String {
-        match self {
+impl fmt::Display for OptCodes {
+
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
             Self::Llq => "Long-Lived Queries",
             Self::Ul => "Update Leases",
             Self::Nsid => "Name Server Identifier",
@@ -80,6 +104,6 @@ impl OptCodes {
             Self::AdaptiveDnsDiscovery => "Adaptive DNS Discovery",
             Self::DoH => "DNS over HTTPS",
             Self::MultiUserClientSubnet => "Multi-User Client Subnet"
-        }.to_string()
+        })
     }
 }

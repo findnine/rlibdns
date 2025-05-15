@@ -1,4 +1,5 @@
-use std::io;
+use std::{fmt, io};
+use std::fmt::Formatter;
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum OpCodes {
@@ -26,12 +27,15 @@ impl OpCodes {
             Self::Status => 2
         }
     }
+}
 
-    pub fn to_string(&self) -> String {
-        match self {
+impl fmt::Display for OpCodes {
+
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
             Self::Query => "Query",
             Self::IQuery => "IQuery",
             Self::Status => "Status"
-        }.to_string()
+        })
     }
 }

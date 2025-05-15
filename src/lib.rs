@@ -20,7 +20,7 @@ mod tests {
         assert_eq!(x, message.to_bytes());
 
 
-        let zone = Zone::from_file("/home/brad/Downloads/find9.net.zone").unwrap();
+        let zone = Zone::from_file("/home/brad/Downloads/find9.net.test.zone").unwrap();
 
     }
 }

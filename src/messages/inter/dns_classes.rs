@@ -1,4 +1,5 @@
-use std::io;
+use std::{fmt, io};
+use std::fmt::Formatter;
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum DnsClasses {
@@ -29,12 +30,25 @@ impl DnsClasses {
         }
     }
 
-    pub fn to_string(&self) -> String {
+    /*
+    pub fn (&self) -> String {
         match self {
             Self::In => "Internet",
             Self::Cs => "Unasigned",
             Self::Ch => "Chaos",
             Self::Hs => "Hesiod"
         }.to_string()
+    }*/
+}
+
+impl fmt::Display for DnsClasses {
+
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
+            Self::In => "Internet",
+            Self::Cs => "Unasigned",
+            Self::Ch => "Chaos",
+            Self::Hs => "Hesiod"
+        })
     }
 }
