@@ -1,6 +1,6 @@
 use std::any::Any;
 use std::collections::HashMap;
-use crate::messages::inter::record_types::RecordTypes;
+use crate::messages::inter::rr_types::RRTypes;
 
 pub trait RecordBase {
 
@@ -8,7 +8,7 @@ pub trait RecordBase {
 
     fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String>;
 
-    fn get_type(&self) -> RecordTypes;
+    fn get_type(&self) -> RRTypes;
 
     fn upcast(self) -> Box<dyn RecordBase>;
 

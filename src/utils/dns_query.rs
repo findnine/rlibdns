@@ -1,19 +1,19 @@
 use std::collections::HashMap;
-use crate::messages::inter::dns_classes::DnsClasses;
-use crate::messages::inter::record_types::RecordTypes;
+use crate::messages::inter::rr_classes::RRClasses;
+use crate::messages::inter::rr_types::RRTypes;
 use crate::utils::domain_utils::{pack_domain, unpack_domain};
 
 #[derive(Debug, Clone)]
 pub struct DnsQuery {
     name: String,
-    _type: RecordTypes,
-    dns_class: DnsClasses,
+    _type: RRTypes,
+    dns_class: RRClasses,
     length: usize
 }
 
 impl DnsQuery {
 
-    pub fn new(name: &str, _type: RecordTypes, dns_class: DnsClasses) -> Self {
+    pub fn new(name: &str, _type: RRTypes, dns_class: RRClasses) -> Self {
         Self {
             name: name.to_string(),
             _type,
@@ -26,8 +26,8 @@ impl DnsQuery {
         let (name, length) = unpack_domain(buf, off);
         let off = off+length;
 
-        let _type = RecordTypes::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
-        let dns_class = DnsClasses::from_code(u16::from_be_bytes([buf[off+2], buf[off+3]])).unwrap();
+        let _type = RRTypes::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
+        let dns_class = RRClasses::from_code(u16::from_be_bytes([buf[off+2], buf[off+3]])).unwrap();
 
         Self {
             name,
@@ -59,19 +59,19 @@ impl DnsQuery {
         &self.name
     }
 
-    pub fn set_type(&mut self, _type: RecordTypes) {
+    pub fn set_type(&mut self, _type: RRTypes) {
         self._type = _type;
     }
 
-    pub fn get_type(&self) -> RecordTypes {
+    pub fn get_type(&self) -> RRTypes {
         self._type
     }
 
-    pub fn set_dns_class(&mut self, dns_class: DnsClasses) {
+    pub fn set_dns_class(&mut self, dns_class: RRClasses) {
         self.dns_class = dns_class;
     }
 
-    pub fn get_dns_class(&self) -> DnsClasses {
+    pub fn get_dns_class(&self) -> RRClasses {
         self.dns_class
     }
 

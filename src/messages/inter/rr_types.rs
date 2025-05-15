@@ -2,7 +2,7 @@ use std::{fmt, io};
 use std::fmt::Formatter;
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
-pub enum RecordTypes {
+pub enum RRTypes {
     A,
     Aaaa,
     Ns,
@@ -23,7 +23,7 @@ pub enum RecordTypes {
     Caa
 }
 
-impl RecordTypes {
+impl RRTypes {
 
     pub fn from_code(code: u16) -> Result<Self, String> {
         for c in [
@@ -107,7 +107,7 @@ impl RecordTypes {
     }
 }
 
-impl fmt::Display for RecordTypes {
+impl fmt::Display for RRTypes {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{}", match self {

@@ -2,7 +2,7 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
-use crate::messages::inter::record_types::RecordTypes;
+use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::opt_codes::OptCodes;
 use crate::records::inter::record_base::RecordBase;
 use crate::utils::ordered_map::OrderedMap;
@@ -80,8 +80,8 @@ impl RecordBase for OptRecord {
         Ok(buf)
     }
 
-    fn get_type(&self) -> RecordTypes {
-        RecordTypes::Opt
+    fn get_type(&self) -> RRTypes {
+        RRTypes::Opt
     }
 
     fn upcast(self) -> Box<dyn RecordBase> {

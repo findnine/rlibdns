@@ -3,7 +3,7 @@ use std::io;
 use std::net::SocketAddr;
 use crate::messages::inter::op_codes::OpCodes;
 use crate::messages::inter::response_codes::ResponseCodes;
-use crate::messages::inter::record_types::RecordTypes;
+use crate::messages::inter::rr_types::RRTypes;
 use crate::records::a_record::ARecord;
 use crate::records::aaaa_record::AaaaRecord;
 use crate::records::cname_record::CNameRecord;
@@ -188,56 +188,56 @@ impl MessageBase {
                 }
             };
 
-            let record = match RecordTypes::from_code(u16::from_be_bytes([buf[pos], buf[pos+1]])).unwrap() {
-                RecordTypes::A => {
+            let record = match RRTypes::from_code(u16::from_be_bytes([buf[pos], buf[pos+1]])).unwrap() {
+                RRTypes::A => {
                     ARecord::from_bytes(buf, pos+2).upcast()
                 }
-                RecordTypes::Aaaa => {
+                RRTypes::Aaaa => {
                     AaaaRecord::from_bytes(buf, pos+2).upcast()
                 }
-                RecordTypes::Ns => {
+                RRTypes::Ns => {
                     NsRecord::from_bytes(buf, pos+2).upcast()
                 }
-                RecordTypes::Cname => {
+                RRTypes::Cname => {
                     CNameRecord::from_bytes(buf, pos+2).upcast()
                 }
-                RecordTypes::Soa => {
+                RRTypes::Soa => {
                     SoaRecord::from_bytes(buf, pos+2).upcast()
                 }
-                RecordTypes::Ptr => {
+                RRTypes::Ptr => {
                     PtrRecord::from_bytes(buf, pos+2).upcast()
                 }
-                RecordTypes::Mx => {
+                RRTypes::Mx => {
                     MxRecord::from_bytes(buf, pos+2).upcast()
                 }
-                RecordTypes::Txt => {
+                RRTypes::Txt => {
                     TxtRecord::from_bytes(buf, pos+2).upcast()
                 }
-                RecordTypes::Srv => {
+                RRTypes::Srv => {
                     SrvRecord::from_bytes(buf, pos+2).upcast()
                 }
-                RecordTypes::Opt => {
+                RRTypes::Opt => {
                     OptRecord::from_bytes(buf, pos+2).upcast()
                 }
-                RecordTypes::Rrsig => {
+                RRTypes::Rrsig => {
                     RRSigRecord::from_bytes(buf, pos+2).upcast()
                 }
-                RecordTypes::Nsec => {
+                RRTypes::Nsec => {
                     NSecRecord::from_bytes(buf, pos+2).upcast()
                 }
-                RecordTypes::DnsKey => {
+                RRTypes::DnsKey => {
                     DnsKeyRecord::from_bytes(buf, pos+2).upcast()
                 }
-                RecordTypes::Https => {
+                RRTypes::Https => {
                     HttpsRecord::from_bytes(buf, pos+2).upcast()
                 }
-                RecordTypes::Spf => {
+                RRTypes::Spf => {
                     todo!()
                 }
-                RecordTypes::Tsig => {
+                RRTypes::Tsig => {
                     todo!()
                 }
-                RecordTypes::Caa => {
+                RRTypes::Caa => {
                     todo!()
                 }
                 _ => {

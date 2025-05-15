@@ -2,14 +2,14 @@ use std::{fmt, io};
 use std::fmt::Formatter;
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
-pub enum DnsClasses {
+pub enum RRClasses {
     In,
     Cs,
     Ch,
     Hs
 }
 
-impl DnsClasses {
+impl RRClasses {
 
     pub fn from_code(code: u16) -> io::Result<Self> {
         for c in [Self::In, Self::Cs, Self::Ch, Self::Hs] {
@@ -50,7 +50,7 @@ impl DnsClasses {
     }
 }
 
-impl fmt::Display for DnsClasses {
+impl fmt::Display for RRClasses {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{}", match self {

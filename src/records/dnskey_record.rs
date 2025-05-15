@@ -2,13 +2,13 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
-use crate::messages::inter::dns_classes::DnsClasses;
-use crate::messages::inter::record_types::RecordTypes;
+use crate::messages::inter::rr_classes::RRClasses;
+use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::RecordBase;
 
 #[derive(Clone)]
 pub struct DnsKeyRecord {
-    dns_class: Option<DnsClasses>,
+    dns_class: Option<RRClasses>,
     ttl: u32,
     flags: u16,
     protocol: u8,
@@ -35,7 +35,7 @@ impl RecordBase for DnsKeyRecord {
     fn from_bytes(buf: &[u8], off: usize) -> Self {
         let mut off = off;
 
-        let dns_class = Some(DnsClasses::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap());
+        let dns_class = Some(RRClasses::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap());
         let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
 
         let flags = u16::from_be_bytes([buf[off+8], buf[off+9]]);
@@ -83,8 +83,8 @@ impl RecordBase for DnsKeyRecord {
         Ok(buf)
     }
 
-    fn get_type(&self) -> RecordTypes {
-        RecordTypes::DnsKey
+    fn get_type(&self) -> RRTypes {
+        RRTypes::DnsKey
     }
 
     fn upcast(self) -> Box<dyn RecordBase> {
@@ -102,7 +102,7 @@ impl RecordBase for DnsKeyRecord {
 
 impl DnsKeyRecord {
 
-    pub fn new(dns_classes: DnsClasses, ttl: u32, flags: u16, protocol: u8, algorithm: u8, public_key: Vec<u8>) -> Self {
+    pub fn new(dns_classes: RRClasses, ttl: u32, flags: u16, protocol: u8, algorithm: u8, public_key: Vec<u8>) -> Self {
         Self {
             dns_class: Some(dns_classes),
             ttl,
@@ -113,11 +113,11 @@ impl DnsKeyRecord {
         }
     }
 
-    pub fn set_dns_class(&mut self, dns_class: DnsClasses) {
+    pub fn set_dns_class(&mut self, dns_class: RRClasses) {
         self.dns_class = Some(dns_class);
     }
 
-    pub fn get_dns_class(&self) -> Option<&DnsClasses> {
+    pub fn get_dns_class(&self) -> Option<&RRClasses> {
         self.dns_class.as_ref()
     }
 

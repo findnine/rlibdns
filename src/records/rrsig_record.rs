@@ -2,14 +2,14 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
-use crate::messages::inter::dns_classes::DnsClasses;
-use crate::messages::inter::record_types::RecordTypes;
+use crate::messages::inter::rr_classes::RRClasses;
+use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::RecordBase;
 use crate::utils::domain_utils::{pack_domain_uncompressed, unpack_domain};
 
 #[derive(Clone)]
 pub struct RRSigRecord {
-    dns_class: Option<DnsClasses>,
+    dns_class: Option<RRClasses>,
     ttl: u32,
     type_covered: u16,
     algorithm: u8,
@@ -46,7 +46,7 @@ impl RecordBase for RRSigRecord {
     fn from_bytes(buf: &[u8], off: usize) -> Self {
         let mut off = off;
 
-        let dns_class = Some(DnsClasses::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap());
+        let dns_class = Some(RRClasses::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap());
         let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
 
         let type_covered = u16::from_be_bytes([buf[off+8], buf[off+9]]);
@@ -107,8 +107,8 @@ impl RecordBase for RRSigRecord {
         Ok(buf)
     }
 
-    fn get_type(&self) -> RecordTypes {
-        RecordTypes::Rrsig
+    fn get_type(&self) -> RRTypes {
+        RRTypes::Rrsig
     }
 
     fn upcast(self) -> Box<dyn RecordBase> {
@@ -126,7 +126,7 @@ impl RecordBase for RRSigRecord {
 
 impl RRSigRecord {
 
-    pub fn new(dns_classes: DnsClasses, ttl: u32, type_covered: u16, algorithm: u8, labels: u8, original_ttl: u32, signature_expiration: u32, signature_inception: u32, key_tag: u16, signer_name: &str, signature: &[u8]) -> Self {
+    pub fn new(dns_classes: RRClasses, ttl: u32, type_covered: u16, algorithm: u8, labels: u8, original_ttl: u32, signature_expiration: u32, signature_inception: u32, key_tag: u16, signer_name: &str, signature: &[u8]) -> Self {
         Self {
             dns_class: Some(dns_classes),
             ttl,
@@ -142,11 +142,11 @@ impl RRSigRecord {
         }
     }
 
-    pub fn set_dns_class(&mut self, dns_class: DnsClasses) {
+    pub fn set_dns_class(&mut self, dns_class: RRClasses) {
         self.dns_class = Some(dns_class);
     }
 
-    pub fn get_dns_class(&self) -> Option<&DnsClasses> {
+    pub fn get_dns_class(&self) -> Option<&RRClasses> {
         self.dns_class.as_ref()
     }
 

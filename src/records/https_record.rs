@@ -2,15 +2,15 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
-use crate::messages::inter::dns_classes::DnsClasses;
-use crate::messages::inter::record_types::RecordTypes;
+use crate::messages::inter::rr_classes::RRClasses;
+use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::RecordBase;
 use crate::utils::domain_utils::{pack_domain, unpack_domain};
 use crate::utils::ordered_map::OrderedMap;
 
 #[derive(Clone)]
 pub struct HttpsRecord {
-    dns_class: Option<DnsClasses>,
+    dns_class: Option<RRClasses>,
     ttl: u32,
     priority: u16,
     target: Option<String>,
@@ -35,7 +35,7 @@ impl RecordBase for HttpsRecord {
     fn from_bytes(buf: &[u8], off: usize) -> Self {
         let mut off = off;
 
-        let dns_class = Some(DnsClasses::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap());
+        let dns_class = Some(RRClasses::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap());
         let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
 
         let priority = u16::from_be_bytes([buf[off+8], buf[off+9]]);
@@ -85,8 +85,8 @@ impl RecordBase for HttpsRecord {
         Ok(buf)
     }
 
-    fn get_type(&self) -> RecordTypes {
-        RecordTypes::Https
+    fn get_type(&self) -> RRTypes {
+        RRTypes::Https
     }
 
     fn upcast(self) -> Box<dyn RecordBase> {
@@ -104,7 +104,7 @@ impl RecordBase for HttpsRecord {
 
 impl HttpsRecord {
 
-    pub fn new(dns_classes: DnsClasses, ttl: u32, priority: u16, target: &str, params: OrderedMap<u16, Vec<u8>>) -> Self {
+    pub fn new(dns_classes: RRClasses, ttl: u32, priority: u16, target: &str, params: OrderedMap<u16, Vec<u8>>) -> Self {
         Self {
             dns_class: Some(dns_classes),
             ttl,
@@ -114,11 +114,11 @@ impl HttpsRecord {
         }
     }
 
-    pub fn set_dns_class(&mut self, dns_class: DnsClasses) {
+    pub fn set_dns_class(&mut self, dns_class: RRClasses) {
         self.dns_class = Some(dns_class);
     }
 
-    pub fn get_dns_class(&self) -> Option<&DnsClasses> {
+    pub fn get_dns_class(&self) -> Option<&RRClasses> {
         self.dns_class.as_ref()
     }
 

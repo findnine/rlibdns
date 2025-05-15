@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io;
 use std::io::{BufRead, BufReader};
-use crate::messages::inter::dns_classes::DnsClasses;
+use crate::messages::inter::rr_classes::RRClasses;
 use crate::records::inter::record_base::RecordBase;
 
 pub struct Zone {
@@ -112,7 +112,7 @@ impl Zone {
 
 
 
-            //if let Some(a) = DnsClasses::from_abbreviation(tokens[0]).ok() {
+            //if let Some(a) = RRClasses::from_abbreviation(tokens[0]).ok() {
             //    println!("DNS CLASS: {a}");
             //}
 

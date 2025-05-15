@@ -2,14 +2,14 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
-use crate::messages::inter::dns_classes::DnsClasses;
-use crate::messages::inter::record_types::RecordTypes;
+use crate::messages::inter::rr_classes::RRClasses;
+use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::RecordBase;
 use crate::utils::domain_utils::{pack_domain, unpack_domain};
 
 #[derive(Clone)]
 pub struct NsRecord {
-    dns_class: Option<DnsClasses>,
+    dns_class: Option<RRClasses>,
     ttl: u32,
     server: Option<String>
 }
@@ -28,7 +28,7 @@ impl Default for NsRecord {
 impl RecordBase for NsRecord {
 
     fn from_bytes(buf: &[u8], off: usize) -> Self {
-        let dns_class = Some(DnsClasses::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap());
+        let dns_class = Some(RRClasses::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap());
         let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
 
         let z = u16::from_be_bytes([buf[off+6], buf[off+7]]);
@@ -56,8 +56,8 @@ impl RecordBase for NsRecord {
         Ok(buf)
     }
 
-    fn get_type(&self) -> RecordTypes {
-        RecordTypes::Ns
+    fn get_type(&self) -> RRTypes {
+        RRTypes::Ns
     }
 
     fn upcast(self) -> Box<dyn RecordBase> {
@@ -75,7 +75,7 @@ impl RecordBase for NsRecord {
 
 impl NsRecord {
 
-    pub fn new(dns_classes: DnsClasses, ttl: u32, server: &str) -> Self {
+    pub fn new(dns_classes: RRClasses, ttl: u32, server: &str) -> Self {
         Self {
             dns_class: Some(dns_classes),
             ttl,
@@ -83,11 +83,11 @@ impl NsRecord {
         }
     }
 
-    pub fn set_dns_class(&mut self, dns_class: DnsClasses) {
+    pub fn set_dns_class(&mut self, dns_class: RRClasses) {
         self.dns_class = Some(dns_class);
     }
 
-    pub fn get_dns_class(&self) -> Option<&DnsClasses> {
+    pub fn get_dns_class(&self) -> Option<&RRClasses> {
         self.dns_class.as_ref()
     }
 

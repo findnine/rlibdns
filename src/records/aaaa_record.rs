@@ -3,13 +3,13 @@ use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use std::net::Ipv6Addr;
-use crate::messages::inter::dns_classes::DnsClasses;
-use crate::messages::inter::record_types::RecordTypes;
+use crate::messages::inter::rr_classes::RRClasses;
+use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::RecordBase;
 
 #[derive(Clone)]
 pub struct AaaaRecord {
-    dns_class: Option<DnsClasses>,
+    dns_class: Option<RRClasses>,
     cache_flush: bool,
     ttl: u32,
     address: Option<Ipv6Addr>
@@ -32,7 +32,7 @@ impl RecordBase for AaaaRecord {
     fn from_bytes(buf: &[u8], off: usize) -> Self {
         let dns_class = u16::from_be_bytes([buf[off], buf[off+1]]);
         let cache_flush = (dns_class & 0x8000) != 0;
-        let dns_class = Some(DnsClasses::from_code(dns_class & 0x7FFF).unwrap());
+        let dns_class = Some(RRClasses::from_code(dns_class & 0x7FFF).unwrap());
         let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
 
         let length = u16::from_be_bytes([buf[off+6], buf[off+7]]) as usize;
@@ -71,8 +71,8 @@ impl RecordBase for AaaaRecord {
         Ok(buf)
     }
 
-    fn get_type(&self) -> RecordTypes {
-        RecordTypes::Aaaa
+    fn get_type(&self) -> RRTypes {
+        RRTypes::Aaaa
     }
 
     fn upcast(self) -> Box<dyn RecordBase> {
@@ -90,7 +90,7 @@ impl RecordBase for AaaaRecord {
 
 impl AaaaRecord {
 
-    pub fn new(dns_classes: DnsClasses, cache_flush: bool, ttl: u32, address: Ipv6Addr) -> Self {
+    pub fn new(dns_classes: RRClasses, cache_flush: bool, ttl: u32, address: Ipv6Addr) -> Self {
         Self {
             dns_class: Some(dns_classes),
             cache_flush,
@@ -99,11 +99,11 @@ impl AaaaRecord {
         }
     }
 
-    pub fn set_dns_class(&mut self, dns_class: DnsClasses) {
+    pub fn set_dns_class(&mut self, dns_class: RRClasses) {
         self.dns_class = Some(dns_class);
     }
 
-    pub fn get_dns_class(&self) -> Option<&DnsClasses> {
+    pub fn get_dns_class(&self) -> Option<&RRClasses> {
         self.dns_class.as_ref()
     }
 
