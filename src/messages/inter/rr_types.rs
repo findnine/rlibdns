@@ -25,7 +25,7 @@ pub enum RRTypes {
 
 impl RRTypes {
 
-    pub fn from_code(code: u16) -> Result<Self, String> {
+    pub fn from_code(code: u16) -> Option<Self> {
         for c in [
             Self::A,
             Self::Aaaa,
@@ -47,11 +47,11 @@ impl RRTypes {
             Self::Caa
         ] {
             if c.get_code() == code {
-                return Ok(c);
+                return Some(c);
             }
         }
 
-        Err(format!("Couldn't find for code: {}", code))
+        None
     }
 
     pub fn get_code(&self) -> u16 {
@@ -77,7 +77,7 @@ impl RRTypes {
         }
     }
 
-    pub fn from_string(value: &str) -> io::Result<Self> {
+    pub fn from_string(value: &str) -> Option<Self> {
         for c in [
             Self::A,
             Self::Aaaa,
@@ -99,11 +99,11 @@ impl RRTypes {
             Self::Caa
         ] {
             if c.to_string() == value {
-                return Ok(c);
+                return Some(c);
             }
         }
 
-        Err(io::Error::new(io::ErrorKind::InvalidInput, format!("Couldn't find for value: {}", value)))
+        None
     }
 }
 

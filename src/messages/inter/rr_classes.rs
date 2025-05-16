@@ -11,14 +11,14 @@ pub enum RRClasses {
 
 impl RRClasses {
 
-    pub fn from_code(code: u16) -> io::Result<Self> {
+    pub fn from_code(code: u16) -> Option<Self> {
         for c in [Self::In, Self::Cs, Self::Ch, Self::Hs] {
             if c.get_code() == code {
-                return Ok(c);
+                return Some(c);
             }
         }
 
-        Err(io::Error::new(io::ErrorKind::InvalidInput, format!("Couldn't find for code: {}", code)))
+        None
     }
 
     pub fn get_code(&self) -> u16 {
@@ -30,14 +30,14 @@ impl RRClasses {
         }
     }
 
-    pub fn from_abbreviation(value: &str) -> io::Result<Self> {
+    pub fn from_abbreviation(value: &str) -> Option<Self> {
         for c in [Self::In, Self::Cs, Self::Ch, Self::Hs] {
             if c.to_abbreviation() == value {
-                return Ok(c);
+                return Some(c);
             }
         }
 
-        Err(io::Error::new(io::ErrorKind::InvalidInput, format!("Couldn't find for value: {}", value)))
+        None
     }
 
     pub fn to_abbreviation(&self) -> String {

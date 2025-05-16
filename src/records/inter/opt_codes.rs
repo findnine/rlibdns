@@ -26,7 +26,7 @@ pub enum OptCodes {
 
 impl OptCodes {
 
-    pub fn from_code(code: u16) -> io::Result<Self> {
+    pub fn from_code(code: u16) ->  Option<Self> {
         for c in [
             Self::Llq,
             Self::Ul,
@@ -49,11 +49,11 @@ impl OptCodes {
             Self::MultiUserClientSubnet
         ] {
             if c.get_code() == code {
-                return Ok(c);
+                return Some(c);
             }
         }
 
-        Err(io::Error::new(io::ErrorKind::InvalidInput, format!("Couldn't find for code: {}", code)))
+        None
     }
 
     pub fn get_code(&self) -> u16 {

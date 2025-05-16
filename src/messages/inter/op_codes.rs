@@ -10,14 +10,14 @@ pub enum OpCodes {
 
 impl OpCodes {
 
-    pub fn from_code(code: u8) -> io::Result<Self> {
+    pub fn from_code(code: u8) -> Option<Self> {
         for c in [Self::Query, Self::IQuery, Self::Status] {
             if c.get_code() == code {
-                return Ok(c);
+                return Some(c);
             }
         }
 
-        Err(io::Error::new(io::ErrorKind::InvalidInput, format!("Couldn't find for code: {}", code)))
+        None
     }
 
     pub fn get_code(&self) -> u8 {
