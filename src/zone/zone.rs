@@ -1,225 +1,313 @@
 use std::fs::File;
-use std::io;
-use std::io::{BufRead, BufReader};
+use std::io::{BufReader, BufRead};
+use std::fmt::{Display, Debug, Formatter};
 use crate::messages::inter::rr_classes::RRClasses;
-use crate::records::inter::record_base::RecordBase;
+use crate::messages::inter::rr_types::RRTypes;
 
-pub struct Zone {
-    records: Vec<Box<dyn RecordBase>>
+#[derive(Debug, Clone)]
+pub struct RecordData {
+    data: String
 }
 
-impl Zone {
+impl RecordData {
 
-    pub fn new() -> Self {
+    pub fn new(data: &str) -> Self {
         Self {
-            records: Vec::new()
+            data: data.to_string()
         }
     }
 
-    pub fn from_file(file_path: &str) -> io::Result<Self> {
-        let file = File::open(file_path)?;
+    pub fn from_bytes(data: &[u8]) -> Self {
+        Self {
+            data: String::from_utf8(data.to_vec()).unwrap()
+        }
+    }
+}
 
-        //PARSE ZONE FILE
-        let reader = BufReader::new(file);
+impl PartialEq for RecordData {
 
-        let mut records = Vec::new();
+    fn eq(&self, other: &RecordData) -> bool {
+        self.data == other.data
+    }
+}
 
+impl Display for RecordData {
 
-        let default_origin = "find9.net";
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.data)
+    }
+}
 
-        let mut origin = default_origin.to_string();
-        let mut default_ttl: Option<u32> = None;
+#[derive(Debug, Clone)]
+pub struct Record {
+    pub name: String,
+    pub ttl: u32,
+    pub class: RRClasses,
+    pub rrtype: RRTypes,
+    pub data: Vec<RecordData>
+}
 
-        let mut is_indented = false;
-        let mut multiline = String::new();
+impl PartialEq for Record {
 
-
-
-        for line in reader.lines() {
-            let mut line = line?;
-
-            //TRIMMING WILL REMOVE CHECK IF WE ARE UTILIZING LAST LINE NAME REFERENCE
-            //https://datatracker.ietf.org/doc/html/rfc2308#section-10
-            //let is_indented = line.chars().next().map_or(false, |c| c.is_whitespace());
-            //let mut line = line.split(';').next().unwrap_or("").trim().to_string();
-
-            if !multiline.is_empty() {
-                line = line.split(';').next().unwrap_or("").trim().to_string();
-
-                if line.is_empty() {
-                    continue;
-                }
-
-                multiline.push(' ');
-                multiline.push_str(&line);
-
-                if !line.contains(')') {
-                    continue;
-                }
-
-                line = multiline.trim().to_string();
-                multiline.clear();
-
-            } else if line.contains('(') && !line.contains(')') {
-                is_indented = line.chars().next().map_or(false, |c| c.is_whitespace());
-                multiline = line.split(';').next().unwrap_or("").trim().to_string();
-                continue;
-
-            } else {
-                is_indented = line.chars().next().map_or(false, |c| c.is_whitespace());
-                line = line.split(';').next().unwrap_or("").trim().to_string();
-
-                if line.is_empty() {
-                    continue;
-                }
-            }
-
-            let mut tokens: Vec<&str> = line.split_whitespace().collect();
-            
-            if line.starts_with('$') {
-                match tokens[0] {
-                    "$ORIGIN" if tokens.len() > 1 => {
-                        origin = tokens[1].trim_end_matches('.').to_string();
-                    }
-                    "$TTL" if tokens.len() > 1 => {
-                        default_ttl = tokens[1].parse().ok();
-                    }
-                    _ => {}
-                }
-                continue;
-            }
-
-            if is_indented {
-                //WE KNOW TO USE PREVIOUS ORIGIN...
-                //tokens.insert(0, &origin);
-
-            } else {
-                //ORIGIN WILL BE SET
-                origin = tokens[0].to_string();
-
-            }
-
-            //if tokens.len() < 3 {
-            //    continue;
-            //}
-
-            println!("{} {:?}", is_indented, tokens);
-
-
-            //@ = $ORIGIN
-
-            //
-
-
-
-            //if let Some(a) = RRClasses::from_abbreviation(tokens[0]).ok() {
-            //    println!("DNS CLASS: {a}");
-            //}
-
-
-
-            //TTL CAN EXIST -
-
-
-            /*
-            if continued {
-                multiline.push(' ');
-                multiline.push_str(line);
-
-                if line.contains(')') {
-                    continued = false;
-                } else {
-                    continue;
-                }
-
-            } else if line.contains('(') && !line.contains(')') {
-                multiline = line.to_string();
-                continued = true;
-                continue;
-
-            } else {
-                multiline = line.to_string();
-            }
-
-            let line = multiline.trim();
-            if line.starts_with('$') {
-                let tokens: Vec<&str> = line.split_whitespace().collect();
-                match tokens[0] {
-                    "$ORIGIN" if tokens.len() > 1 => {
-                        origin = tokens[1].trim_end_matches('.').to_string();
-                    }
-                    "$TTL" if tokens.len() > 1 => {
-                        default_ttl = tokens[1].parse().ok();
-                    }
-                    _ => {}
-                }
-                continue;
-            }
-
-            let tokens: Vec<&str> = line.split_whitespace().collect();
-            if tokens.len() < 3 {
-                continue;
-            }
-
-            let mut name = "";
-            let mut ttl: Option<u32> = None;
-            let mut class = "IN";
-            let mut rtype = "";
-            let mut rdata_start = 0;
-
-            let type_index = tokens.iter().position(|t| !t.parse::<u32>().is_ok()).unwrap();
-
-            match type_index {
-                0 => {}
-                1 => name = tokens[0],
-                2 => {
-                    name = tokens[0];
-                    if let Ok(parsed_ttl) = tokens[1].parse() {
-                        ttl = Some(parsed_ttl);
-                    } else {
-                        class = tokens[1];
-                    }
-                }
-                3 => {
-                    name = tokens[0];
-                    ttl = tokens[1].parse().ok();
-                    class = tokens[2];
-                }
-                _ => continue
-            }
-
-            rtype = tokens[type_index];
-            rdata_start = type_index + 1;
-
-            let rdata = tokens[rdata_start..].join(" ");
-
-            let fqdn = if name.is_empty() {
-                origin.clone()
-            } else if name == "@" {
-                origin.clone()
-            } else if name.ends_with('.') {
-                name.trim_end_matches('.').to_string()
-            } else {
-                format!("{}.{}", name, origin)
-            };
-
-            println!("name: {}  ttl: {:?}  class: {}  rtpe: {}  rdata: {}", fqdn, ttl, class.to_string(), rtype, rdata);
-            */
+    fn eq(&self, other: &Record) -> bool {
+        if self.name != other.name ||
+            self.ttl != other.ttl ||
+            self.class != other.class ||
+            self.rrtype != other.rrtype ||
+            self.data.len() != other.data.len() {
+            return false;
         }
 
+        let n = self.data.len();
+        for i in 0..n {
+            if self.data[i] != other.data[i] {
+                return false;
+            }
+        }
 
-
-
-        Ok(Self {
-            records
-        })
+        true
     }
+}
 
-    pub fn to_file(&self, path: &str) -> io::Result<()> {
+impl Display for Record {
+
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {} {} {}", self.name, self.ttl, self.class, self.rrtype)?;
+
+        for d in &self.data {
+            write!(f, " {}", d)?
+        }
+
         Ok(())
     }
+}
 
-    pub fn get_records(&self) -> Vec<Box<dyn RecordBase>> {
-        todo!()
+impl Record {
+
+    pub fn new(name: &str, ttl: u32, class: RRClasses , rrtype: RRTypes) -> Self {
+        Self {
+            name: name.to_string(),
+            ttl: ttl,
+            class: class,
+            rrtype: rrtype,
+            data: Default::default(),
+        }
+    }
+
+    pub fn push_data(&mut self, data: RecordData) {
+        self.data.push(data)
+    }
+}
+
+#[derive(Debug, Default, PartialEq, Eq)]
+enum ParserState {
+    #[default]
+    Init,
+    Common,
+    Directive,
+    Data,
+    QString,
+}
+
+pub struct ZoneParser<'a> {
+    bufreader: BufReader<&'a File>,
+    line_no: usize,
+    quoted_buf: String,
+    directive_buf: String,
+    name: String,
+    origin: String,
+    default_ttl: u32,
+    ttl: u32,
+    class: RRClasses,
+    rrtype: RRTypes,
+    b_count: u16,
+    end_of_stream: bool,
+    state: ParserState
+}
+
+impl<'a> ZoneParser<'a> {
+
+    pub fn new(file: &'a File, origin: &str) -> Self {
+        let buf = BufReader::new(file);
+
+        let mut origin_muted = origin.to_string();
+        if !origin_muted.ends_with('.') {
+            origin_muted.push('.');
+        }
+
+        Self {
+            bufreader: buf,
+            line_no: 0,
+            quoted_buf: "".to_string(),
+            directive_buf: "".to_string(),
+            name: "".to_string(),
+            origin: origin_muted,
+            default_ttl: 0,
+            ttl: 0,
+            class: RRClasses::In,
+            rrtype: RRTypes::A,
+            b_count: 0,
+            end_of_stream: false,
+            state: Default::default()
+        }
+    }
+
+    fn parse_line(&mut self, rec: &mut Option<Record>) {
+        let mut line: String = "".to_string();
+        let len = self.bufreader.read_line(&mut line).expect("Error reading zonefile");
+
+        if len == 0 {
+            self.end_of_stream = true;
+            return;
+        }
+
+        let bytes = line.as_bytes();
+        let mut pos = 0;
+        self.line_no += 1;
+
+        for part in bytes.split_inclusive(
+            |&b| b == b' ' || b == b'\t' || b == b'\n' || b == b'(' || b == b')') {
+            let plen = part.len();
+            let mut wlen = plen;
+
+            if part[0] == b';' && self.state != ParserState::QString {
+                return;
+            }
+
+            match part[plen - 1] {
+                b' ' | b'\t' | b'\n' => {
+                    wlen -= 1;
+                }
+                b'(' => {
+                    self.b_count += 1;
+                    wlen -= 1;
+                }
+                b')' => {
+                    self.b_count -= 1;
+                    wlen -= 1;
+                }
+                _ => {}
+            }
+
+            if wlen == 0 && (part[0] == b'\n' || self.state != ParserState::Init) {
+                continue;
+            }
+
+            match self.state {
+                ParserState::Init => {
+                    let word = String::from_utf8(part[0..wlen].to_vec()).unwrap().to_lowercase();
+
+                    if pos == 0 && self.b_count == 0 {
+                        if word.starts_with('$') {
+                            self.directive_buf = word;
+                            self.state = ParserState::Directive;
+
+                        } else {
+                            if wlen > 0 {
+                                self.name = word;
+                            }
+
+                            self.state = ParserState::Common;
+                        }
+                    }
+                }
+                ParserState::Common => {
+                    let word = String::from_utf8(part[0..wlen].to_vec()).unwrap().to_uppercase();
+
+                    if let Some(class) = RRClasses::from_abbreviation(&word) {
+                        self.class = class;
+
+                    } else if let Some(rrtype) = RRTypes::from_string(&word) {
+                        self.rrtype = rrtype;
+                        self.state = ParserState::Data;
+                        rec.insert(Record::new(&self.name, self.ttl, self.class, self.rrtype));
+
+                    } else {
+                        self.ttl = word.parse().expect(&format!("Parse error on line {} pos {}", self.line_no, pos));
+                    }
+                }
+                ParserState::Directive => {
+                    let value = String::from_utf8(part[0..wlen].to_vec()).unwrap().to_uppercase();
+
+                    if self.directive_buf == "$ttl" {
+                        self.default_ttl = value.parse().expect(&format!("Parse error on line {} pos {}", self.line_no, pos));
+
+                    } else if self.directive_buf == "$origin" {
+                        self.origin = value;
+
+                    } else {
+                        panic!("Unknown directive {}", self.directive_buf);
+                    }
+
+                    self.state = ParserState::Init;
+                }
+                ParserState::Data => {
+                    if part[0] == b'"' {
+                        if part[wlen - 1] == b'"' {
+                            rec.as_mut().unwrap().push_data(RecordData::from_bytes(&part[1..wlen - 1]));
+
+                        } else {
+                            self.state = ParserState::QString;
+                            self.quoted_buf = format!("{}{}", String::from_utf8(part[1..wlen].to_vec()).unwrap(), part[wlen] as char);
+                        }
+
+                    } else {
+                        rec.as_mut().unwrap().push_data(RecordData::from_bytes(&part[0..wlen]));
+                    }
+                }
+                ParserState::QString => {
+                    if part[wlen - 1] == b'"' {
+                        let s = format!("{}", String::from_utf8(part[0..wlen - 1].to_vec()).unwrap());
+                        self.quoted_buf.push_str(&s);
+                        rec.as_mut().unwrap().push_data(RecordData::new(&self.quoted_buf));
+                        self.state = ParserState::Data;
+
+                    } else {
+                        self.quoted_buf.push_str(&format!("{}{}", String::from_utf8(part[0..wlen].to_vec()).unwrap(), part[wlen] as char));
+                    }
+                }
+            }
+
+            pos += plen;
+        }
+    }
+
+    pub fn absolute_name(&self, name: &str) -> String {
+        assert!(name != "");
+
+        if name == "@" {
+            return self.origin.clone();
+        }
+
+        if name.ends_with('.') {
+            name.to_string()
+
+        } else {
+            format!("{}.{}", name, self.origin)
+        }
+    }
+}
+
+impl<'a> Iterator for ZoneParser<'a> {
+
+    type Item = Record;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.state = ParserState::Init;
+        if self.default_ttl != 0 {
+            self.ttl = self.default_ttl;
+        }
+
+        let mut rec: Option<Record> = None;
+
+        while !self.end_of_stream {
+            self.parse_line(&mut rec);
+
+            if rec.is_some() && self.b_count == 0 {
+                return rec;
+            }
+        }
+
+        None
     }
 }

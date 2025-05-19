@@ -5,8 +5,9 @@ pub mod zone;
 
 #[cfg(test)]
 mod tests {
+    use std::fs::File;
     use crate::messages::message_base::MessageBase;
-    use crate::zone::zone::Zone;
+    use crate::zone::zone::ZoneParser;
 
     #[test]
     fn encode_and_decode() {
@@ -20,7 +21,12 @@ mod tests {
         assert_eq!(x, message.to_bytes());
 
 
-        let zone = Zone::from_file("/home/brad/Downloads/find9.net.test.zone").unwrap();
+        let file = File::open("/home/brad/Downloads/find9.net.test.zone").unwrap();
 
+        let p = ZoneParser::new(&file, "find9.net");
+
+        for x in p {
+            println!("{:?}", x);
+        }
     }
 }
