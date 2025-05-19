@@ -138,9 +138,9 @@ impl<'a> ZoneParser<'a> {
         Self {
             bufreader: buf,
             line_no: 0,
-            quoted_buf: "".to_string(),
-            directive_buf: "".to_string(),
-            name: "".to_string(),
+            quoted_buf: String::new(),
+            directive_buf: String::new(),
+            name: String::new(),
             origin: origin_muted,
             default_ttl: 0,
             ttl: 0,
@@ -153,7 +153,7 @@ impl<'a> ZoneParser<'a> {
     }
 
     fn parse_line(&mut self, rec: &mut Option<Record>) {
-        let mut line: String = "".to_string();
+        let mut line = String::new();
         let len = self.bufreader.read_line(&mut line).expect("Error reading zonefile");
 
         if len == 0 {
