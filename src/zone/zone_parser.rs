@@ -43,7 +43,7 @@ pub struct Record {
     pub name: String,
     pub ttl: u32,
     pub class: RRClasses,
-    pub rrtype: RRTypes,
+    pub _type: RRTypes,
     pub data: Vec<RecordData>
 }
 
@@ -53,7 +53,7 @@ impl PartialEq for Record {
         if self.name != other.name ||
             self.ttl != other.ttl ||
             self.class != other.class ||
-            self.rrtype != other.rrtype ||
+            self._type != other._type ||
             self.data.len() != other.data.len() {
             return false;
         }
@@ -72,7 +72,7 @@ impl PartialEq for Record {
 impl Display for Record {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} {} {} {}", self.name, self.ttl, self.class, self.rrtype)?;
+        write!(f, "{} {} {} {}", self.name, self.ttl, self.class, self._type)?;
 
         for d in &self.data {
             write!(f, " {}", d)?
@@ -84,12 +84,12 @@ impl Display for Record {
 
 impl Record {
 
-    pub fn new(name: &str, ttl: u32, class: RRClasses , rrtype: RRTypes) -> Self {
+    pub fn new(name: &str, ttl: u32, class: RRClasses , _type: RRTypes) -> Self {
         Self {
             name: name.to_string(),
             ttl: ttl,
             class: class,
-            rrtype: rrtype,
+            _type: _type,
             data: Default::default(),
         }
     }
@@ -119,7 +119,7 @@ pub struct ZoneParser<'a> {
     default_ttl: u32,
     ttl: u32,
     class: RRClasses,
-    rrtype: RRTypes,
+    _type: RRTypes,
     b_count: u16,
     end_of_stream: bool,
     state: ParserState
@@ -145,7 +145,7 @@ impl<'a> ZoneParser<'a> {
             default_ttl: 0,
             ttl: 0,
             class: RRClasses::In,
-            rrtype: RRTypes::A,
+            _type: RRTypes::A,
             b_count: 0,
             end_of_stream: false,
             state: Default::default()
@@ -217,10 +217,10 @@ impl<'a> ZoneParser<'a> {
                     if let Some(class) = RRClasses::from_abbreviation(&word) {
                         self.class = class;
 
-                    } else if let Some(rrtype) = RRTypes::from_string(&word) {
-                        self.rrtype = rrtype;
+                    } else if let Some(_type) = RRTypes::from_string(&word) {
+                        self._type = _type;
                         self.state = ParserState::Data;
-                        rec.insert(Record::new(&self.name, self.ttl, self.class, self.rrtype));
+                        rec.insert(Record::new(&self.name, self.ttl, self.class, self._type));
 
                     } else {
                         self.ttl = word.parse().expect(&format!("Parse error on line {} pos {}", self.line_no, pos));
