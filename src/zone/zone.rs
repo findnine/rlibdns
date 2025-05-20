@@ -257,6 +257,8 @@ impl<'a> ZoneParser<'a> {
                 }
                 ParserState::QString => {
                     if part[wlen - 1] == b'"' {
+                        //PARSE THIS INTO THE ACTUAL RECORD DATA...
+
                         let s = format!("{}", String::from_utf8(part[0..wlen - 1].to_vec()).unwrap());
                         self.quoted_buf.push_str(&s);
                         rec.as_mut().unwrap().push_data(RecordData::new(&self.quoted_buf));
