@@ -23,10 +23,11 @@ mod tests {
 
         let file = File::open("/home/brad/Downloads/find9.net.test.zone").unwrap();
 
-        let p = ZoneParser::new(&file, "find9.net");
+        let mut p = ZoneParser::new(&file, "find9.net");
+        p.parse();
 
-        for x in p {
-            println!("{:?}", x);
-        }
+        //for x in p {
+        //    println!("{:?}", x);
+        //}
     }
 }

@@ -152,6 +152,30 @@ impl<'a> ZoneParser<'a> {
         }
     }
 
+    pub fn parse(&mut self) {
+        self.state = ParserState::Init;
+        if self.default_ttl != 0 {
+            self.ttl = self.default_ttl;
+        }
+
+        let mut rec: Option<Record> = None;
+
+        while !self.end_of_stream {
+            self.parse_line(&mut rec);
+
+            if rec.is_some() && self.b_count == 0 {
+                println!("{:?}", rec);
+
+                self.state = ParserState::Init;
+                if self.default_ttl != 0 {
+                    self.ttl = self.default_ttl;
+                }
+                
+                rec = None;
+            }
+        }
+    }
+
     fn parse_line(&mut self, rec: &mut Option<Record>) {
         let mut line = String::new();
         let len = self.bufreader.read_line(&mut line).expect("Error reading zonefile");
