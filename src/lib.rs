@@ -7,7 +7,7 @@ pub mod zone;
 mod tests {
     use std::fs::File;
     use crate::messages::message_base::MessageBase;
-    use crate::zone::zone::ZoneParser;
+    use crate::zone::zone_parser::ZoneParser;
 
     #[test]
     fn encode_and_decode() {
