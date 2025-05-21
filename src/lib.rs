@@ -1,13 +1,15 @@
 pub mod messages;
 pub mod records;
 pub mod utils;
-pub mod zone;
+//pub mod zone;
+
+//SWAP EVERYTHING TO RR_CLASS... - A, AAAA, CNAME HAVE ALREADY BEEN SWITCHED - NO OPTIONS - USE DEFAULT...
 
 #[cfg(test)]
 mod tests {
     use std::fs::File;
     use crate::messages::message_base::MessageBase;
-    use crate::zone::zone_parser2::ZoneParser;
+    //use crate::zone::zone::Zone;
 
     #[test]
     fn encode_and_decode() {
@@ -21,10 +23,9 @@ mod tests {
         assert_eq!(x, message.to_bytes());
 
 
-        let file = File::open("/home/brad/Downloads/find9.net.test.zone").unwrap();
+        //let file = File::open("/home/brad/Downloads/find9.net.test.zone").unwrap();
 
-        let mut p = ZoneParser::new(&file, "find9.net");
-        p.parse();
+        //let mut p = Zone::from_file("/home/brad/Downloads/find9.net.test.zone", "find9.net");
 
         //for x in p {
         //    println!("{:?}", x);

@@ -9,7 +9,7 @@ use crate::utils::domain_utils::{pack_domain, unpack_domain};
 
 #[derive(Clone)]
 pub struct CNameRecord {
-    dns_class: Option<RRClasses>,
+    rr_class: RRClasses,
     ttl: u32,
     target: Option<String>
 }
@@ -18,7 +18,7 @@ impl Default for CNameRecord {
 
     fn default() -> Self {
         Self {
-            dns_class: None,
+            rr_class: RRClasses::default(),
             ttl: 0,
             target: None
         }
@@ -28,7 +28,7 @@ impl Default for CNameRecord {
 impl RecordBase for CNameRecord {
 
     fn from_bytes(buf: &[u8], off: usize) -> Self {
-        let dns_class = Some(RRClasses::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap());
+        let rr_class = RRClasses::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
         let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
 
         let z = u16::from_be_bytes([buf[off+6], buf[off+7]]);
@@ -36,7 +36,7 @@ impl RecordBase for CNameRecord {
         let (target, _) = unpack_domain(buf, off+8);
 
         Self {
-            dns_class,
+            rr_class,
             ttl,
             target: Some(target)
         }
@@ -46,7 +46,7 @@ impl RecordBase for CNameRecord {
         let mut buf = vec![0u8; 10];
 
         buf.splice(0..2, self.get_type().get_code().to_be_bytes());
-        buf.splice(2..4, self.dns_class.unwrap().get_code().to_be_bytes());
+        buf.splice(2..4, self.rr_class.get_code().to_be_bytes());
         buf.splice(4..8, self.ttl.to_be_bytes());
 
         buf.extend_from_slice(&pack_domain(self.target.as_ref().unwrap().as_str(), label_map, off+12));
@@ -75,20 +75,20 @@ impl RecordBase for CNameRecord {
 
 impl CNameRecord {
 
-    pub fn new(dns_classes: RRClasses, ttl: u32, target: &str) -> Self {
+    pub fn new(rr_class: RRClasses, ttl: u32, target: &str) -> Self {
         Self {
-            dns_class: Some(dns_classes),
+            rr_class,
             ttl,
             target: Some(target.to_string())
         }
     }
 
-    pub fn set_dns_class(&mut self, dns_class: RRClasses) {
-        self.dns_class = Some(dns_class);
+    pub fn set_rr_class(&mut self, rr_class: RRClasses) {
+        self.rr_class = rr_class;
     }
 
-    pub fn get_dns_class(&self) -> Option<&RRClasses> {
-        self.dns_class.as_ref()
+    pub fn get_rr_class(&self) -> RRClasses {
+        self.rr_class
     }
 
     pub fn set_ttl(&mut self, ttl: u32) {
@@ -111,6 +111,6 @@ impl CNameRecord {
 impl fmt::Display for CNameRecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "type {:?}, class {:?}, target: {}", self.get_type(), self.dns_class.unwrap(), self.target.as_ref().unwrap())
+        write!(f, "type {:?}, class {:?}, target: {}", self.get_type(), self.rr_class, self.target.as_ref().unwrap())
     }
 }

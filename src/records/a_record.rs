@@ -9,7 +9,7 @@ use crate::records::inter::record_base::RecordBase;
 
 #[derive(Clone)]
 pub struct ARecord {
-    dns_class: Option<RRClasses>,
+    rr_class: RRClasses,
     cache_flush: bool,
     ttl: u32,
     address: Option<Ipv4Addr>
@@ -19,7 +19,7 @@ impl Default for ARecord {
 
     fn default() -> Self {
         Self {
-            dns_class: None,
+            rr_class: RRClasses::default(),
             cache_flush: false,
             ttl: 0,
             address: None
@@ -32,7 +32,7 @@ impl RecordBase for ARecord {
     fn from_bytes(buf: &[u8], off: usize) -> Self {
         let dns_class = u16::from_be_bytes([buf[off], buf[off+1]]);
         let cache_flush = (dns_class & 0x8000) != 0;
-        let dns_class = Some(RRClasses::from_code(dns_class & 0x7FFF).unwrap());
+        let rr_class = RRClasses::from_code(dns_class & 0x7FFF).unwrap();
         let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
 
         let length = u16::from_be_bytes([buf[off+6], buf[off+7]]) as usize;
@@ -44,7 +44,7 @@ impl RecordBase for ARecord {
         };
 
         Self {
-            dns_class,
+            rr_class,
             cache_flush,
             ttl,
             address: Some(address)
@@ -56,12 +56,12 @@ impl RecordBase for ARecord {
 
         buf.splice(0..2, self.get_type().get_code().to_be_bytes());
 
-        let mut dns_class = self.dns_class.unwrap().get_code();
+        let mut rr_class = self.rr_class.get_code();
         if self.cache_flush {
-            dns_class = dns_class | 0x8000;
+            rr_class = rr_class | 0x8000;
         }
 
-        buf.splice(2..4, dns_class.to_be_bytes());
+        buf.splice(2..4, rr_class.to_be_bytes());
         buf.splice(4..8, self.ttl.to_be_bytes());
 
         buf.extend_from_slice(&self.address.unwrap().octets().to_vec());
@@ -90,21 +90,21 @@ impl RecordBase for ARecord {
 
 impl ARecord {
 
-    pub fn new(dns_classes: RRClasses, cache_flush: bool, ttl: u32, address: Ipv4Addr) -> Self {
+    pub fn new(rr_class: RRClasses, cache_flush: bool, ttl: u32, address: Ipv4Addr) -> Self {
         Self {
-            dns_class: Some(dns_classes),
+            rr_class,
             cache_flush,
             ttl,
             address: Some(address)
         }
     }
 
-    pub fn set_dns_class(&mut self, dns_class: RRClasses) {
-        self.dns_class = Some(dns_class);
+    pub fn set_rr_class(&mut self, rr_class: RRClasses) {
+        self.rr_class = rr_class;
     }
 
-    pub fn get_dns_class(&self) -> Option<&RRClasses> {
-        self.dns_class.as_ref()
+    pub fn get_rr_class(&self) -> RRClasses {
+        self.rr_class
     }
 
     pub fn set_ttl(&mut self, ttl: u32) {
@@ -127,6 +127,6 @@ impl ARecord {
 impl fmt::Display for ARecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "type {:?}, class {:?}, addr: {}", self.get_type(), self.dns_class.unwrap(), self.address.unwrap())
+        write!(f, "type {:?}, class {:?}, addr: {}", self.get_type(), self.rr_class, self.address.unwrap())
     }
 }

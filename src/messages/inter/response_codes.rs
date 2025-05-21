@@ -1,8 +1,9 @@
 use std::{fmt, io};
 use std::fmt::Formatter;
 
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+#[derive(Copy, Default, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum ResponseCodes {
+    #[default]
     NoError,
     FormErr,
     ServFail,
