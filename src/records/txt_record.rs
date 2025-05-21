@@ -8,7 +8,7 @@ use crate::records::inter::record_base::RecordBase;
 
 #[derive(Clone)]
 pub struct TxtRecord {
-    dns_class: Option<RRClasses>,
+    class: RRClasses,
     cache_flush: bool,
     ttl: u32,
     content: Vec<String>
@@ -18,7 +18,7 @@ impl Default for TxtRecord {
 
     fn default() -> Self {
         Self {
-            dns_class: None,
+            class: RRClasses::default(),
             cache_flush: false,
             ttl: 0,
             content: Vec::new()
@@ -31,9 +31,9 @@ impl RecordBase for TxtRecord {
     fn from_bytes(buf: &[u8], off: usize) -> Self {
         let mut off = off;
 
-        let dns_class = u16::from_be_bytes([buf[off], buf[off+1]]);
-        let cache_flush = (dns_class & 0x8000) != 0;
-        let dns_class = Some(RRClasses::from_code(dns_class & 0x7FFF).unwrap());
+        let class = u16::from_be_bytes([buf[off], buf[off+1]]);
+        let cache_flush = (class & 0x8000) != 0;
+        let class = RRClasses::from_code(class & 0x7FFF).unwrap();
         let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
 
         let data_length = off+8+u16::from_be_bytes([buf[off+6], buf[off+7]]) as usize;
@@ -49,7 +49,7 @@ impl RecordBase for TxtRecord {
         }
 
         Self {
-            dns_class,
+            class,
             cache_flush,
             ttl,
             content
@@ -61,12 +61,12 @@ impl RecordBase for TxtRecord {
 
         buf.splice(0..2, self.get_type().get_code().to_be_bytes());
 
-        let mut dns_class = self.dns_class.unwrap().get_code();
+        let mut class = self.class.get_code();
         if self.cache_flush {
-            dns_class = dns_class | 0x8000;
+            class = class | 0x8000;
         }
 
-        buf.splice(2..4, dns_class.to_be_bytes());
+        buf.splice(2..4, class.to_be_bytes());
         buf.splice(4..8, self.ttl.to_be_bytes());
 
         for record in &self.content {
@@ -98,21 +98,21 @@ impl RecordBase for TxtRecord {
 
 impl TxtRecord {
 
-    pub fn new(dns_classes: RRClasses, cache_flush: bool, ttl: u32, content: Vec<String>) -> Self {
+    pub fn new(class: RRClasses, cache_flush: bool, ttl: u32, content: Vec<String>) -> Self {
         Self {
-            dns_class: Some(dns_classes),
+            class,
             cache_flush,
             ttl,
             content
         }
     }
 
-    pub fn set_dns_class(&mut self, dns_class: RRClasses) {
-        self.dns_class = Some(dns_class);
+    pub fn set_class(&mut self, class: RRClasses) {
+        self.class = class;
     }
 
-    pub fn get_dns_class(&self) -> Option<&RRClasses> {
-        self.dns_class.as_ref()
+    pub fn get_class(&self) -> RRClasses {
+        self.class
     }
 
     pub fn set_ttl(&mut self, ttl: u32) {
@@ -127,6 +127,6 @@ impl TxtRecord {
 impl fmt::Display for TxtRecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "type {:?}, class {:?}", self.get_type(), self.dns_class.unwrap())
+        write!(f, "type {:?}, class {:?}", self.get_type(), self.class)
     }
 }

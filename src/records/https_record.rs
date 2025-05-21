@@ -10,7 +10,7 @@ use crate::utils::ordered_map::OrderedMap;
 
 #[derive(Clone)]
 pub struct HttpsRecord {
-    dns_class: Option<RRClasses>,
+    class: RRClasses,
     ttl: u32,
     priority: u16,
     target: Option<String>,
@@ -21,7 +21,7 @@ impl Default for HttpsRecord {
 
     fn default() -> Self {
         Self {
-            dns_class: None,
+            class: RRClasses::default(),
             ttl: 0,
             priority: 0,
             target: None,
@@ -35,7 +35,7 @@ impl RecordBase for HttpsRecord {
     fn from_bytes(buf: &[u8], off: usize) -> Self {
         let mut off = off;
 
-        let dns_class = Some(RRClasses::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap());
+        let class = RRClasses::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
         let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
 
         let priority = u16::from_be_bytes([buf[off+8], buf[off+9]]);
@@ -54,7 +54,7 @@ impl RecordBase for HttpsRecord {
         }
 
         Self {
-            dns_class,
+            class,
             ttl,
             priority,
             target: Some(target),
@@ -66,7 +66,7 @@ impl RecordBase for HttpsRecord {
         let mut buf = vec![0u8; 12];
 
         buf.splice(0..2, self.get_type().get_code().to_be_bytes());
-        buf.splice(2..4, self.dns_class.unwrap().get_code().to_be_bytes());
+        buf.splice(2..4, self.class.get_code().to_be_bytes());
         buf.splice(4..8, self.ttl.to_be_bytes());
 
         buf.splice(10..12, self.priority.to_be_bytes());
@@ -104,9 +104,9 @@ impl RecordBase for HttpsRecord {
 
 impl HttpsRecord {
 
-    pub fn new(dns_classes: RRClasses, ttl: u32, priority: u16, target: &str, params: OrderedMap<u16, Vec<u8>>) -> Self {
+    pub fn new(class: RRClasses, ttl: u32, priority: u16, target: &str, params: OrderedMap<u16, Vec<u8>>) -> Self {
         Self {
-            dns_class: Some(dns_classes),
+            class,
             ttl,
             priority,
             target: Some(target.to_string()),
@@ -114,12 +114,12 @@ impl HttpsRecord {
         }
     }
 
-    pub fn set_dns_class(&mut self, dns_class: RRClasses) {
-        self.dns_class = Some(dns_class);
+    pub fn set_class(&mut self, class: RRClasses) {
+        self.class = class;
     }
 
-    pub fn get_dns_class(&self) -> Option<&RRClasses> {
-        self.dns_class.as_ref()
+    pub fn get_class(&self) -> RRClasses {
+        self.class
     }
 
     pub fn set_ttl(&mut self, ttl: u32) {
@@ -134,6 +134,6 @@ impl HttpsRecord {
 impl fmt::Display for HttpsRecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "type {:?}, class {:?}", self.get_type(), self.dns_class.unwrap())
+        write!(f, "type {:?}, class {:?}", self.get_type(), self.class)
     }
 }

@@ -9,7 +9,7 @@ use crate::utils::domain_utils::{pack_domain_uncompressed, unpack_domain};
 
 #[derive(Clone)]
 pub struct RRSigRecord {
-    dns_class: Option<RRClasses>,
+    class: RRClasses,
     ttl: u32,
     type_covered: u16,
     algorithm: u8,
@@ -26,7 +26,7 @@ impl Default for RRSigRecord {
 
     fn default() -> Self {
         Self {
-            dns_class: None,
+            class: RRClasses::default(),
             ttl: 0,
             type_covered: 0,
             algorithm: 0,
@@ -46,7 +46,7 @@ impl RecordBase for RRSigRecord {
     fn from_bytes(buf: &[u8], off: usize) -> Self {
         let mut off = off;
 
-        let dns_class = Some(RRClasses::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap());
+        let class = RRClasses::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
         let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
 
         let type_covered = u16::from_be_bytes([buf[off+8], buf[off+9]]);
@@ -67,7 +67,7 @@ impl RecordBase for RRSigRecord {
         let signature = buf[off..data_length].to_vec();
 
         Self {
-            dns_class,
+            class,
             ttl,
             type_covered,
             algorithm,
@@ -85,7 +85,7 @@ impl RecordBase for RRSigRecord {
         let mut buf = vec![0u8; 28];
 
         buf.splice(0..2, self.get_type().get_code().to_be_bytes());
-        buf.splice(2..4, self.dns_class.unwrap().get_code().to_be_bytes());
+        buf.splice(2..4, self.class.get_code().to_be_bytes());
         buf.splice(4..8, self.ttl.to_be_bytes());
 
         buf.splice(10..12, self.type_covered.to_be_bytes());
@@ -126,9 +126,9 @@ impl RecordBase for RRSigRecord {
 
 impl RRSigRecord {
 
-    pub fn new(dns_classes: RRClasses, ttl: u32, type_covered: u16, algorithm: u8, labels: u8, original_ttl: u32, signature_expiration: u32, signature_inception: u32, key_tag: u16, signer_name: &str, signature: &[u8]) -> Self {
+    pub fn new(class: RRClasses, ttl: u32, type_covered: u16, algorithm: u8, labels: u8, original_ttl: u32, signature_expiration: u32, signature_inception: u32, key_tag: u16, signer_name: &str, signature: &[u8]) -> Self {
         Self {
-            dns_class: Some(dns_classes),
+            class,
             ttl,
             type_covered,
             algorithm,
@@ -142,12 +142,12 @@ impl RRSigRecord {
         }
     }
 
-    pub fn set_dns_class(&mut self, dns_class: RRClasses) {
-        self.dns_class = Some(dns_class);
+    pub fn set_class(&mut self, class: RRClasses) {
+        self.class = class;
     }
 
-    pub fn get_dns_class(&self) -> Option<&RRClasses> {
-        self.dns_class.as_ref()
+    pub fn get_class(&self) -> RRClasses {
+        self.class
     }
 
     pub fn set_ttl(&mut self, ttl: u32) {
@@ -162,6 +162,6 @@ impl RRSigRecord {
 impl fmt::Display for RRSigRecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "type {:?}, class {:?}", self.get_type(), self.dns_class.unwrap())
+        write!(f, "type {:?}, class {:?}", self.get_type(), self.class)
     }
 }

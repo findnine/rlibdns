@@ -9,7 +9,7 @@ use crate::utils::domain_utils::{pack_domain, unpack_domain};
 
 #[derive(Clone)]
 pub struct SoaRecord {
-    dns_class: Option<RRClasses>,
+    class: RRClasses,
     ttl: u32,
     domain: Option<String>,
     mailbox: Option<String>,
@@ -24,7 +24,7 @@ impl Default for SoaRecord {
 
     fn default() -> Self {
         Self {
-            dns_class: None,
+            class: RRClasses::default(),
             ttl: 0,
             domain: None,
             mailbox: None,
@@ -42,7 +42,7 @@ impl RecordBase for SoaRecord {
     fn from_bytes(buf: &[u8], off: usize) -> Self {
         let mut off = off;
 
-        let dns_class = Some(RRClasses::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap());
+        let class = RRClasses::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
         let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
 
         let z = u16::from_be_bytes([buf[off+6], buf[off+7]]);
@@ -60,7 +60,7 @@ impl RecordBase for SoaRecord {
         let minimum_ttl = u32::from_be_bytes([buf[off+16], buf[off+17], buf[off+18], buf[off+19]]);
 
         Self {
-            dns_class,
+            class,
             ttl,
             domain: Some(domain),
             mailbox: Some(mailbox),
@@ -78,7 +78,7 @@ impl RecordBase for SoaRecord {
         let mut buf = vec![0u8; 10];
 
         buf.splice(0..2, self.get_type().get_code().to_be_bytes());
-        buf.splice(2..4, self.dns_class.unwrap().get_code().to_be_bytes());
+        buf.splice(2..4, self.class.get_code().to_be_bytes());
         buf.splice(4..8, self.ttl.to_be_bytes());
 
         let domain = pack_domain(self.domain.as_ref().unwrap().as_str(), label_map, off+12);
@@ -119,9 +119,9 @@ impl RecordBase for SoaRecord {
 
 impl SoaRecord {
 
-    pub fn new(dns_classes: RRClasses, ttl: u32, domain: &str, mailbox: &str, serial_number: u32, refresh_interval: u32, retry_interval: u32, expire_limit: u32, minimum_ttl: u32) -> Self {
+    pub fn new(class: RRClasses, ttl: u32, domain: &str, mailbox: &str, serial_number: u32, refresh_interval: u32, retry_interval: u32, expire_limit: u32, minimum_ttl: u32) -> Self {
         Self {
-            dns_class: Some(dns_classes),
+            class,
             ttl,
             domain: Some(domain.to_string()),
             mailbox: Some(mailbox.to_string()),
@@ -133,12 +133,12 @@ impl SoaRecord {
         }
     }
 
-    pub fn set_dns_class(&mut self, dns_class: RRClasses) {
-        self.dns_class = Some(dns_class);
+    pub fn set_class(&mut self, class: RRClasses) {
+        self.class = class;
     }
 
-    pub fn get_dns_class(&self) -> Option<&RRClasses> {
-        self.dns_class.as_ref()
+    pub fn get_class(&self) -> RRClasses {
+        self.class
     }
 
     pub fn set_ttl(&mut self, ttl: u32) {
@@ -161,6 +161,6 @@ impl SoaRecord {
 impl fmt::Display for SoaRecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "type {:?}, class {:?}, domain {}", self.get_type(), self.dns_class.unwrap(), self.domain.as_ref().unwrap())
+        write!(f, "type {:?}, class {:?}, domain {}", self.get_type(), self.class, self.domain.as_ref().unwrap())
     }
 }

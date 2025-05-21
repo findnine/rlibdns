@@ -9,7 +9,7 @@ use crate::utils::domain_utils::{pack_domain, unpack_domain};
 
 #[derive(Clone)]
 pub struct NSecRecord {
-    dns_class: Option<RRClasses>,
+    class: RRClasses,
     cache_flush: bool,
     ttl: u32,
     domain: Option<String>,
@@ -20,7 +20,7 @@ impl Default for NSecRecord {
 
     fn default() -> Self {
         Self {
-            dns_class: None,
+            class: RRClasses::default(),
             cache_flush: false,
             ttl: 0,
             domain: None,
@@ -34,9 +34,9 @@ impl RecordBase for NSecRecord {
     fn from_bytes(buf: &[u8], off: usize) -> Self {
         let mut off = off;
 
-        let dns_class = u16::from_be_bytes([buf[off], buf[off+1]]);
-        let cache_flush = (dns_class & 0x8000) != 0;
-        let dns_class = Some(RRClasses::from_code(dns_class & 0x7FFF).unwrap());
+        let class = u16::from_be_bytes([buf[off], buf[off+1]]);
+        let cache_flush = (class & 0x8000) != 0;
+        let class = RRClasses::from_code(class & 0x7FFF).unwrap();
         let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
 
         let (domain, length) = unpack_domain(buf, off+8);
@@ -68,7 +68,7 @@ impl RecordBase for NSecRecord {
         }
 
         Self {
-            dns_class,
+            class,
             cache_flush,
             ttl,
             domain: Some(domain),
@@ -81,12 +81,12 @@ impl RecordBase for NSecRecord {
 
         buf.splice(0..2, self.get_type().get_code().to_be_bytes());
 
-        let mut dns_class = self.dns_class.unwrap().get_code();
+        let mut class = self.class.get_code();
         if self.cache_flush {
-            dns_class = dns_class | 0x8000;
+            class = class | 0x8000;
         }
 
-        buf.splice(2..4, dns_class.to_be_bytes());
+        buf.splice(2..4, class.to_be_bytes());
         buf.splice(4..8, self.ttl.to_be_bytes());
 
         buf.extend_from_slice(&pack_domain(self.domain.as_ref().unwrap().as_str(), label_map, off+12));
@@ -136,9 +136,9 @@ impl RecordBase for NSecRecord {
 
 impl NSecRecord {
 
-    pub fn new(dns_classes: RRClasses, cache_flush: bool, ttl: u32, domain: &str, rr_types: Vec<u16>) -> Self {
+    pub fn new(class: RRClasses, cache_flush: bool, ttl: u32, domain: &str, rr_types: Vec<u16>) -> Self {
         Self {
-            dns_class: Some(dns_classes),
+            class,
             cache_flush,
             ttl,
             domain: Some(domain.to_string()),
@@ -146,12 +146,12 @@ impl NSecRecord {
         }
     }
 
-    pub fn set_dns_class(&mut self, dns_class: RRClasses) {
-        self.dns_class = Some(dns_class);
+    pub fn set_class(&mut self, class: RRClasses) {
+        self.class = class;
     }
 
-    pub fn get_dns_class(&self) -> Option<&RRClasses> {
-        self.dns_class.as_ref()
+    pub fn get_class(&self) -> RRClasses {
+        self.class
     }
 
     pub fn set_ttl(&mut self, ttl: u32) {
@@ -174,6 +174,6 @@ impl NSecRecord {
 impl fmt::Display for NSecRecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "type {:?}, class {:?}, domain {}", self.get_type(), self.dns_class.unwrap(), self.domain.as_ref().unwrap())
+        write!(f, "type {:?}, class {:?}, domain {}", self.get_type(), self.class, self.domain.as_ref().unwrap())
     }
 }

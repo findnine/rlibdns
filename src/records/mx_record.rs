@@ -9,7 +9,7 @@ use crate::utils::domain_utils::{pack_domain, unpack_domain};
 
 #[derive(Clone)]
 pub struct MxRecord {
-    dns_class: Option<RRClasses>,
+    class: RRClasses,
     ttl: u32,
     priority: u16,
     server: Option<String>
@@ -19,7 +19,7 @@ impl Default for MxRecord {
 
     fn default() -> Self {
         Self {
-            dns_class: None,
+            class: RRClasses::default(),
             ttl: 0,
             priority: 0,
             server: None
@@ -30,7 +30,7 @@ impl Default for MxRecord {
 impl RecordBase for MxRecord {
 
     fn from_bytes(buf: &[u8], off: usize) -> Self {
-        let dns_class = Some(RRClasses::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap());
+        let class = RRClasses::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
         let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
 
         let z = u16::from_be_bytes([buf[off+6], buf[off+7]]);
@@ -40,7 +40,7 @@ impl RecordBase for MxRecord {
         let (server, _) = unpack_domain(buf, off+10);
 
         Self {
-            dns_class,
+            class,
             ttl,
             priority,
             server: Some(server)
@@ -51,7 +51,7 @@ impl RecordBase for MxRecord {
         let mut buf = vec![0u8; 12];
 
         buf.splice(0..2, self.get_type().get_code().to_be_bytes());
-        buf.splice(2..4, self.dns_class.unwrap().get_code().to_be_bytes());
+        buf.splice(2..4, self.class.get_code().to_be_bytes());
         buf.splice(4..8, self.ttl.to_be_bytes());
 
         buf.splice(10..12, self.priority.to_be_bytes());
@@ -82,21 +82,21 @@ impl RecordBase for MxRecord {
 
 impl MxRecord {
 
-    pub fn new(dns_classes: RRClasses, ttl: u32, priority: u16, server: &str) -> Self {
+    pub fn new(class: RRClasses, ttl: u32, priority: u16, server: &str) -> Self {
         Self {
-            dns_class: Some(dns_classes),
+            class,
             ttl,
             priority,
             server: Some(server.to_string())
         }
     }
 
-    pub fn set_dns_class(&mut self, dns_class: RRClasses) {
-        self.dns_class = Some(dns_class);
+    pub fn set_class(&mut self, class: RRClasses) {
+        self.class = class;
     }
 
-    pub fn get_dns_class(&self) -> Option<&RRClasses> {
-        self.dns_class.as_ref()
+    pub fn get_class(&self) -> RRClasses {
+        self.class
     }
 
     pub fn set_ttl(&mut self, ttl: u32) {
@@ -119,6 +119,6 @@ impl MxRecord {
 impl fmt::Display for MxRecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "type {:?}, class {:?}, priority {}, server {}", self.get_type(), self.dns_class.unwrap(), self.priority, self.server.as_ref().unwrap())
+        write!(f, "type {:?}, class {:?}, priority {}, server {}", self.get_type(), self.class, self.priority, self.server.as_ref().unwrap())
     }
 }
