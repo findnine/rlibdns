@@ -1,6 +1,6 @@
 use std::fs::File;
 use std::io;
-use std::io::Read;
+use std::io::{BufReader, Read};
 use crate::records::inter::record_base::RecordBase;
 
 pub struct Zone {
@@ -19,13 +19,42 @@ impl Zone {
 
     pub fn from_file(file_path: &str) -> io::Result<Self> {
         let mut file = File::open(file_path)?;
+        let mut reader = BufReader::new(file);
 
         let mut buf = [0u8; 1];
         let mut records = Vec::new();
 
-        while file.read(&mut buf)? != 0 {
-            
-            
+        let mut paren_depth = 0;
+
+        for byte in reader.bytes() {
+
+            match byte? {
+                b'\n' => {
+                    if paren_depth == 0 {
+                        // End of logical line
+                        //if !logical_line.is_empty() {
+                        //    let line_str = String::from_utf8_lossy(&logical_line);
+                        //    println!("Logical line: {}", line_str);
+                        //    //logical_line.clear();
+                        //}
+                    } else {
+                        //logical_line.push(b' '); // Replace newline with space inside multiline
+                    }
+                }
+                b'(' => {
+                    paren_depth += 1;
+                    //logical_line.push(byte);
+                }
+                b')' => {
+                    if paren_depth > 0 {
+                        paren_depth -= 1;
+                    }
+                    //logical_line.push(byte);
+                }
+                _ => {
+                    //logical_line.push(byte);
+                }
+            }
         }
 
         Ok(Self {
