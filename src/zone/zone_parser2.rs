@@ -170,7 +170,7 @@ impl<'a> ZoneParser<'a> {
                 if self.default_ttl != 0 {
                     self.ttl = self.default_ttl;
                 }
-                
+
                 rec = None;
             }
         }
