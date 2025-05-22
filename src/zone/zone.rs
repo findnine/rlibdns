@@ -1,7 +1,6 @@
-use std::array::IntoIter;
 use std::fs::File;
 use std::io;
-use std::io::{BufRead, BufReader, Read};
+use std::io::{BufRead, BufReader};
 use std::ops::DerefMut;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
@@ -14,12 +13,12 @@ use crate::records::inter::record_base::RecordBase;
 use crate::records::mx_record::MxRecord;
 use crate::records::ns_record::NsRecord;
 use crate::records::nsec_record::NSecRecord;
-use crate::records::opt_record::OptRecord;
 use crate::records::ptr_record::PtrRecord;
 use crate::records::rrsig_record::RRSigRecord;
 use crate::records::soa_record::SoaRecord;
 use crate::records::srv_record::SrvRecord;
 use crate::records::txt_record::TxtRecord;
+use crate::utils::base64::base64_decode;
 
 #[derive(Debug, PartialEq, Eq)]
 enum ParserState {
@@ -333,7 +332,24 @@ fn set_rdata(record: &mut dyn RecordBase, pos: usize, value: &str) {
                 _ => unimplemented!()
             }
         }
-        RRTypes::Rrsig => {}//RRSIG   <type covered> <algorithm> <labels> <original TTL> <expiration> <inception> <key tag> <signer name> <signature>
+        RRTypes::Rrsig => {
+            let record = record.as_any_mut().downcast_mut::<RRSigRecord>().unwrap();
+            match pos {
+                0 => record.set_type_covered(value.parse().unwrap()),
+                1 => record.set_algorithm(value.parse().unwrap()),
+                2 => record.set_labels(value.parse().unwrap()),
+                3 => record.set_original_ttl(value.parse().unwrap()),
+                4 => record.set_expiration(value.parse().unwrap()),
+                5 => record.set_inception(value.parse().unwrap()),
+                6 => record.set_key_tag(value.parse().unwrap()),
+                7 => record.set_signer_name(match value.strip_suffix('.') {
+                    Some(base) => base,
+                    None => panic!("Domain is not fully qualified (missing trailing dot)"),
+                }),
+                8 => record.set_signature(&base64_decode(value).unwrap()),
+                _ => unimplemented!()
+            }
+        }
         RRTypes::Nsec => {}//example.com.  NSEC  next.example.com. A MX RRSIG NSEC
         RRTypes::DnsKey => {}//DNSKEY  <flags> <protocol> <algorithm> <public key>
         RRTypes::Https => {}//HTTPS   <priority> <target> [key=value params...]

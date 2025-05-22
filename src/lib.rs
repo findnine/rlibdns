@@ -5,9 +5,13 @@ pub mod zone;
 
 #[cfg(test)]
 mod tests {
-    use std::fs::File;
+    use std::collections::HashMap;
+    use crate::messages::inter::rr_types::RRTypes;
     use crate::messages::message_base::MessageBase;
+    use crate::records::inter::record_base::RecordBase;
     use crate::zone::zone::ZoneParser;
+
+    type RecordMap = HashMap<String, HashMap<RRTypes, Vec<Box<dyn RecordBase>>>>;
 
     #[test]
     fn encode_and_decode() {
@@ -21,10 +25,22 @@ mod tests {
         assert_eq!(x, message.to_bytes());
 
 
+        let mut records = RecordMap::new();
+
         let mut parser = ZoneParser::new("/home/brad/Downloads/find9.net.test.zone", "find9.net").unwrap();
         for (name, record) in parser.iter() {
-            //println!("{}: {:?}", parser.absolute_name(&name), record);
             println!("{}: {:?}", name, record);
+
+            records
+                .entry(name)
+                .or_insert_with(HashMap::new)
+                .entry(record.get_type())
+                .or_insert_with(Vec::new)
+                .push(record);
         }
+
+        println!("{:?}", records);
+
+        println!("{:?}", records["find9.net"][&RRTypes::A]);
     }
 }

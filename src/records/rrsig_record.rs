@@ -15,8 +15,8 @@ pub struct RRSigRecord {
     algorithm: u8,
     labels: u8,
     original_ttl: u32,
-    signature_expiration: u32,
-    signature_inception: u32,
+    expiration: u32,
+    inception: u32,
     key_tag: u16,
     signer_name: Option<String>,
     signature: Vec<u8>
@@ -32,8 +32,8 @@ impl Default for RRSigRecord {
             algorithm: 0,
             labels: 0,
             original_ttl: 0,
-            signature_expiration: 0,
-            signature_inception: 0,
+            expiration: 0,
+            inception: 0,
             key_tag: 0,
             signer_name: None,
             signature: Vec::new()
@@ -55,8 +55,8 @@ impl RecordBase for RRSigRecord {
         let labels = buf[off+11];
 
         let original_ttl = u32::from_be_bytes([buf[off+12], buf[off+13], buf[off+14], buf[off+15]]);
-        let signature_expiration = u32::from_be_bytes([buf[off+16], buf[off+17], buf[off+18], buf[off+19]]);
-        let signature_inception = u32::from_be_bytes([buf[off+20], buf[off+21], buf[off+22], buf[off+23]]);
+        let expiration = u32::from_be_bytes([buf[off+16], buf[off+17], buf[off+18], buf[off+19]]);
+        let inception = u32::from_be_bytes([buf[off+20], buf[off+21], buf[off+22], buf[off+23]]);
         let key_tag = u16::from_be_bytes([buf[off+24], buf[off+25]]);
 
         let (signer_name, length) = unpack_domain(buf, off+26);
@@ -73,8 +73,8 @@ impl RecordBase for RRSigRecord {
             algorithm,
             labels,
             original_ttl,
-            signature_expiration,
-            signature_inception,
+            expiration,
+            inception,
             key_tag,
             signer_name: Some(signer_name),
             signature
@@ -94,8 +94,8 @@ impl RecordBase for RRSigRecord {
         buf[13] = self.labels;
 
         buf.splice(14..18, self.original_ttl.to_be_bytes());
-        buf.splice(18..22, self.signature_expiration.to_be_bytes());
-        buf.splice(22..26, self.signature_inception.to_be_bytes());
+        buf.splice(18..22, self.expiration.to_be_bytes());
+        buf.splice(22..26, self.inception.to_be_bytes());
         buf.splice(26..28, self.key_tag.to_be_bytes());
 
         buf.extend_from_slice(&pack_domain_uncompressed(self.signer_name.as_ref().unwrap()));
@@ -148,6 +148,78 @@ impl RRSigRecord {
 
     pub fn get_ttl(&self) -> u32 {
         self.ttl
+    }
+
+    pub fn set_type_covered(&mut self, type_covered: u16) {
+        self.type_covered = type_covered;
+    }
+
+    pub fn get_type_covered(&self) -> u16 {
+        self.type_covered
+    }
+
+    pub fn set_algorithm(&mut self, algorithm: u8) {
+        self.algorithm = algorithm;
+    }
+
+    pub fn get_algorithm(&self) -> u8 {
+        self.algorithm
+    }
+
+    pub fn set_labels(&mut self, labels: u8) {
+        self.labels = labels;
+    }
+
+    pub fn get_labels(&self) -> u8 {
+        self.labels
+    }
+
+    pub fn set_original_ttl(&mut self, original_ttl: u32) {
+        self.original_ttl = original_ttl;
+    }
+
+    pub fn get_original_ttl(&self) -> u32 {
+        self.original_ttl
+    }
+
+    pub fn set_expiration(&mut self, expiration: u32) {
+        self.expiration = expiration;
+    }
+
+    pub fn get_expiration(&self) -> u32 {
+        self.expiration
+    }
+
+    pub fn set_inception(&mut self, inception: u32) {
+        self.inception = inception;
+    }
+
+    pub fn get_inception(&self) -> u32 {
+        self.inception
+    }
+
+    pub fn set_key_tag(&mut self, key_tag: u16) {
+        self.key_tag = key_tag;
+    }
+
+    pub fn get_key_tag(&self) -> u16 {
+        self.key_tag
+    }
+
+    pub fn set_signer_name(&mut self, signer_name: &str) {
+        self.signer_name = Some(signer_name.to_string());
+    }
+
+    pub fn get_signer_name(&self) -> Option<&String> {
+        self.signer_name.as_ref()
+    }
+
+    pub fn set_signature(&mut self, signature: &[u8]) {
+        self.signature = signature.to_vec();
+    }
+
+    pub fn get_signature(&self) -> &[u8] {
+        self.signature.as_ref()
     }
 }
 
