@@ -7,7 +7,7 @@ use crate::records::inter::opt_codes::OptCodes;
 use crate::records::inter::record_base::RecordBase;
 use crate::utils::ordered_map::OrderedMap;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct OptRecord {
     payload_size: u16,
     ext_rcode: u8,

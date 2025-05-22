@@ -7,7 +7,7 @@ use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::RecordBase;
 use crate::utils::domain_utils::{pack_domain_uncompressed, unpack_domain};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct RRSigRecord {
     class: RRClasses,
     ttl: u32,
@@ -126,19 +126,11 @@ impl RecordBase for RRSigRecord {
 
 impl RRSigRecord {
 
-    pub fn new(class: RRClasses, ttl: u32, type_covered: u16, algorithm: u8, labels: u8, original_ttl: u32, signature_expiration: u32, signature_inception: u32, key_tag: u16, signer_name: &str, signature: &[u8]) -> Self {
+    pub fn new(ttl: u32, class: RRClasses) -> Self {
         Self {
             class,
             ttl,
-            type_covered,
-            algorithm,
-            labels,
-            original_ttl,
-            signature_expiration,
-            signature_inception,
-            key_tag,
-            signer_name: Some(signer_name.to_string()),
-            signature: signature.to_vec()
+            ..Self::default()
         }
     }
 

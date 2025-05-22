@@ -3,8 +3,21 @@ use std::io;
 use std::io::{BufRead, BufReader, Read};
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
+use crate::records::a_record::ARecord;
+use crate::records::aaaa_record::AaaaRecord;
+use crate::records::cname_record::CNameRecord;
+use crate::records::dnskey_record::DnsKeyRecord;
+use crate::records::https_record::HttpsRecord;
 use crate::records::inter::record_base::RecordBase;
-use crate::zone::zone_parser2::{Record, RecordData};
+use crate::records::mx_record::MxRecord;
+use crate::records::ns_record::NsRecord;
+use crate::records::nsec_record::NSecRecord;
+use crate::records::opt_record::OptRecord;
+use crate::records::ptr_record::PtrRecord;
+use crate::records::rrsig_record::RRSigRecord;
+use crate::records::soa_record::SoaRecord;
+use crate::records::srv_record::SrvRecord;
+use crate::records::txt_record::TxtRecord;
 
 #[derive(Debug, PartialEq, Eq)]
 enum ParserState {
@@ -38,16 +51,29 @@ impl Zone {
         let mut state = ParserState::Init;
         let mut paren_count = 0;
 
+        let mut origin = origin.to_string();
+        let mut default_ttl = 300;
+
+        let mut name = String::new();
+        let mut _type = RRTypes::default();
+        let mut class = RRClasses::default();
+        let mut ttl = default_ttl;
+
+        let mut directive_buf = String::new();
+
+        let mut record: Option<Box<dyn RecordBase>> = None;
+        let mut data_count = 0;
+
         for line in reader.lines() {
+            let mut pos = 0;
+            let mut quoted_buf = String::new();
 
             for part in line?.as_bytes().split_inclusive(|&b| b == b' ' || b == b'\t' || b == b'\n' || b == b'(' || b == b')') {
-                println!("{}", String::from_utf8(part.to_vec()).unwrap());
-
                 let part_len = part.len();
                 let mut word_len = part_len;
 
                 if part[0] == b';' && state != ParserState::QString {
-                    continue;
+                    break;
                 }
 
                 match part[part_len - 1] {
@@ -70,7 +96,6 @@ impl Zone {
                 }
 
 
-                let mut class = RRClasses::In;
 
                 match state {
                     ParserState::Init => {
@@ -78,12 +103,12 @@ impl Zone {
 
                         if pos == 0 && paren_count == 0 {
                             if word.starts_with('$') {
-                                self.directive_buf = word;
+                                directive_buf = word;
                                 state = ParserState::Directive;
 
                             } else {
                                 if word_len > 0 {
-                                    self.name = word;
+                                    name = word;
                                 }
 
                                 state = ParserState::Common;
@@ -96,67 +121,159 @@ impl Zone {
                         if let Some(c) = RRClasses::from_abbreviation(&word) {
                             class = c;
 
-                        } else if let Some(_type) = RRTypes::from_string(&word) {
-                            self._type = _type;
-                            self.state = ParserState::Data;
-                            rec.insert(Record::new(&self.name, self.ttl, self.class, self._type));
+                        } else if let Some(t) = RRTypes::from_string(&word) {
+                            _type = t;
+                            state = ParserState::Data;
+                            data_count = 0;
+
+                            record = Some(match _type {
+                                RRTypes::A => ARecord::new(ttl, class).upcast(),
+                                RRTypes::Aaaa => AaaaRecord::new(ttl, class).upcast(),
+                                RRTypes::Ns => NsRecord::new(ttl, class).upcast(),
+                                RRTypes::Cname => CNameRecord::new(ttl, class).upcast(),
+                                RRTypes::Soa => SoaRecord::new(ttl, class).upcast(),
+                                RRTypes::Ptr => PtrRecord::new(ttl, class).upcast(),
+                                RRTypes::Mx => MxRecord::new(ttl, class).upcast(),
+                                RRTypes::Txt => TxtRecord::new(ttl, class).upcast(),
+                                RRTypes::Srv => SrvRecord::new(ttl, class).upcast(),
+                                //RRTypes::Opt => OptRecord::new(ttl, class).upcast(),
+                                RRTypes::Rrsig => RRSigRecord::new(ttl, class).upcast(),
+                                RRTypes::Nsec => NSecRecord::new(ttl, class).upcast(),
+                                RRTypes::DnsKey => DnsKeyRecord::new(ttl, class).upcast(),
+                                RRTypes::Https => HttpsRecord::new(ttl, class).upcast(),
+                                //RRTypes::Spf => {}
+                                //RRTypes::Tsig => {}
+                                //RRTypes::Any => {}
+                                //RRTypes::Caa => {}
+                                _ => unreachable!()
+                            });
 
                         } else {
-                            self.ttl = word.parse().expect(&format!("Parse error on line {} pos {}", self.line_no, pos));
+                            ttl = word.parse().unwrap();//.expect(&format!("Parse error on line {} pos {}", self.line_no, pos));
                         }
                     }
                     ParserState::Directive => {
                         let value = String::from_utf8(part[0..word_len].to_vec()).unwrap().to_uppercase();
-/*
-                        if self.directive_buf == "$ttl" {
-                            self.default_ttl = value.parse().expect(&format!("Parse error on line {} pos {}", self.line_no, pos));
 
-                        } else if self.directive_buf == "$origin" {
-                            self.origin = value;
+                        if directive_buf == "$ttl" {
+                            default_ttl = value.parse().unwrap();//.expect(&format!("Parse error on line {} pos {}", self.line_no, pos));
+
+                        } else if directive_buf == "$origin" {
+                            origin = value;
 
                         } else {
-                            panic!("Unknown directive {}", self.directive_buf);
+                            panic!("Unknown directive {}", directive_buf);
                         }
-*/
+
                         state = ParserState::Init;
                     }
                     ParserState::Data => {
                         if part[0] == b'"' {
                             if part[word_len - 1] == b'"' {
-                                //rec.as_mut().unwrap().push_data(RecordData::from_bytes(&part[1..word_len - 1]));
+                                if let Some(record) = record.as_deref_mut() {
+                                    set_rdata(record, data_count, &String::from_utf8(part[1..word_len - 1].to_vec()).unwrap());
+                                }
+
+                                data_count += 1;
 
                             } else {
                                 state = ParserState::QString;
-                                //self.quoted_buf = format!("{}{}", String::from_utf8(part[1..word_len].to_vec()).unwrap(), part[word_len] as char);
+                                quoted_buf = format!("{}{}", String::from_utf8(part[1..word_len].to_vec()).unwrap(), part[word_len] as char);
                             }
 
                         } else {
-                            //rec.as_mut().unwrap().push_data(RecordData::from_bytes(&part[0..word_len]));
+                            if let Some(record) = record.as_deref_mut() {
+                                set_rdata(record, data_count, &String::from_utf8(part[0..word_len].to_vec()).unwrap());
+                            }
+
+                            data_count += 1;
                         }
                     }
                     ParserState::QString => {
                         if part[word_len - 1] == b'"' {
-                            //PARSE THIS INTO THE ACTUAL RECORD DATA...
+                            quoted_buf.push_str(&format!("{}", String::from_utf8(part[0..word_len - 1].to_vec()).unwrap()));
 
-                            //let s = format!("{}", String::from_utf8(part[0..word_len - 1].to_vec()).unwrap());
-                            //self.quoted_buf.push_str(&s);
-                            //rec.as_mut().unwrap().push_data(RecordData::new(&self.quoted_buf));
+                            if let Some(record) = record.as_deref_mut() {
+                                set_rdata(record, data_count, &quoted_buf);
+                            }
+
+                            data_count += 1;
                             state = ParserState::Data;
 
                         } else {
-                            //self.quoted_buf.push_str(&format!("{}{}", String::from_utf8(part[0..word_len].to_vec()).unwrap(), part[word_len] as char));
+                            quoted_buf.push_str(&format!("{}{}", String::from_utf8(part[0..word_len].to_vec()).unwrap(), part[word_len] as char));
                         }
                     }
                 }
 
-                pos += plen;
+                pos += part_len;
+            }
 
+            if record.is_some() && paren_count == 0 {
+                println!("{:?}", record.unwrap());
+
+                state = ParserState::Init;
+                if default_ttl != 0 {
+                    ttl = default_ttl;
+                }
+
+                record = None;
             }
         }
 
         Ok(Self {
-            name: String::new(),
+            name,
             records
         })
+    }
+}
+
+fn set_rdata(record: &mut dyn RecordBase, pos: usize, value: &str) {
+    //WE NEED TO FIX DOMAINS CONTAINING PERIOD...
+    match record.get_type() {
+        RRTypes::A => record.as_any_mut().downcast_mut::<ARecord>().unwrap().set_address(value.parse().unwrap()),
+        RRTypes::Aaaa => record.as_any_mut().downcast_mut::<AaaaRecord>().unwrap().set_address(value.parse().unwrap()),
+        RRTypes::Ns => record.as_any_mut().downcast_mut::<NsRecord>().unwrap().set_server(value),
+        RRTypes::Cname => record.as_any_mut().downcast_mut::<CNameRecord>().unwrap().set_target(value),
+        RRTypes::Soa => {
+            let record = record.as_any_mut().downcast_mut::<SoaRecord>().unwrap();
+            match pos {
+                0 => record.set_domain(value),
+                1 => record.set_mailbox(value),
+                2 => record.set_serial(value.parse().unwrap()),
+                3 => record.set_refresh(value.parse().unwrap()),
+                4 => record.set_retry(value.parse().unwrap()),
+                5 => record.set_expire(value.parse().unwrap()),
+                6 => record.set_minimum_ttl(value.parse().unwrap()),
+                _ => unimplemented!()
+            }
+        }
+        RRTypes::Ptr => record.as_any_mut().downcast_mut::<PtrRecord>().unwrap().set_domain(value),
+        RRTypes::Mx => {
+            let record = record.as_any_mut().downcast_mut::<MxRecord>().unwrap();
+            match pos {
+                0 => record.set_priority(value.parse().unwrap()),
+                1 => record.set_server(value),
+                _ => unimplemented!()
+            }
+        }
+        RRTypes::Txt => record.as_any_mut().downcast_mut::<TxtRecord>().unwrap().add_data(value),
+        RRTypes::Srv => {
+            let record = record.as_any_mut().downcast_mut::<SrvRecord>().unwrap();
+            match pos {
+                0 => record.set_priority(value.parse().unwrap()),
+                1 => record.set_weight(value.parse().unwrap()),
+                2 => record.set_port(value.parse().unwrap()),
+                3 => record.set_target(value),
+                _ => unimplemented!()
+            }
+        }
+        RRTypes::Rrsig => {}//RRSIG   <type covered> <algorithm> <labels> <original TTL> <expiration> <inception> <key tag> <signer name> <signature>
+        RRTypes::Nsec => {}//example.com.  NSEC  next.example.com. A MX RRSIG NSEC
+        RRTypes::DnsKey => {}//DNSKEY  <flags> <protocol> <algorithm> <public key>
+        RRTypes::Https => {}//HTTPS   <priority> <target> [key=value params...]
+        RRTypes::Spf => {}//@       SPF   "v=spf1 include:_spf.example.com ~all"
+        RRTypes::Caa => {}//CAA     <flags> <tag> <value>
+        _ => unimplemented!()
     }
 }

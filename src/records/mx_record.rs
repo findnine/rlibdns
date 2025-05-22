@@ -7,7 +7,7 @@ use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::RecordBase;
 use crate::utils::domain_utils::{pack_domain, unpack_domain};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct MxRecord {
     class: RRClasses,
     ttl: u32,
@@ -82,12 +82,11 @@ impl RecordBase for MxRecord {
 
 impl MxRecord {
 
-    pub fn new(class: RRClasses, ttl: u32, priority: u16, server: &str) -> Self {
+    pub fn new(ttl: u32, class: RRClasses) -> Self {
         Self {
             class,
             ttl,
-            priority,
-            server: Some(server.to_string())
+            ..Self::default()
         }
     }
 
@@ -105,6 +104,14 @@ impl MxRecord {
 
     pub fn get_ttl(&self) -> u32 {
         self.ttl
+    }
+
+    pub fn set_priority(&mut self, priority: u16) {
+        self.priority = priority;
+    }
+
+    pub fn get_priority(&self) -> u16 {
+        self.priority
     }
 
     pub fn set_server(&mut self, server: &str) {

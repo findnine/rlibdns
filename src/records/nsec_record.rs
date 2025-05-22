@@ -7,7 +7,7 @@ use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::RecordBase;
 use crate::utils::domain_utils::{pack_domain, unpack_domain};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct NSecRecord {
     class: RRClasses,
     cache_flush: bool,
@@ -136,13 +136,11 @@ impl RecordBase for NSecRecord {
 
 impl NSecRecord {
 
-    pub fn new(class: RRClasses, cache_flush: bool, ttl: u32, domain: &str, rr_types: Vec<u16>) -> Self {
+    pub fn new(ttl: u32, class: RRClasses) -> Self {
         Self {
             class,
-            cache_flush,
             ttl,
-            domain: Some(domain.to_string()),
-            rr_types
+            ..Self::default()
         }
     }
 

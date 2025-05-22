@@ -7,7 +7,7 @@ use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::RecordBase;
 use crate::utils::domain_utils::{pack_domain, unpack_domain};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct CNameRecord {
     class: RRClasses,
     ttl: u32,
@@ -75,11 +75,11 @@ impl RecordBase for CNameRecord {
 
 impl CNameRecord {
 
-    pub fn new(class: RRClasses, ttl: u32, target: &str) -> Self {
+    pub fn new(ttl: u32, class: RRClasses) -> Self {
         Self {
             class,
             ttl,
-            target: Some(target.to_string())
+            ..Self::default()
         }
     }
 

@@ -7,16 +7,16 @@ use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::RecordBase;
 use crate::utils::domain_utils::{pack_domain, unpack_domain};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct SoaRecord {
     class: RRClasses,
     ttl: u32,
     domain: Option<String>,
     mailbox: Option<String>,
-    serial_number: u32,
-    refresh_interval: u32,
-    retry_interval: u32,
-    expire_limit: u32,
+    serial: u32,
+    refresh: u32,
+    retry: u32,
+    expire: u32,
     minimum_ttl: u32
 }
 
@@ -28,10 +28,10 @@ impl Default for SoaRecord {
             ttl: 0,
             domain: None,
             mailbox: None,
-            serial_number: 0,
-            refresh_interval: 0,
-            retry_interval: 0,
-            expire_limit: 0,
+            serial: 0,
+            refresh: 0,
+            retry: 0,
+            expire: 0,
             minimum_ttl: 0
         }
     }
@@ -53,10 +53,10 @@ impl RecordBase for SoaRecord {
         let (mailbox, length) = unpack_domain(buf, off);
         off += length;
 
-        let serial_number = u32::from_be_bytes([buf[off], buf[off+1], buf[off+2], buf[off+3]]);
-        let refresh_interval = u32::from_be_bytes([buf[off+4], buf[off+5], buf[off+6], buf[off+7]]);
-        let retry_interval = u32::from_be_bytes([buf[off+8], buf[off+9], buf[off+10], buf[off+11]]);
-        let expire_limit = u32::from_be_bytes([buf[off+12], buf[off+13], buf[off+14], buf[off+15]]);
+        let serial = u32::from_be_bytes([buf[off], buf[off+1], buf[off+2], buf[off+3]]);
+        let refresh = u32::from_be_bytes([buf[off+4], buf[off+5], buf[off+6], buf[off+7]]);
+        let retry = u32::from_be_bytes([buf[off+8], buf[off+9], buf[off+10], buf[off+11]]);
+        let expire = u32::from_be_bytes([buf[off+12], buf[off+13], buf[off+14], buf[off+15]]);
         let minimum_ttl = u32::from_be_bytes([buf[off+16], buf[off+17], buf[off+18], buf[off+19]]);
 
         Self {
@@ -64,10 +64,10 @@ impl RecordBase for SoaRecord {
             ttl,
             domain: Some(domain),
             mailbox: Some(mailbox),
-            serial_number,
-            refresh_interval,
-            retry_interval,
-            expire_limit,
+            serial,
+            refresh,
+            retry,
+            expire,
             minimum_ttl
         }
     }
@@ -89,10 +89,10 @@ impl RecordBase for SoaRecord {
         let mailbox = pack_domain(self.mailbox.as_ref().unwrap().as_str(), label_map, off+12);
         buf.extend_from_slice(&mailbox);
 
-        buf.extend_from_slice(&self.serial_number.to_be_bytes());
-        buf.extend_from_slice(&self.refresh_interval.to_be_bytes());
-        buf.extend_from_slice(&self.retry_interval.to_be_bytes());
-        buf.extend_from_slice(&self.expire_limit.to_be_bytes());
+        buf.extend_from_slice(&self.serial.to_be_bytes());
+        buf.extend_from_slice(&self.refresh.to_be_bytes());
+        buf.extend_from_slice(&self.retry.to_be_bytes());
+        buf.extend_from_slice(&self.expire.to_be_bytes());
         buf.extend_from_slice(&self.minimum_ttl.to_be_bytes());
 
         buf.splice(8..10, ((buf.len()-10) as u16).to_be_bytes());
@@ -119,17 +119,11 @@ impl RecordBase for SoaRecord {
 
 impl SoaRecord {
 
-    pub fn new(class: RRClasses, ttl: u32, domain: &str, mailbox: &str, serial_number: u32, refresh_interval: u32, retry_interval: u32, expire_limit: u32, minimum_ttl: u32) -> Self {
+    pub fn new(ttl: u32, class: RRClasses) -> Self {
         Self {
             class,
             ttl,
-            domain: Some(domain.to_string()),
-            mailbox: Some(mailbox.to_string()),
-            serial_number,
-            refresh_interval,
-            retry_interval,
-            expire_limit,
-            minimum_ttl
+            ..Self::default()
         }
     }
 
@@ -155,6 +149,54 @@ impl SoaRecord {
 
     pub fn get_domain(&self) -> Option<String> {
         self.domain.clone()
+    }
+
+    pub fn set_mailbox(&mut self, mailbox: &str) {
+        self.mailbox = Some(mailbox.to_string());
+    }
+
+    pub fn get_mailbox(&self) -> Option<String> {
+        self.mailbox.clone()
+    }
+
+    pub fn set_serial(&mut self, serial: u32) {
+        self.serial = serial;
+    }
+
+    pub fn get_serial(&self) -> u32 {
+        self.serial
+    }
+
+    pub fn set_refresh(&mut self, refresh: u32) {
+        self.refresh = refresh;
+    }
+
+    pub fn get_refresh(&self) -> u32 {
+        self.refresh
+    }
+
+    pub fn set_retry(&mut self, retry: u32) {
+        self.retry = retry;
+    }
+
+    pub fn get_retry(&self) -> u32 {
+        self.retry
+    }
+
+    pub fn set_expire(&mut self, expire: u32) {
+        self.expire = expire;
+    }
+
+    pub fn get_expire(&self) -> u32 {
+        self.expire
+    }
+
+    pub fn set_minimum_ttl(&mut self, minimum_ttl: u32) {
+        self.minimum_ttl = minimum_ttl;
+    }
+
+    pub fn get_minimum_ttl(&self) -> u32 {
+        self.minimum_ttl
     }
 }
 

@@ -7,7 +7,7 @@ use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::RecordBase;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ARecord {
     class: RRClasses,
     cache_flush: bool,
@@ -90,12 +90,11 @@ impl RecordBase for ARecord {
 
 impl ARecord {
 
-    pub fn new(class: RRClasses, cache_flush: bool, ttl: u32, address: Ipv4Addr) -> Self {
+    pub fn new(ttl: u32, class: RRClasses) -> Self {
         Self {
             class,
-            cache_flush,
             ttl,
-            address: Some(address)
+            ..Self::default()
         }
     }
 

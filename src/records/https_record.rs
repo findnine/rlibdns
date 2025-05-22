@@ -8,7 +8,7 @@ use crate::records::inter::record_base::RecordBase;
 use crate::utils::domain_utils::{pack_domain, unpack_domain};
 use crate::utils::ordered_map::OrderedMap;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct HttpsRecord {
     class: RRClasses,
     ttl: u32,
@@ -104,13 +104,11 @@ impl RecordBase for HttpsRecord {
 
 impl HttpsRecord {
 
-    pub fn new(class: RRClasses, ttl: u32, priority: u16, target: &str, params: OrderedMap<u16, Vec<u8>>) -> Self {
+    pub fn new(ttl: u32, class: RRClasses) -> Self {
         Self {
             class,
             ttl,
-            priority,
-            target: Some(target.to_string()),
-            params
+            ..Self::default()
         }
     }
 

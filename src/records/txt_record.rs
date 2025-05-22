@@ -6,12 +6,12 @@ use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::RecordBase;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct TxtRecord {
     class: RRClasses,
     cache_flush: bool,
     ttl: u32,
-    content: Vec<String>
+    data: Vec<String>
 }
 
 impl Default for TxtRecord {
@@ -21,7 +21,7 @@ impl Default for TxtRecord {
             class: RRClasses::default(),
             cache_flush: false,
             ttl: 0,
-            content: Vec::new()
+            data: Vec::new()
         }
     }
 }
@@ -39,12 +39,12 @@ impl RecordBase for TxtRecord {
         let data_length = off+8+u16::from_be_bytes([buf[off+6], buf[off+7]]) as usize;
         off += 8;
 
-        let mut content = Vec::new();
+        let mut data = Vec::new();
 
         while off < data_length {
             let length = buf[off] as usize;
             let record = String::from_utf8(buf[off + 1..off + 1 + length].to_vec()).unwrap();
-            content.push(record);
+            data.push(record);
             off += length+1;
         }
 
@@ -52,7 +52,7 @@ impl RecordBase for TxtRecord {
             class,
             cache_flush,
             ttl,
-            content
+            data
         }
     }
 
@@ -69,7 +69,7 @@ impl RecordBase for TxtRecord {
         buf.splice(2..4, class.to_be_bytes());
         buf.splice(4..8, self.ttl.to_be_bytes());
 
-        for record in &self.content {
+        for record in &self.data {
             buf.push(record.len() as u8);
             buf.extend_from_slice(record.as_bytes());
         }
@@ -98,12 +98,11 @@ impl RecordBase for TxtRecord {
 
 impl TxtRecord {
 
-    pub fn new(class: RRClasses, cache_flush: bool, ttl: u32, content: Vec<String>) -> Self {
+    pub fn new(ttl: u32, class: RRClasses) -> Self {
         Self {
             class,
-            cache_flush,
             ttl,
-            content
+            ..Self::default()
         }
     }
 
@@ -121,6 +120,14 @@ impl TxtRecord {
 
     pub fn get_ttl(&self) -> u32 {
         self.ttl
+    }
+
+    pub fn add_data(&mut self, data: &str) {
+        self.data.push(data.to_string());
+    }
+
+    pub fn get_data(&self) -> &Vec<String> {
+        self.data.as_ref()
     }
 }
 

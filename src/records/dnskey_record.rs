@@ -6,7 +6,7 @@ use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::RecordBase;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct DnsKeyRecord {
     class: RRClasses,
     ttl: u32,
@@ -102,14 +102,11 @@ impl RecordBase for DnsKeyRecord {
 
 impl DnsKeyRecord {
 
-    pub fn new(class: RRClasses, ttl: u32, flags: u16, protocol: u8, algorithm: u8, public_key: Vec<u8>) -> Self {
+    pub fn new(ttl: u32, class: RRClasses) -> Self {
         Self {
             class,
             ttl,
-            flags,
-            protocol,
-            algorithm,
-            public_key
+            ..Self::default()
         }
     }
 

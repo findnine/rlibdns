@@ -7,7 +7,7 @@ use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::RecordBase;
 use crate::utils::domain_utils::{pack_domain, unpack_domain};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct SrvRecord {
     class: RRClasses,
     cache_flush: bool,
@@ -103,15 +103,11 @@ impl RecordBase for SrvRecord {
 
 impl SrvRecord {
 
-    pub fn new(class: RRClasses, cache_flush: bool, ttl: u32, priority: u16, weight: u16, port: u16, target: &str) -> Self {
+    pub fn new(ttl: u32, class: RRClasses) -> Self {
         Self {
             class,
-            cache_flush,
             ttl,
-            priority,
-            weight,
-            port,
-            target: Some(target.to_string())
+            ..Self::default()
         }
     }
 
@@ -129,6 +125,38 @@ impl SrvRecord {
 
     pub fn get_ttl(&self) -> u32 {
         self.ttl
+    }
+
+    pub fn set_priority(&mut self, priority: u16) {
+        self.priority = priority;
+    }
+
+    pub fn get_priority(&self) -> u16 {
+        self.priority
+    }
+
+    pub fn set_weight(&mut self, weight: u16) {
+        self.weight = weight;
+    }
+
+    pub fn get_weight(&self) -> u16 {
+        self.weight
+    }
+
+    pub fn set_port(&mut self, port: u16) {
+        self.port = port;
+    }
+
+    pub fn get_port(&self) -> u16 {
+        self.port
+    }
+
+    pub fn set_target(&mut self, target: &str) {
+        self.target = Some(target.to_string());
+    }
+
+    pub fn get_target(&self) -> Option<String> {
+        self.target.clone()
     }
 }
 
