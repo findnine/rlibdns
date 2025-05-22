@@ -54,7 +54,7 @@ where
     //THIS FUNCTION MAY BE BRICKING IT...
     pub fn entry(&mut self, key: K) -> Entry<K, V> {
         match self.map.entry(key.clone()) {
-            Entry::Occupied(mut occupied) => {
+            Entry::Occupied(occupied) => {
                 Entry::Occupied(occupied)
             }
             Entry::Vacant(vacant) => {
