@@ -1,6 +1,8 @@
+use std::array::IntoIter;
 use std::fs::File;
 use std::io;
 use std::io::{BufRead, BufReader, Read};
+use std::ops::DerefMut;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::a_record::ARecord;
@@ -28,47 +30,46 @@ enum ParserState {
     QString,
 }
 
-pub struct Zone {
+pub struct ZoneParser {
+    reader: BufReader<File>,
+    origin: String,
     name: String,
-    records: Vec<Box<dyn RecordBase>>
+    default_ttl: u32
 }
 
-impl Zone {
+impl ZoneParser {
 
-    pub fn new(name: String) -> Self {
-        Self {
-            name,
-            records: Vec::new()
-        }
+    pub fn new(file_path: &str, origin: &str) -> io::Result<Self> {
+        let file = File::open(file_path)?;
+        let reader = BufReader::new(file);
+
+        Ok(Self {
+            reader,
+            origin: origin.to_string(),
+            name: String::new(),
+            default_ttl: 300
+        })
     }
 
-    pub fn from_file(file_path: &str, origin: &str) -> io::Result<Self> {
-        let file = File::open(file_path)?;
-        let mut reader = BufReader::new(file);
-
-        let mut records = Vec::new();
-
+    pub fn parse_record(&mut self) -> Option<(String, Box<dyn RecordBase>)> {
         let mut state = ParserState::Init;
         let mut paren_count = 0;
 
-        let mut origin = origin.to_string();
-        let mut default_ttl = 300;
-
-        let mut name = String::new();
+        //let mut name = String::new();
         let mut _type = RRTypes::default();
         let mut class = RRClasses::default();
-        let mut ttl = default_ttl;
+        let mut ttl = self.default_ttl;
 
         let mut directive_buf = String::new();
 
-        let mut record: Option<Box<dyn RecordBase>> = None;
+        let mut record: Option<(String, Box<dyn RecordBase>)> = None;
         let mut data_count = 0;
 
-        for line in reader.lines() {
+        for line in self.reader.by_ref().lines() {
             let mut pos = 0;
             let mut quoted_buf = String::new();
 
-            for part in line?.as_bytes().split_inclusive(|&b| b == b' ' || b == b'\t' || b == b'\n' || b == b'(' || b == b')') {
+            for part in line.ok().unwrap().as_bytes().split_inclusive(|&b| b == b' ' || b == b'\t' || b == b'\n' || b == b'(' || b == b')') {
                 let part_len = part.len();
                 let mut word_len = part_len;
 
@@ -95,8 +96,6 @@ impl Zone {
                     continue;
                 }
 
-
-
                 match state {
                     ParserState::Init => {
                         let word = String::from_utf8(part[0..word_len].to_vec()).unwrap().to_lowercase();
@@ -108,7 +107,7 @@ impl Zone {
 
                             } else {
                                 if word_len > 0 {
-                                    name = word;
+                                    self.name = word;
                                 }
 
                                 state = ParserState::Common;
@@ -126,7 +125,8 @@ impl Zone {
                             state = ParserState::Data;
                             data_count = 0;
 
-                            record = Some(match _type {
+                            //let name = self.absolute_name(&self.name);
+                            record = Some((self.name.clone(), match _type {
                                 RRTypes::A => ARecord::new(ttl, class).upcast(),
                                 RRTypes::Aaaa => AaaaRecord::new(ttl, class).upcast(),
                                 RRTypes::Ns => NsRecord::new(ttl, class).upcast(),
@@ -146,7 +146,7 @@ impl Zone {
                                 //RRTypes::Any => {}
                                 //RRTypes::Caa => {}
                                 _ => unreachable!()
-                            });
+                            }));
 
                         } else {
                             ttl = word.parse().unwrap();//.expect(&format!("Parse error on line {} pos {}", self.line_no, pos));
@@ -156,10 +156,10 @@ impl Zone {
                         let value = String::from_utf8(part[0..word_len].to_vec()).unwrap().to_uppercase();
 
                         if directive_buf == "$ttl" {
-                            default_ttl = value.parse().unwrap();//.expect(&format!("Parse error on line {} pos {}", self.line_no, pos));
+                            self.default_ttl = value.parse().unwrap();//.expect(&format!("Parse error on line {} pos {}", self.line_no, pos));
 
                         } else if directive_buf == "$origin" {
-                            origin = value;
+                            self.origin = value;
 
                         } else {
                             panic!("Unknown directive {}", directive_buf);
@@ -170,8 +170,8 @@ impl Zone {
                     ParserState::Data => {
                         if part[0] == b'"' {
                             if part[word_len - 1] == b'"' {
-                                if let Some(record) = record.as_deref_mut() {
-                                    set_rdata(record, data_count, &String::from_utf8(part[1..word_len - 1].to_vec()).unwrap());
+                                if let Some((_, ref mut record)) = record {
+                                    set_rdata(record.deref_mut(), data_count, &String::from_utf8(part[1..word_len - 1].to_vec()).unwrap());
                                 }
 
                                 data_count += 1;
@@ -182,8 +182,8 @@ impl Zone {
                             }
 
                         } else {
-                            if let Some(record) = record.as_deref_mut() {
-                                set_rdata(record, data_count, &String::from_utf8(part[0..word_len].to_vec()).unwrap());
+                            if let Some((_, ref mut record)) = record {
+                                set_rdata(record.deref_mut(), data_count, &String::from_utf8(part[0..word_len].to_vec()).unwrap());
                             }
 
                             data_count += 1;
@@ -193,8 +193,8 @@ impl Zone {
                         if part[word_len - 1] == b'"' {
                             quoted_buf.push_str(&format!("{}", String::from_utf8(part[0..word_len - 1].to_vec()).unwrap()));
 
-                            if let Some(record) = record.as_deref_mut() {
-                                set_rdata(record, data_count, &quoted_buf);
+                            if let Some((_, ref mut record)) = record {
+                                set_rdata(record.deref_mut(), data_count, &quoted_buf);
                             }
 
                             data_count += 1;
@@ -210,24 +210,58 @@ impl Zone {
             }
 
             if record.is_some() && paren_count == 0 {
-                println!("{:?}", record.unwrap());
-
-                state = ParserState::Init;
-                if default_ttl != 0 {
-                    ttl = default_ttl;
-                }
-
-                record = None;
+                return record;
             }
         }
 
-        Ok(Self {
-            name,
-            records
-        })
+        record
+    }
+
+    pub fn absolute_name(&self, name: &str) -> String {
+        assert!(name != "");
+
+        if name == "@" {
+            return self.origin.clone();
+        }
+
+        if name.ends_with('.') {
+            name.to_string()
+
+        } else {
+            format!("{}.{}", name, self.origin)
+        }
+    }
+
+    pub fn iter(&mut self) -> ZoneParserIter {
+        ZoneParserIter {
+            parser: self
+        }
     }
 }
 
+pub struct ZoneParserIter<'a> {
+    parser: &'a mut ZoneParser,
+}
+
+impl<'a> Iterator for ZoneParserIter<'a> {
+
+    type Item = (String, Box<dyn RecordBase>);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.parser.parse_record()
+    }
+}
+
+/*
+impl Iterator for ZoneParser {
+
+    type Item = (String, Box<dyn RecordBase>);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.parse_record()
+    }
+}
+*/
 fn set_rdata(record: &mut dyn RecordBase, pos: usize, value: &str) {
     //WE NEED TO FIX DOMAINS CONTAINING PERIOD...
     match record.get_type() {

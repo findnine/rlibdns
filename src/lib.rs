@@ -3,13 +3,11 @@ pub mod records;
 pub mod utils;
 pub mod zone;
 
-//switch getter and setters for class and ttl on all records and switch self ttl to be above class
-
 #[cfg(test)]
 mod tests {
     use std::fs::File;
     use crate::messages::message_base::MessageBase;
-    use crate::zone::zone::Zone;
+    use crate::zone::zone::ZoneParser;
 
     #[test]
     fn encode_and_decode() {
@@ -23,6 +21,10 @@ mod tests {
         assert_eq!(x, message.to_bytes());
 
 
-        let p = Zone::from_file("/home/brad/Downloads/find9.net.test.zone", "find9.net");
+        let mut parser = ZoneParser::new("/home/brad/Downloads/find9.net.test.zone", "find9.net").unwrap();
+        for (name, record) in parser.iter() {
+            //println!("{}: {:?}", parser.absolute_name(&name), record);
+            println!("{}: {:?}", name, record);
+        }
     }
 }
