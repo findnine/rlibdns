@@ -51,7 +51,6 @@ where
         self.map.get_mut(key)
     }
 
-    //THIS FUNCTION MAY BE BRICKING IT...
     pub fn entry(&mut self, key: K) -> Entry<K, V> {
         match self.map.entry(key.clone()) {
             Entry::Occupied(occupied) => {
@@ -89,21 +88,3 @@ where
             .filter_map(|key| self.map.remove(&key).map(|v| (key, v)))
     }
 }
-/*
-impl<K, V> IntoIterator for OrderedMap<K, V>
-where
-    K: Eq + Hash + Clone,
-    V: Clone,
-{
-    type Item = (K, V);  // This defines the type of each element in the iteration (key-value pair)
-    type IntoIter = IntoIter<K>;  // We'll use a vector iterator for the keys
-
-    fn into_iter(self) -> Self::IntoIter {
-        let keys = self.keys;
-        let map = self.map;
-
-        // Return the iterator that yields key-value pairs
-        keys.into_iter().filter_map(move |key| map.get(&key).map(|value| (key.clone(), value.clone())))
-    }
-}
-*/
