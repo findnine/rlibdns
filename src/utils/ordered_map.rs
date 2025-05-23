@@ -1,7 +1,6 @@
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::hash::Hash;
-use std::vec::IntoIter;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct OrderedMap<K: Eq + Hash, V> {

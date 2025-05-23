@@ -118,7 +118,7 @@ impl MessageBase {
         let mut queries = Vec::new();
         let mut off = 12;
 
-        for i in 0..qd_count {
+        for _ in 0..qd_count {
             let query = DnsQuery::from_bytes(buf, off);
             off += query.get_length();
             queries.push(query);

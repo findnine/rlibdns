@@ -1,4 +1,4 @@
-use std::{fmt, io};
+use std::fmt;
 use std::fmt::Formatter;
 
 #[derive(Copy, Default, Clone, Eq, PartialEq, Hash, Debug)]
