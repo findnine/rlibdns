@@ -12,7 +12,7 @@ pub struct ARecord {
     class: RRClasses,
     cache_flush: bool,
     ttl: u32,
-    address: Option<Ipv4Addr>
+    pub(crate) address: Option<Ipv4Addr>
 }
 
 impl Default for ARecord {

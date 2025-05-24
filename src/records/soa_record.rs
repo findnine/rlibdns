@@ -11,13 +11,13 @@ use crate::utils::domain_utils::{pack_domain, unpack_domain};
 pub struct SoaRecord {
     class: RRClasses,
     ttl: u32,
-    domain: Option<String>,
-    mailbox: Option<String>,
-    serial: u32,
-    refresh: u32,
-    retry: u32,
-    expire: u32,
-    minimum_ttl: u32
+    pub(crate) domain: Option<String>,
+    pub(crate) mailbox: Option<String>,
+    pub(crate) serial: u32,
+    pub(crate) refresh: u32,
+    pub(crate) retry: u32,
+    pub(crate) expire: u32,
+    pub(crate) minimum_ttl: u32
 }
 
 impl Default for SoaRecord {

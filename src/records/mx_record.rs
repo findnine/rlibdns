@@ -11,8 +11,8 @@ use crate::utils::domain_utils::{pack_domain, unpack_domain};
 pub struct MxRecord {
     class: RRClasses,
     ttl: u32,
-    priority: u16,
-    server: Option<String>
+    pub(crate) priority: u16,
+    pub(crate) server: Option<String>
 }
 
 impl Default for MxRecord {

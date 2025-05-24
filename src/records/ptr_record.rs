@@ -12,7 +12,7 @@ pub struct PtrRecord {
     class: RRClasses,
     cache_flush: bool,
     ttl: u32,
-    domain: Option<String>
+    pub(crate) domain: Option<String>
 }
 
 impl Default for PtrRecord {

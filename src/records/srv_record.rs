@@ -12,10 +12,10 @@ pub struct SrvRecord {
     class: RRClasses,
     cache_flush: bool,
     ttl: u32,
-    priority: u16,
-    weight: u16,
-    port: u16,
-    target: Option<String>
+    pub(crate) priority: u16,
+    pub(crate) weight: u16,
+    pub(crate) port: u16,
+    pub(crate) target: Option<String>
 }
 
 impl Default for SrvRecord {

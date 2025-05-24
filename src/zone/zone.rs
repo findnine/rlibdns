@@ -257,59 +257,59 @@ impl<'a> Iterator for ZoneParserIter<'a> {
 fn set_rdata(record: &mut dyn RecordBase, pos: usize, value: &str) {
     //WE NEED TO FIX DOMAINS CONTAINING PERIOD...
     match record.get_type() {
-        RRTypes::A => record.as_any_mut().downcast_mut::<ARecord>().unwrap().set_address(value.parse().unwrap()),
-        RRTypes::Aaaa => record.as_any_mut().downcast_mut::<AaaaRecord>().unwrap().set_address(value.parse().unwrap()),
-        RRTypes::Ns => record.as_any_mut().downcast_mut::<NsRecord>().unwrap().set_server(match value.strip_suffix('.') {
-            Some(base) => base,
+        RRTypes::A => record.as_any_mut().downcast_mut::<ARecord>().unwrap().address = Some(value.parse().unwrap()),
+        RRTypes::Aaaa => record.as_any_mut().downcast_mut::<AaaaRecord>().unwrap().address = Some(value.parse().unwrap()),
+        RRTypes::Ns => record.as_any_mut().downcast_mut::<NsRecord>().unwrap().server = Some(match value.strip_suffix('.') {
+            Some(base) => base.to_string(),
             None => panic!("Domain is not fully qualified (missing trailing dot)")
         }),
-        RRTypes::Cname => record.as_any_mut().downcast_mut::<CNameRecord>().unwrap().set_target(match value.strip_suffix('.') {
-            Some(base) => base,
+        RRTypes::Cname => record.as_any_mut().downcast_mut::<CNameRecord>().unwrap().target = Some(match value.strip_suffix('.') {
+            Some(base) => base.to_string(),
             None => panic!("Domain is not fully qualified (missing trailing dot)")
         }),
         RRTypes::Soa => {
             let record = record.as_any_mut().downcast_mut::<SoaRecord>().unwrap();
             match pos {
-                0 => record.set_domain(match value.strip_suffix('.') {
-                    Some(base) => base,
+                0 => record.domain = Some(match value.strip_suffix('.') {
+                    Some(base) => base.to_string(),
                     None => panic!("Domain is not fully qualified (missing trailing dot)")
                 }),
-                1 => record.set_mailbox(match value.strip_suffix('.') {
-                    Some(base) => base,
+                1 => record.mailbox = Some(match value.strip_suffix('.') {
+                    Some(base) => base.to_string(),
                     None => panic!("Domain is not fully qualified (missing trailing dot)")
                 }),
-                2 => record.set_serial(value.parse().unwrap()),
-                3 => record.set_refresh(value.parse().unwrap()),
-                4 => record.set_retry(value.parse().unwrap()),
-                5 => record.set_expire(value.parse().unwrap()),
-                6 => record.set_minimum_ttl(value.parse().unwrap()),
+                2 => record.serial = value.parse().unwrap(),
+                3 => record.refresh = value.parse().unwrap(),
+                4 => record.retry = value.parse().unwrap(),
+                5 => record.expire = value.parse().unwrap(),
+                6 => record.minimum_ttl = value.parse().unwrap(),
                 _ => unimplemented!()
             }
         }
-        RRTypes::Ptr => record.as_any_mut().downcast_mut::<PtrRecord>().unwrap().set_domain(match value.strip_suffix('.') {
-            Some(base) => base,
+        RRTypes::Ptr => record.as_any_mut().downcast_mut::<PtrRecord>().unwrap().domain = Some(match value.strip_suffix('.') {
+            Some(base) => base.to_string(),
             None => panic!("Domain is not fully qualified (missing trailing dot)")
         }),
         RRTypes::Mx => {
             let record = record.as_any_mut().downcast_mut::<MxRecord>().unwrap();
             match pos {
-                0 => record.set_priority(value.parse().unwrap()),
-                1 => record.set_server(match value.strip_suffix('.') {
-                    Some(base) => base,
+                0 => record.priority = value.parse().unwrap(),
+                1 => record.server = Some(match value.strip_suffix('.') {
+                    Some(base) => base.to_string(),
                     None => panic!("Domain is not fully qualified (missing trailing dot)")
                 }),
                 _ => unimplemented!()
             }
         }
-        RRTypes::Txt => record.as_any_mut().downcast_mut::<TxtRecord>().unwrap().add_data(value),
+        RRTypes::Txt => record.as_any_mut().downcast_mut::<TxtRecord>().unwrap().data.push(value.to_string()),
         RRTypes::Srv => {
             let record = record.as_any_mut().downcast_mut::<SrvRecord>().unwrap();
             match pos {
-                0 => record.set_priority(value.parse().unwrap()),
-                1 => record.set_weight(value.parse().unwrap()),
-                2 => record.set_port(value.parse().unwrap()),
-                3 => record.set_target(match value.strip_suffix('.') {
-                    Some(base) => base,
+                0 => record.priority = value.parse().unwrap(),
+                1 => record.weight = value.parse().unwrap(),
+                2 => record.port = value.parse().unwrap() ,
+                3 => record.target = Some(match value.strip_suffix('.') {
+                    Some(base) => base.to_string(),
                     None => panic!("Domain is not fully qualified (missing trailing dot)")
                 }),
                 _ => unimplemented!()
@@ -318,15 +318,15 @@ fn set_rdata(record: &mut dyn RecordBase, pos: usize, value: &str) {
         RRTypes::Rrsig => {
             let record = record.as_any_mut().downcast_mut::<RRSigRecord>().unwrap();
             match pos {
-                0 => record.set_type_covered(value.parse().unwrap()),
-                1 => record.set_algorithm(value.parse().unwrap()),
-                2 => record.set_labels(value.parse().unwrap()),
-                3 => record.set_original_ttl(value.parse().unwrap()),
-                4 => record.set_expiration(value.parse().unwrap()),
-                5 => record.set_inception(value.parse().unwrap()),
-                6 => record.set_key_tag(value.parse().unwrap()),
-                7 => record.set_signer_name(match value.strip_suffix('.') {
-                    Some(base) => base,
+                0 => record.type_covered = value.parse().unwrap(),
+                1 => record.algorithm = value.parse().unwrap(),
+                2 => record.labels = value.parse().unwrap(),
+                3 => record.original_ttl = value.parse().unwrap(),
+                4 => record.expiration = value.parse().unwrap(),
+                5 => record.inception = value.parse().unwrap(),
+                6 => record.key_tag = value.parse().unwrap(),
+                7 => record.signer_name = Some(match value.strip_suffix('.') {
+                    Some(base) => base.to_string(),
                     None => panic!("Domain is not fully qualified (missing trailing dot)")
                 }),
                 8 => record.set_signature(&base64_decode(value).unwrap()),

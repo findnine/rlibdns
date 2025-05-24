@@ -11,7 +11,7 @@ use crate::utils::domain_utils::{pack_domain, unpack_domain};
 pub struct CNameRecord {
     class: RRClasses,
     ttl: u32,
-    target: Option<String>
+    pub(crate) target: Option<String>
 }
 
 impl Default for CNameRecord {

@@ -11,7 +11,7 @@ pub struct TxtRecord {
     class: RRClasses,
     cache_flush: bool,
     ttl: u32,
-    data: Vec<String>
+    pub(crate) data: Vec<String>
 }
 
 impl Default for TxtRecord {

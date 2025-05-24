@@ -12,7 +12,7 @@ pub struct AaaaRecord {
     class: RRClasses,
     cache_flush: bool,
     ttl: u32,
-    address: Option<Ipv6Addr>
+    pub(crate) address: Option<Ipv6Addr>
 }
 
 impl Default for AaaaRecord {

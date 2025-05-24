@@ -11,15 +11,15 @@ use crate::utils::domain_utils::{pack_domain_uncompressed, unpack_domain};
 pub struct RRSigRecord {
     class: RRClasses,
     ttl: u32,
-    type_covered: u16,
-    algorithm: u8,
-    labels: u8,
-    original_ttl: u32,
-    expiration: u32,
-    inception: u32,
-    key_tag: u16,
-    signer_name: Option<String>,
-    signature: Vec<u8>
+    pub(crate) type_covered: u16,
+    pub(crate) algorithm: u8,
+    pub(crate) labels: u8,
+    pub(crate) original_ttl: u32,
+    pub(crate) expiration: u32,
+    pub(crate) inception: u32,
+    pub(crate) key_tag: u16,
+    pub(crate) signer_name: Option<String>,
+    pub(crate) signature: Vec<u8>
 }
 
 impl Default for RRSigRecord {

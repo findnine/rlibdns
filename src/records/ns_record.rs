@@ -11,7 +11,7 @@ use crate::utils::domain_utils::{pack_domain, unpack_domain};
 pub struct NsRecord {
     class: RRClasses,
     ttl: u32,
-    server: Option<String>
+    pub(crate) server: Option<String>
 }
 
 impl Default for NsRecord {
