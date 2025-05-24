@@ -130,13 +130,13 @@ impl ZoneParser {
                                 RRTypes::A => ARecord::new(ttl, class).upcast(),
                                 RRTypes::Aaaa => AaaaRecord::new(ttl, class).upcast(),
                                 RRTypes::Ns => NsRecord::new(ttl, class).upcast(),
-                                RRTypes::Cname => CNameRecord::new(ttl, class).upcast(),
+                                RRTypes::CName => CNameRecord::new(ttl, class).upcast(),
                                 RRTypes::Soa => SoaRecord::new(ttl, class).upcast(),
                                 RRTypes::Ptr => PtrRecord::new(ttl, class).upcast(),
                                 RRTypes::Mx => MxRecord::new(ttl, class).upcast(),
                                 RRTypes::Txt => TxtRecord::new(ttl, class).upcast(),
                                 RRTypes::Srv => SrvRecord::new(ttl, class).upcast(),
-                                RRTypes::Rrsig => RRSigRecord::new(ttl, class).upcast(),
+                                RRTypes::RRSig => RRSigRecord::new(ttl, class).upcast(),
                                 RRTypes::Nsec => NSecRecord::new(ttl, class).upcast(),
                                 RRTypes::DnsKey => DnsKeyRecord::new(ttl, class).upcast(),
                                 RRTypes::Https => HttpsRecord::new(ttl, class).upcast(),
@@ -263,7 +263,7 @@ fn set_rdata(record: &mut dyn RecordBase, pos: usize, value: &str) {
             Some(base) => base.to_string(),
             None => panic!("Domain is not fully qualified (missing trailing dot)")
         }),
-        RRTypes::Cname => record.as_any_mut().downcast_mut::<CNameRecord>().unwrap().target = Some(match value.strip_suffix('.') {
+        RRTypes::CName => record.as_any_mut().downcast_mut::<CNameRecord>().unwrap().target = Some(match value.strip_suffix('.') {
             Some(base) => base.to_string(),
             None => panic!("Domain is not fully qualified (missing trailing dot)")
         }),
@@ -315,7 +315,7 @@ fn set_rdata(record: &mut dyn RecordBase, pos: usize, value: &str) {
                 _ => unimplemented!()
             }
         }
-        RRTypes::Rrsig => {
+        RRTypes::RRSig => {
             let record = record.as_any_mut().downcast_mut::<RRSigRecord>().unwrap();
             match pos {
                 0 => record.type_covered = value.parse().unwrap(),

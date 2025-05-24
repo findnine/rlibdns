@@ -108,7 +108,7 @@ impl RecordBase for RRSigRecord {
     }
 
     fn get_type(&self) -> RRTypes {
-        RRTypes::Rrsig
+        RRTypes::RRSig
     }
 
     fn upcast(self) -> Box<dyn RecordBase> {

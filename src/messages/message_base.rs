@@ -181,7 +181,7 @@ impl MessageBase {
                 RRTypes::Ns => {
                     NsRecord::from_bytes(buf, pos+2).upcast()
                 }
-                RRTypes::Cname => {
+                RRTypes::CName => {
                     CNameRecord::from_bytes(buf, pos+2).upcast()
                 }
                 RRTypes::Soa => {
@@ -202,7 +202,7 @@ impl MessageBase {
                 RRTypes::Opt => {
                     OptRecord::from_bytes(buf, pos+2).upcast()
                 }
-                RRTypes::Rrsig => {
+                RRTypes::RRSig => {
                     RRSigRecord::from_bytes(buf, pos+2).upcast()
                 }
                 RRTypes::Nsec => {

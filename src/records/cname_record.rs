@@ -57,7 +57,7 @@ impl RecordBase for CNameRecord {
     }
 
     fn get_type(&self) -> RRTypes {
-        RRTypes::Cname
+        RRTypes::CName
     }
 
     fn as_any(&self) -> &dyn Any {
