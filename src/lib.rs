@@ -23,8 +23,10 @@ mod tests {
         let message = MessageBase::from_bytes(&x).unwrap();
 
         assert_eq!(x, message.to_bytes());
+    }
 
-
+    #[test]
+    fn parsing() {
         let mut records = RecordMap::new();
 
         let mut parser = ZoneParser::new("/home/brad/Downloads/find9.net.test.zone", "find9.net").unwrap();
