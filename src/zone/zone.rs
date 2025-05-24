@@ -63,7 +63,7 @@ impl ZoneParser {
 
         let mut record: Option<(String, Box<dyn RecordBase>)> = None;
         let mut data_count = 0;
-        
+
         loop {
             let Some(line) = self.reader.by_ref().lines().next() else { break };
 
@@ -136,7 +136,6 @@ impl ZoneParser {
                                 RRTypes::Mx => MxRecord::new(ttl, class).upcast(),
                                 RRTypes::Txt => TxtRecord::new(ttl, class).upcast(),
                                 RRTypes::Srv => SrvRecord::new(ttl, class).upcast(),
-                                //RRTypes::Opt => OptRecord::new(ttl, class).upcast(),
                                 RRTypes::Rrsig => RRSigRecord::new(ttl, class).upcast(),
                                 RRTypes::Nsec => NSecRecord::new(ttl, class).upcast(),
                                 RRTypes::DnsKey => DnsKeyRecord::new(ttl, class).upcast(),
@@ -255,16 +254,6 @@ impl<'a> Iterator for ZoneParserIter<'a> {
     }
 }
 
-/*
-impl Iterator for ZoneParser {
-
-    type Item = (String, Box<dyn RecordBase>);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.parse_record()
-    }
-}
-*/
 fn set_rdata(record: &mut dyn RecordBase, pos: usize, value: &str) {
     //WE NEED TO FIX DOMAINS CONTAINING PERIOD...
     match record.get_type() {
