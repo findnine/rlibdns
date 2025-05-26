@@ -71,6 +71,10 @@ impl RecordBase for CNameRecord {
     fn upcast(self) -> Box<dyn RecordBase> {
         Box::new(self)
     }
+
+    fn clone_box(&self) -> Box<dyn RecordBase> {
+        Box::new(self.clone())
+    }
 }
 
 impl CNameRecord {

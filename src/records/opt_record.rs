@@ -95,6 +95,10 @@ impl RecordBase for OptRecord {
     fn as_any_mut(&mut self) -> &mut dyn Any {
         self
     }
+
+    fn clone_box(&self) -> Box<dyn RecordBase> {
+        Box::new(self.clone())
+    }
 }
 
 impl OptRecord {

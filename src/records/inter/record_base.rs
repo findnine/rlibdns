@@ -16,4 +16,13 @@ pub trait RecordBase: Debug {
     fn as_any(&self) -> &dyn Any;
 
     fn as_any_mut(&mut self) -> &mut dyn Any;
+    
+    fn clone_box(&self) -> Box<dyn RecordBase>;
+}
+
+impl Clone for Box<dyn RecordBase> {
+    
+    fn clone(&self) -> Box<dyn RecordBase> {
+        self.clone_box()
+    }
 }
