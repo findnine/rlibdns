@@ -55,8 +55,8 @@ impl DnsQuery {
         self.name = name.to_string();
     }
 
-    pub fn get_name(&self) -> &String {
-        &self.name
+    pub fn get_name(&self) -> String {
+        self.name.clone()
     }
 
     pub fn set_type(&mut self, _type: RRTypes) {
