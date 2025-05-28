@@ -63,7 +63,9 @@ impl ZoneParser {
         let mut record: Option<(String, Box<dyn RecordBase>)> = None;
         let mut data_count = 0;
 
-        for line in self.reader.by_ref().lines() {
+        loop {
+            let Some(line) = self.reader.by_ref().lines().next() else { break };
+
             let mut pos = 0;
             let mut quoted_buf = String::new();
 
