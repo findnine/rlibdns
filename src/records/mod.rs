@@ -1,11 +1,9 @@
 pub mod inter;
 pub mod a_record;
 pub mod aaaa_record;
-pub mod axfr_record;
 pub mod cname_record;
 pub mod dnskey_record;
 pub mod https_record;
-pub mod ixfr_record;
 pub mod mx_record;
 pub mod ns_record;
 pub mod nsec_record;
