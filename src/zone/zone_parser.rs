@@ -54,7 +54,6 @@ impl ZoneParser {
         let mut state = ParserState::Init;
         let mut paren_count = 0;
 
-        //let mut name = String::new();
         let mut _type = RRTypes::default();
         let mut class = RRClasses::default();
         let mut ttl = self.default_ttl;
@@ -217,6 +216,10 @@ impl ZoneParser {
         }
 
         record
+    }
+    
+    pub fn get_origin(&self) -> String {
+        self.origin.clone()
     }
 
     pub fn absolute_name(&self, name: &str) -> String {
