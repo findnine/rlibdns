@@ -21,6 +21,8 @@ pub enum RRTypes {
     Spf,
     Tsig,
     Any,
+    Ixfr,
+    Axfr,
     Caa
 }
 
@@ -44,6 +46,8 @@ impl RRTypes {
             Self::Https,
             Self::Spf,
             Self::Tsig,
+            Self::Ixfr,
+            Self::Axfr,
             Self::Any,
             Self::Caa
         ] {
@@ -73,6 +77,8 @@ impl RRTypes {
             Self::Https => 65,
             Self::Spf => 99,
             Self::Tsig => 250,
+            Self::Ixfr => 251,
+            Self::Axfr => 252,
             Self::Any => 255,
             Self::Caa => 257
         }
@@ -96,6 +102,8 @@ impl RRTypes {
             Self::Https,
             Self::Spf,
             Self::Tsig,
+            Self::Ixfr,
+            Self::Axfr,
             Self::Any,
             Self::Caa
         ] {
@@ -128,6 +136,8 @@ impl fmt::Display for RRTypes {
             Self::Https => "HTTPS",
             Self::Spf => "SPF",
             Self::Tsig => "TSIG",
+            Self::Ixfr => "IXFR",
+            Self::Axfr => "AXFR",
             Self::Any => "ANY",
             Self::Caa => "CAA"
         })
