@@ -43,6 +43,6 @@ mod tests {
 
         println!("{:?}", records);
 
-        println!("{:?}", records["find9.net"][&RRTypes::A]);
+        println!("{:?}", records["@"][&RRTypes::A]);
     }
 }

@@ -63,9 +63,7 @@ impl ZoneParser {
         let mut record: Option<(String, Box<dyn RecordBase>)> = None;
         let mut data_count = 0;
 
-        loop {
-            let Some(line) = self.reader.by_ref().lines().next() else { break };
-
+        for line in self.reader.by_ref().lines() {
             let mut pos = 0;
             let mut quoted_buf = String::new();
 
@@ -125,7 +123,7 @@ impl ZoneParser {
                             state = ParserState::Data;
                             data_count = 0;
 
-                            record = Some((self.absolute_name(&self.name), match _type {
+                            record = Some((self.name.clone(), match _type {
                                 RRTypes::A => ARecord::new(ttl, class).upcast(),
                                 RRTypes::Aaaa => AaaaRecord::new(ttl, class).upcast(),
                                 RRTypes::Ns => NsRecord::new(ttl, class).upcast(),
@@ -217,7 +215,7 @@ impl ZoneParser {
 
         record
     }
-    
+
     pub fn get_origin(&self) -> String {
         self.origin.clone()
     }
