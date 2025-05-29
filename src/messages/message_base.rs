@@ -22,6 +22,7 @@ use crate::records::txt_record::TxtRecord;
 use crate::utils::dns_query::DnsQuery;
 use crate::utils::domain_utils::{pack_domain, unpack_domain};
 use crate::utils::ordered_map::OrderedMap;
+use crate::utils::record_utils::{records_from_bytes, records_to_bytes};
 /*
                                1  1  1  1  1  1
  0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
@@ -126,13 +127,13 @@ impl MessageBase {
             queries.push(query);
         }
 
-        let (answers, length) = Self::records_from_bytes(buf, off, an_count);
+        let (answers, length) = records_from_bytes(buf, off, an_count);
         off += length;
 
-        let (name_servers, length) = Self::records_from_bytes(buf, off, ns_count);
+        let (name_servers, length) = records_from_bytes(buf, off, ns_count);
         off += length;
 
-        let (additional_records, length) = Self::records_from_bytes(buf, off, ar_count);
+        let (additional_records, length) = records_from_bytes(buf, off, ar_count);
         off += length;
 
         Ok(Self {
@@ -156,96 +157,56 @@ impl MessageBase {
         })
     }
 
-    fn records_from_bytes(buf: &[u8], off: usize, count: u16) -> (OrderedMap<String, Vec<Box<dyn RecordBase>>>, usize) {
-        let mut records: OrderedMap<String, Vec<Box<dyn RecordBase>>> = OrderedMap::new();
-        let mut pos = off;
-
-        for _ in 0..count {
-            let domain = match buf[pos] {
-                0 => {
-                    pos += 1;
-                    String::new()
-                }
-                _ => {
-                    let (domain, length) = unpack_domain(buf, pos);
-                    pos += length;
-                    domain
-                }
-            };
-
-            let record = match RRTypes::from_code(u16::from_be_bytes([buf[pos], buf[pos+1]])).unwrap() {
-                RRTypes::A => {
-                    ARecord::from_bytes(buf, pos+2).upcast()
-                }
-                RRTypes::Aaaa => {
-                    AaaaRecord::from_bytes(buf, pos+2).upcast()
-                }
-                RRTypes::Ns => {
-                    NsRecord::from_bytes(buf, pos+2).upcast()
-                }
-                RRTypes::CName => {
-                    CNameRecord::from_bytes(buf, pos+2).upcast()
-                }
-                RRTypes::Soa => {
-                    SoaRecord::from_bytes(buf, pos+2).upcast()
-                }
-                RRTypes::Ptr => {
-                    PtrRecord::from_bytes(buf, pos+2).upcast()
-                }
-                RRTypes::Mx => {
-                    MxRecord::from_bytes(buf, pos+2).upcast()
-                }
-                RRTypes::Txt => {
-                    TxtRecord::from_bytes(buf, pos+2).upcast()
-                }
-                RRTypes::Srv => {
-                    SrvRecord::from_bytes(buf, pos+2).upcast()
-                }
-                RRTypes::Opt => {
-                    OptRecord::from_bytes(buf, pos+2).upcast()
-                }
-                RRTypes::RRSig => {
-                    RRSigRecord::from_bytes(buf, pos+2).upcast()
-                }
-                RRTypes::Nsec => {
-                    NSecRecord::from_bytes(buf, pos+2).upcast()
-                }
-                RRTypes::DnsKey => {
-                    DnsKeyRecord::from_bytes(buf, pos+2).upcast()
-                }
-                RRTypes::Https => {
-                    HttpsRecord::from_bytes(buf, pos+2).upcast()
-                }
-                RRTypes::Spf => {
-                    todo!()
-                }
-                RRTypes::Tsig => {
-                    todo!()
-                }
-                RRTypes::Caa => {
-                    todo!()
-                }
-                _ => {
-                    todo!()
-                }
-            };
-
-            records.entry(domain).or_insert_with(Vec::new).push(record);
-            pos += 10+u16::from_be_bytes([buf[pos+8], buf[pos+9]]) as usize;
-        }
-
-        (records, pos-off)
-    }
-
-    pub fn to_bytes(&self) -> Vec<u8> {
-        let mut buf = vec![0u8; DNS_HEADER_LEN];//self.length];
+    pub fn to_bytes(&self, max_payload_len: usize) -> Vec<u8> {
+        let mut buf = vec![0u8; DNS_HEADER_LEN];
 
         buf.splice(0..2, self.id.to_be_bytes());
+
+        buf.splice(4..6, (self.queries.len() as u16).to_be_bytes());
+
+        let mut label_map = HashMap::new();
+        let mut off = DNS_HEADER_LEN;
+        let mut truncated = false;
+
+        for query in &self.queries {
+            let q = query.to_bytes(&mut label_map, off);
+            if off+q.len() > max_payload_len {
+                truncated = true;
+                break;
+            }
+
+            buf.extend_from_slice(&q);
+            off += q.len();
+        }
+
+        if off < max_payload_len {
+            let (answers, i, t) = records_to_bytes(off, &self.answers, &mut label_map, max_payload_len);
+            buf.extend_from_slice(&answers);
+            truncated = t;
+
+            buf.splice(6..8, i.to_be_bytes());
+        }
+
+        if off < max_payload_len {
+            let (answers, i, t) = records_to_bytes(off, &self.name_servers, &mut label_map, max_payload_len);
+            buf.extend_from_slice(&answers);
+            truncated = t;
+
+            buf.splice(8..10, i.to_be_bytes());
+        }
+
+        if off < max_payload_len {
+            let (answers, i, t) = records_to_bytes(off, &self.additional_records, &mut label_map, max_payload_len);
+            buf.extend_from_slice(&answers);
+            truncated = t;
+
+            buf.splice(10..12, i.to_be_bytes());
+        }
 
         let flags = (if self.qr { 0x8000 } else { 0 }) |  // QR bit
             ((self.op_code as u16 & 0x0F) << 11) |  // Opcode
             (if self.authoritative { 0x0400 } else { 0 }) |  // AA bit
-            (if self.truncated { 0x0200 } else { 0 }) |  // TC bit
+            (if truncated { 0 } else { 0x0200 }) |  // TC bit
             (if self.recursion_desired { 0x0100 } else { 0 }) |  // RD bit
             (if self.recursion_available { 0x0080 } else { 0 }) |  // RA bit
             //(if self.z { 0x0040 } else { 0 }) |  // Z bit (always 0)
@@ -255,73 +216,7 @@ impl MessageBase {
 
         buf.splice(2..4, flags.to_be_bytes());
 
-        buf.splice(4..6, (self.queries.len() as u16).to_be_bytes());
-
-        let mut label_map = HashMap::new();
-        let mut off = DNS_HEADER_LEN;
-
-        for query in &self.queries {
-            let q = query.to_bytes(&mut label_map, off);
-            buf.extend_from_slice(&q);
-            off += q.len();
-        }
-
-        let (answers, i) = Self::records_to_bytes(off, &self.answers, &mut label_map);
-        buf.extend_from_slice(&answers);
-
-        buf.splice(6..8, i.to_be_bytes());
-
-
-
-        let (answers, i) = Self::records_to_bytes(off, &self.name_servers, &mut label_map);
-        buf.extend_from_slice(&answers);
-
-        buf.splice(8..10, i.to_be_bytes());
-
-
-
-        let (answers, i) = Self::records_to_bytes(off, &self.additional_records, &mut label_map);
-        buf.extend_from_slice(&answers);
-
-        buf.splice(10..12, i.to_be_bytes());
-
         buf
-    }
-
-    fn records_to_bytes(off: usize, records: &OrderedMap<String, Vec<Box<dyn RecordBase>>>, label_map: &mut HashMap<String, usize>) -> (Vec<u8>, u16) {
-        let mut buf = Vec::new();
-        let mut i = 0;
-        let mut off = off;
-
-        for (query, records) in records.iter() {
-            for record in records {
-                match record.to_bytes(label_map, off) {
-                    Ok(e) => {
-                        match query.len() {
-                            0 => {
-                                buf.push(0);
-                            }
-                            _ => {
-                                let eq = pack_domain(query, label_map, off);
-                                buf.extend_from_slice(&eq);
-                                off += eq.len();
-                            }
-                        }
-
-                        buf.extend_from_slice(&e);
-                        off += e.len();
-                    }
-                    Err(_) => {}
-                }
-                i += 1;
-            }
-        }
-
-        (buf, i)
-    }
-
-    pub fn len(&self) -> usize {
-        DNS_HEADER_LEN
     }
 
     pub fn set_id(&mut self, id: u16) {
