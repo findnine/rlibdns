@@ -40,6 +40,8 @@ use crate::utils::ordered_map::OrderedMap;
 +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 */
 
+pub const DNS_HEADER_LEN: usize = 12;
+
 pub struct MessageBase {
     id: u16,
     op_code: OpCodes,
@@ -116,7 +118,7 @@ impl MessageBase {
         let ar_count = u16::from_be_bytes([buf[10], buf[11]]);
 
         let mut queries = Vec::new();
-        let mut off = 12;
+        let mut off = DNS_HEADER_LEN;
 
         for _ in 0..qd_count {
             let query = DnsQuery::from_bytes(buf, off);
@@ -236,7 +238,7 @@ impl MessageBase {
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
-        let mut buf = vec![0u8; 12];//self.length];
+        let mut buf = vec![0u8; DNS_HEADER_LEN];//self.length];
 
         buf.splice(0..2, self.id.to_be_bytes());
 
@@ -256,7 +258,7 @@ impl MessageBase {
         buf.splice(4..6, (self.queries.len() as u16).to_be_bytes());
 
         let mut label_map = HashMap::new();
-        let mut off = 12;
+        let mut off = DNS_HEADER_LEN;
 
         for query in &self.queries {
             let q = query.to_bytes(&mut label_map, off);
@@ -316,6 +318,10 @@ impl MessageBase {
         }
 
         (buf, i)
+    }
+
+    pub fn len(&self) -> usize {
+        DNS_HEADER_LEN
     }
 
     pub fn set_id(&mut self, id: u16) {
@@ -398,8 +404,8 @@ impl MessageBase {
         self.response_code
     }
 
-    pub fn total_queries(&self) -> usize {
-        self.queries.len()
+    pub fn has_queries(&self) -> bool {
+        self.queries.len() > 0
     }
 
     pub fn add_query(&mut self, query: DnsQuery) {
