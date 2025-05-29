@@ -21,7 +21,7 @@ mod tests {
                       0xd0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 ];
 
         let message = MessageBase::from_bytes(&x).unwrap();
-        
+
         println!("{}", message);
 
         assert_eq!(x, message.to_bytes(512));
@@ -43,8 +43,7 @@ mod tests {
                 .push(record);
         }
 
-        println!("{:?}", records);
-
+        //println!("{:?}", records);
         println!("{:?}", records["@"][&RRTypes::A]);
     }
 }

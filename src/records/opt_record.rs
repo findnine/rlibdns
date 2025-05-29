@@ -2,9 +2,11 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
+use std::net::{Ipv4Addr, Ipv6Addr};
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::opt_codes::OptCodes;
 use crate::records::inter::record_base::RecordBase;
+use crate::utils::hex;
 use crate::utils::ordered_map::OrderedMap;
 
 #[derive(Clone, Debug)]
@@ -117,6 +119,45 @@ impl OptRecord {
 impl fmt::Display for OptRecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "type {:?}, payload_size {}", self.get_type(), self.payload_size)
+        write!(f, "\t\t\t\t\t\t{}\t\tUDPsize={}; ext-rcode {}; edns-version {}",
+               self.get_type(),
+               self.payload_size,
+               self.ext_rcode,
+               self.edns_version)?;
+
+        if self.flags & 0x8000 != 0 {
+            write!(f, "; flags: do")?;
+        }
+
+        if !self.options.is_empty() {
+            write!(f, "; options:")?;
+
+            for (code, option) in self.options.iter() {
+                match code {
+                    OptCodes::Ecs => {
+                        if option.len() >= 4 {
+                            let family = u16::from_be_bytes([option[0], option[1]]);
+                            let src_prefix = option[2];
+                            let scope_prefix = option[3];
+                            let addr = &option[4..];
+
+                            let ip_str = match family {
+                                1 => format!("{}", Ipv4Addr::new(addr[0], addr[1], addr[2], addr[3])),
+                                2 => format!("{}", Ipv6Addr::from(<[u8; 16]>::try_from(addr).unwrap_or_default())),
+                                _ => format!("unknown family {}", family),
+                            };
+
+                            write!(f, " {code} {ip_str}/{src_prefix}/{scope_prefix}")?;
+
+                        } else {
+                            write!(f, " {code} (invalid)")?;
+                        }
+                    }
+                    _ => write!(f, " {code} {}", hex::encode(option))?
+                }
+            }
+        }
+
+        Ok(())
     }
 }

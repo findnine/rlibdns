@@ -85,25 +85,25 @@ impl fmt::Display for OptCodes {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{}", match self {
-            Self::Llq => "Long-Lived Queries",
-            Self::Ul => "Update Leases",
-            Self::Nsid => "Name Server Identifier",
-            Self::Dau => "DNSSEC Algorithm Understood",
-            Self::Dhu => "DS Hash Understood",
-            Self::N3u => "NSEC3 Hash Understood",
-            Self::Ecs => "EDNS Client Subnet",
-            Self::Expire => "Expire",
-            Self::Cookie => "Cookie",
-            Self::TcpKeepalive => "TCP Keepalive",
-            Self::Padding => "Padding",
-            Self::Chain => "Chain",
-            Self::KeyTag => "Key Tag",
-            Self::EdnsError => "EDNS Version 1 Error",
-            Self::DnsSecTrustedKey => "DNSSEC Trusted Key",
-            Self::DnsSecValidated => "DNSSEC Validated",
-            Self::AdaptiveDnsDiscovery => "Adaptive DNS Discovery",
-            Self::DoH => "DNS over HTTPS",
-            Self::MultiUserClientSubnet => "Multi-User Client Subnet"
+            Self::Llq => "LLQ",
+            Self::Ul => "UL",
+            Self::Nsid => "NSID",
+            Self::Dau => "DAU",
+            Self::Dhu => "DHU",
+            Self::N3u => "N3U",
+            Self::Ecs => "ECS",
+            Self::Expire => "EXPIRE",
+            Self::Cookie => "COOKIE",
+            Self::TcpKeepalive => "TCP_KEEP_ALIVE",
+            Self::Padding => "PADDING",
+            Self::Chain => "CHAIN",
+            Self::KeyTag => "KEYTAG",
+            Self::EdnsError => "EDNSERROR",
+            Self::DnsSecTrustedKey => "DNSSEC_TRUSTED_KEY",
+            Self::DnsSecValidated => "DNSSEC_VALIDATED",
+            Self::AdaptiveDnsDiscovery => "ADAPTIVE_DNS_DISCOVERY",
+            Self::DoH => "DOH",
+            Self::MultiUserClientSubnet => "MULTI_USER_CLIENT_SUBNET"
         })
     }
 }

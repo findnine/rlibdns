@@ -18,7 +18,7 @@ use crate::records::rrsig_record::RRSigRecord;
 use crate::records::soa_record::SoaRecord;
 use crate::records::srv_record::SrvRecord;
 use crate::records::txt_record::TxtRecord;
-use crate::utils::base64::base64_decode;
+use crate::utils::base64;
 
 #[derive(Debug, PartialEq, Eq)]
 enum ParserState {
@@ -332,7 +332,7 @@ fn set_rdata(record: &mut dyn RecordBase, pos: usize, value: &str) {
                     Some(base) => base.to_string(),
                     None => panic!("Domain is not fully qualified (missing trailing dot)")
                 }),
-                8 => record.set_signature(&base64_decode(value).unwrap()),
+                8 => record.set_signature(&base64::decode(value).unwrap()),
                 _ => unimplemented!()
             }
         }

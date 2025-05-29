@@ -1,21 +1,21 @@
 use std::io;
 
-pub fn base64_decode(input: &str) -> io::Result<Vec<u8>> {
+pub fn decode(input: &str) -> io::Result<Vec<u8>> {
     let mut output = Vec::new();
-    let bytes = input.as_bytes();
+    let buf = input.as_bytes();
     let mut i = 0;
 
-    while i + 3 < bytes.len() {
-        let v1 = val(bytes[i]).ok_or(io::Error::new(io::ErrorKind::InvalidInput, "Invalid base64"))?;
-        let v2 = val(bytes[i + 1]).ok_or(io::Error::new(io::ErrorKind::InvalidInput, "Invalid base64"))?;
-        let v3 = val(bytes[i + 2]).ok_or(io::Error::new(io::ErrorKind::InvalidInput, "Invalid base64"))?;
-        let v4 = val(bytes[i + 3]).ok_or(io::Error::new(io::ErrorKind::InvalidInput, "Invalid base64"))?;
+    while i + 3 < buf.len() {
+        let v1 = val(buf[i]).ok_or(io::Error::new(io::ErrorKind::InvalidInput, "Invalid base64"))?;
+        let v2 = val(buf[i + 1]).ok_or(io::Error::new(io::ErrorKind::InvalidInput, "Invalid base64"))?;
+        let v3 = val(buf[i + 2]).ok_or(io::Error::new(io::ErrorKind::InvalidInput, "Invalid base64"))?;
+        let v4 = val(buf[i + 3]).ok_or(io::Error::new(io::ErrorKind::InvalidInput, "Invalid base64"))?;
 
         output.push((v1 << 2) | (v2 >> 4));
-        if bytes[i + 2] != b'=' {
+        if buf[i + 2] != b'=' {
             output.push((v2 << 4) | (v3 >> 2));
         }
-        if bytes[i + 3] != b'=' {
+        if buf[i + 3] != b'=' {
             output.push((v3 << 6) | v4);
         }
 

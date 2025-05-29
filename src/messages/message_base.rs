@@ -119,7 +119,7 @@ impl MessageBase {
         off += length;
 
         let (additional_records, length) = records_from_bytes(buf, off, ar_count);
-        off += length;
+        //off += length;
 
         Ok(Self {
             id,
