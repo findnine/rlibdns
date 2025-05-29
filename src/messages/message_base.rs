@@ -179,7 +179,7 @@ impl MessageBase {
             off += q.len();
         }
 
-        if off < max_payload_len {
+        if !truncated {
             let (answers, i, t) = records_to_bytes(off, &self.answers, &mut label_map, max_payload_len);
             buf.extend_from_slice(&answers);
             truncated = t;
@@ -187,7 +187,7 @@ impl MessageBase {
             buf.splice(6..8, i.to_be_bytes());
         }
 
-        if off < max_payload_len {
+        if !truncated {
             let (answers, i, t) = records_to_bytes(off, &self.name_servers, &mut label_map, max_payload_len);
             buf.extend_from_slice(&answers);
             truncated = t;
@@ -195,7 +195,7 @@ impl MessageBase {
             buf.splice(8..10, i.to_be_bytes());
         }
 
-        if off < max_payload_len {
+        if !truncated {
             let (answers, i, t) = records_to_bytes(off, &self.additional_records, &mut label_map, max_payload_len);
             buf.extend_from_slice(&answers);
             truncated = t;
@@ -206,7 +206,7 @@ impl MessageBase {
         let flags = (if self.qr { 0x8000 } else { 0 }) |  // QR bit
             ((self.op_code as u16 & 0x0F) << 11) |  // Opcode
             (if self.authoritative { 0x0400 } else { 0 }) |  // AA bit
-            (if truncated { 0 } else { 0x0200 }) |  // TC bit
+            (if truncated { 0x0200 } else { 0 }) |  // TC bit
             (if self.recursion_desired { 0x0100 } else { 0 }) |  // RD bit
             (if self.recursion_available { 0x0080 } else { 0 }) |  // RA bit
             //(if self.z { 0x0040 } else { 0 }) |  // Z bit (always 0)
