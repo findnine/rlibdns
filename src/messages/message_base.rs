@@ -406,6 +406,8 @@ impl fmt::Display for MessageBase {
         }
 
         if !self.additional_records.is_empty() {
+            //writeln!(f, "\r\n;; OPT PSEUDOSECTION:")?;
+            //; EDNS: version: 0, flags: do; udp: 1232
             writeln!(f, "\r\n;; ADDITIONAL SECTION:")?;
             for (q, r) in self.additional_records.iter() {
                 for r in r.iter() {
