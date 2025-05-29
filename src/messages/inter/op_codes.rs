@@ -34,9 +34,9 @@ impl fmt::Display for OpCodes {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{}", match self {
-            Self::Query => "Query",
-            Self::IQuery => "IQuery",
-            Self::Status => "Status"
+            Self::Query => "QUERY",
+            Self::IQuery => "IQUERY",
+            Self::Status => "STATUS"
         })
     }
 }
