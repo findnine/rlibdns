@@ -117,10 +117,10 @@ impl ZoneParser {
                     ParserState::Common => {
                         let word = String::from_utf8(part[0..word_len].to_vec()).unwrap().to_uppercase();
 
-                        if let Some(c) = RRClasses::from_abbreviation(&word) {
+                        if let Some(c) = RRClasses::from_str(&word) {
                             class = c;
 
-                        } else if let Some(t) = RRTypes::from_string(&word) {
+                        } else if let Some(t) = RRTypes::from_str(&word) {
                             _type = t;
                             state = ParserState::Data;
                             data_count = 0;

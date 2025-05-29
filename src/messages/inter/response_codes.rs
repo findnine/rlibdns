@@ -8,7 +8,7 @@ pub enum ResponseCodes {
     FormErr,
     ServFail,
     NxDomain,
-    NoTimp,
+    NotImp,
     Refused,
     YxDomain,
     XrrSet,
@@ -24,7 +24,7 @@ impl ResponseCodes {
             Self::FormErr,
             Self::ServFail,
             Self::NxDomain,
-            Self::NoTimp,
+            Self::NotImp,
             Self::Refused,
             Self::YxDomain,
             Self::XrrSet,
@@ -45,7 +45,7 @@ impl ResponseCodes {
             Self::FormErr => 1,
             Self::ServFail => 2,
             Self::NxDomain => 3,
-            Self::NoTimp => 4,
+            Self::NotImp => 4,
             Self::Refused => 5,
             Self::YxDomain => 6,
             Self::XrrSet => 6,
@@ -59,16 +59,16 @@ impl fmt::Display for ResponseCodes {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{}", match self {
-            Self::NoError => "No Error",
-            Self::FormErr => "Format Error",
-            Self::ServFail => "Server Failure",
-            Self::NxDomain => "Domain Not Found",
-            Self::NoTimp => "Not Implemented",
-            Self::Refused => "Refused",
-            Self::YxDomain => "Name Should Not Exist",
-            Self::XrrSet => "RRset Should Not Exist",
-            Self::NotAuth => "Not Authoritative",
-            Self::NotZone => "Name Not In Zone"
+            Self::NoError => "NOERROR",
+            Self::FormErr => "FORMERR",
+            Self::ServFail => "SERVFAIL",
+            Self::NxDomain => "NXDOMAIN",
+            Self::NotImp => "NOTIMP",
+            Self::Refused => "REFUSED",
+            Self::YxDomain => "YXDOMAIN",
+            Self::XrrSet => "XRRSET",
+            Self::NotAuth => "NOTAUTH",
+            Self::NotZone => "NOTZONE"
         })
     }
 }

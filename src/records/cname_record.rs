@@ -115,6 +115,6 @@ impl CNameRecord {
 impl fmt::Display for CNameRecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "type {:?}, class {:?}, target: {}", self.get_type(), self.class, self.target.as_ref().unwrap())
+        write!(f, "{}\t\t{}\t\t{}\t{}.", self.ttl, self.class, self.get_type(), self.target.as_ref().unwrap())
     }
 }

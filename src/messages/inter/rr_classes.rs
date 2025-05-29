@@ -31,23 +31,14 @@ impl RRClasses {
         }
     }
 
-    pub fn from_abbreviation(value: &str) -> Option<Self> {
+    pub fn from_str(value: &str) -> Option<Self> {
         for c in [Self::In, Self::Cs, Self::Ch, Self::Hs] {
-            if c.to_abbreviation() == value {
+            if c.to_string() == value {
                 return Some(c);
             }
         }
 
         None
-    }
-
-    pub fn to_abbreviation(&self) -> String {
-        match self {
-            Self::In => "IN",
-            Self::Cs => "CS",
-            Self::Ch => "CH",
-            Self::Hs => "HS"
-        }.to_string()
     }
 }
 
@@ -55,10 +46,10 @@ impl fmt::Display for RRClasses {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{}", match self {
-            Self::In => "Internet",
-            Self::Cs => "Unasigned",
-            Self::Ch => "Chaos",
-            Self::Hs => "Hesiod"
+            Self::In => "IN",
+            Self::Cs => "CS",
+            Self::Ch => "CH",
+            Self::Hs => "HS"
         })
     }
 }

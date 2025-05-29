@@ -1,26 +1,11 @@
 use std::collections::HashMap;
-use std::io;
+use std::{fmt, io};
+use std::fmt::Formatter;
 use std::net::SocketAddr;
 use crate::messages::inter::op_codes::OpCodes;
 use crate::messages::inter::response_codes::ResponseCodes;
-use crate::messages::inter::rr_types::RRTypes;
-use crate::records::a_record::ARecord;
-use crate::records::aaaa_record::AaaaRecord;
-use crate::records::cname_record::CNameRecord;
-use crate::records::dnskey_record::DnsKeyRecord;
-use crate::records::https_record::HttpsRecord;
 use crate::records::inter::record_base::RecordBase;
-use crate::records::mx_record::MxRecord;
-use crate::records::ns_record::NsRecord;
-use crate::records::nsec_record::NSecRecord;
-use crate::records::opt_record::OptRecord;
-use crate::records::ptr_record::PtrRecord;
-use crate::records::rrsig_record::RRSigRecord;
-use crate::records::soa_record::SoaRecord;
-use crate::records::srv_record::SrvRecord;
-use crate::records::txt_record::TxtRecord;
 use crate::utils::dns_query::DnsQuery;
-use crate::utils::domain_utils::{pack_domain, unpack_domain};
 use crate::utils::ordered_map::OrderedMap;
 use crate::utils::record_utils::{records_from_bytes, records_to_bytes};
 /*
@@ -300,7 +285,7 @@ impl MessageBase {
     }
 
     pub fn has_queries(&self) -> bool {
-        self.queries.len() > 0
+        !self.queries.is_empty()
     }
 
     pub fn add_query(&mut self, query: DnsQuery) {
@@ -312,7 +297,7 @@ impl MessageBase {
     }
 
     pub fn has_answers(&self) -> bool {
-        self.answers.len() > 0
+        !self.answers.is_empty()
     }
 
     pub fn add_answer(&mut self, query: &str, record: Box<dyn RecordBase>) {
@@ -333,7 +318,7 @@ impl MessageBase {
     }
 
     pub fn has_name_servers(&self) -> bool {
-        self.answers.len() > 0
+        !self.name_servers.is_empty()
     }
 
     pub fn add_name_server(&mut self, query: &str, record: Box<dyn RecordBase>) {
@@ -354,7 +339,7 @@ impl MessageBase {
     }
 
     pub fn has_additional_records(&self) -> bool {
-        self.answers.len() > 0
+        !self.additional_records.is_empty()
     }
 
     pub fn add_additional_record(&mut self, query: &str, record: Box<dyn RecordBase>) {
@@ -372,5 +357,63 @@ impl MessageBase {
 
     pub fn get_additional_records_mut(&mut self) -> &mut OrderedMap<String, Vec<Box<dyn RecordBase>>> {
         &mut self.additional_records
+    }
+}
+
+impl fmt::Display for MessageBase {
+
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        writeln!(f, ";; ->>HEADER<<- opcode: {}, status: {}, id: {}", self.op_code, self.response_code, self.id)?;
+
+        let mut flags = Vec::new();
+
+        if self.qr { flags.push("qr"); }
+        if self.authoritative { flags.push("aa"); }
+        if self.truncated { flags.push("tc"); }
+        if self.recursion_desired { flags.push("rd"); }
+        if self.recursion_available { flags.push("ra"); }
+        if self.authenticated_data { flags.push("ad"); }
+        if self.checking_disabled { flags.push("cd"); }
+
+        writeln!(f, ";; flags: {}; QUERY: {}, ANSWER: {}, AUTHORITY: {}, ADDITIONAL: {}\r\n",
+                flags.join(" "),
+                self.queries.len(),
+                self.answers.len(),
+                self.name_servers.len(),
+                self.additional_records.len())?;
+
+        writeln!(f, ";; QUESTION SECTION:")?;
+        for q in &self.queries {
+            writeln!(f, ";{}", q)?;
+        }
+
+        if !self.answers.is_empty() {
+            writeln!(f, "\r\n;; ANSWER SECTION:")?;
+            for (q, r) in self.answers.iter() {
+                for r in r.iter() {
+                    writeln!(f, "{}.\t\t\t{}", q, r)?;
+                }
+            }
+        }
+
+        if !self.name_servers.is_empty() {
+            writeln!(f, "\r\n;; AUTHORITATIVE SECTION:")?;
+            for (q, r) in self.name_servers.iter() {
+                for r in r.iter() {
+                    writeln!(f, "{}.\t\t\t{}", q, r)?;
+                }
+            }
+        }
+
+        if !self.additional_records.is_empty() {
+            writeln!(f, "\r\n;; ADDITIONAL SECTION:")?;
+            for (q, r) in self.additional_records.iter() {
+                for r in r.iter() {
+                    writeln!(f, "{}.\t\t\t{}", q, r)?;
+                }
+            }
+        }
+
+        Ok(())
     }
 }

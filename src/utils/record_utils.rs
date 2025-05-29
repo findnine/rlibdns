@@ -110,20 +110,20 @@ pub fn records_to_bytes(off: usize, records: &OrderedMap<String, Vec<Box<dyn Rec
         for record in records {
             match record.to_bytes(label_map, off) {
                 Ok(r) => {
-                    let d = if query.is_empty() {
+                    let q = if query.is_empty() {
                         vec![0]
                     } else {
                         pack_domain(query, label_map, off)
                     };
 
-                    let len = d.len()+r.len();
+                    let len = q.len()+r.len();
 
                     if off+len > max_payload_len {
                         truncated = true;
                         break 'outer;
                     }
 
-                    buf.extend_from_slice(&d);
+                    buf.extend_from_slice(&q);
                     buf.extend_from_slice(&r);
                     off += len;
                     i += 1;

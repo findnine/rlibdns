@@ -130,6 +130,6 @@ impl AaaaRecord {
 impl fmt::Display for AaaaRecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "type {:?}, class {:?}, addr: {}", self.get_type(), self.class, self.address.unwrap())
+        write!(f, "{}\t\t{}\t\t{}\t{}", self.ttl, self.class, self.get_type(), self.address.as_ref().unwrap())
     }
 }

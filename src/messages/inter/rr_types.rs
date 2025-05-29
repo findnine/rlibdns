@@ -84,7 +84,7 @@ impl RRTypes {
         }
     }
 
-    pub fn from_string(value: &str) -> Option<Self> {
+    pub fn from_str(value: &str) -> Option<Self> {
         for c in [
             Self::A,
             Self::Aaaa,

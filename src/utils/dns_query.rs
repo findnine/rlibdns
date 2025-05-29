@@ -1,4 +1,6 @@
 use std::collections::HashMap;
+use std::fmt;
+use std::fmt::Formatter;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::utils::domain_utils::{pack_domain, unpack_domain};
@@ -7,17 +9,17 @@ use crate::utils::domain_utils::{pack_domain, unpack_domain};
 pub struct DnsQuery {
     name: String,
     _type: RRTypes,
-    dns_class: RRClasses,
+    class: RRClasses,
     length: usize
 }
 
 impl DnsQuery {
 
-    pub fn new(name: &str, _type: RRTypes, dns_class: RRClasses) -> Self {
+    pub fn new(name: &str, _type: RRTypes, class: RRClasses) -> Self {
         Self {
             name: name.to_string(),
             _type,
-            dns_class,
+            class,
             length: name.len()+6
         }
     }
@@ -27,12 +29,12 @@ impl DnsQuery {
         let off = off+length;
 
         let _type = RRTypes::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
-        let dns_class = RRClasses::from_code(u16::from_be_bytes([buf[off+2], buf[off+3]])).unwrap();
+        let class = RRClasses::from_code(u16::from_be_bytes([buf[off+2], buf[off+3]])).unwrap();
 
         Self {
             name,
             _type,
-            dns_class,
+            class,
             length: length+4
         }
     }
@@ -46,7 +48,7 @@ impl DnsQuery {
         let length = address.len();
 
         buf.splice(length..length+2, self._type.get_code().to_be_bytes());
-        buf.splice(length+2..length+4, self.dns_class.get_code().to_be_bytes());
+        buf.splice(length+2..length+4, self.class.get_code().to_be_bytes());
 
         buf
     }
@@ -67,19 +69,22 @@ impl DnsQuery {
         self._type
     }
 
-    pub fn set_dns_class(&mut self, dns_class: RRClasses) {
-        self.dns_class = dns_class;
+    pub fn set_class(&mut self, class: RRClasses) {
+        self.class = class;
     }
 
-    pub fn get_dns_class(&self) -> RRClasses {
-        self.dns_class
+    pub fn get_class(&self) -> RRClasses {
+        self.class
     }
 
     pub fn get_length(&self) -> usize {
         self.length
     }
+}
 
-    pub fn to_string(&self) -> String {
-        format!("[QUERY] {}: type {:?}, class {:?}", self.name, self._type, self.dns_class)
+impl fmt::Display for DnsQuery {
+
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}.\t\t\t\t{}\t\t{}", self.name, self.class, self._type)
     }
 }

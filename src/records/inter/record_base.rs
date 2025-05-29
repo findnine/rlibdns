@@ -1,9 +1,9 @@
 use std::any::Any;
 use std::collections::HashMap;
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 use crate::messages::inter::rr_types::RRTypes;
 
-pub trait RecordBase: Debug + Send + Sync {
+pub trait RecordBase: Display + Debug + Send + Sync {
 
     fn from_bytes(buf: &[u8], off: usize) -> Self where Self: Sized;
 
