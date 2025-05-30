@@ -5,7 +5,7 @@ use std::net::SocketAddr;
 use crate::messages::inter::op_codes::OpCodes;
 use crate::messages::inter::response_codes::ResponseCodes;
 use crate::records::inter::record_base::RecordBase;
-use crate::utils::dns_query::DnsQuery;
+use crate::messages::dns_query::DnsQuery;
 use crate::utils::ordered_map::OrderedMap;
 use crate::utils::record_utils::{records_from_bytes, records_to_bytes};
 /*
@@ -292,8 +292,12 @@ impl MessageBase {
         self.queries.push(query);
     }
 
-    pub fn get_queries(&self) -> Vec<DnsQuery> {
-        self.queries.clone()
+    pub fn get_queries(&self) -> &Vec<DnsQuery> {
+        &self.queries
+    }
+
+    pub fn get_queries_mut(&mut self) -> &mut Vec<DnsQuery> {
+        &mut self.queries
     }
 
     pub fn has_answers(&self) -> bool {
