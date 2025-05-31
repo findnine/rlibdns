@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use crate::messages::inter::names::Names;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::a_record::ARecord;
 use crate::records::aaaa_record::AaaaRecord;
@@ -16,13 +15,24 @@ use crate::records::rrsig_record::RRSigRecord;
 use crate::records::soa_record::SoaRecord;
 use crate::records::srv_record::SrvRecord;
 use crate::records::txt_record::TxtRecord;
+use crate::utils::domain_utils::{pack_domain, unpack_domain};
 use crate::utils::ordered_map::OrderedMap;
 
-pub fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> OrderedMap<Names, Vec<Box<dyn RecordBase>>> {
-    let mut records: OrderedMap<Names, Vec<Box<dyn RecordBase>>> = OrderedMap::new();
+pub fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> OrderedMap<String, Vec<Box<dyn RecordBase>>> {
+    let mut records: OrderedMap<String, Vec<Box<dyn RecordBase>>> = OrderedMap::new();
 
     for _ in 0..count {
-        let name = Names::from_wire(buf, off);
+        let name = match buf[*off] {
+            0 => {
+                *off += 1;
+                String::new()
+            }
+            _ => {
+                let (domain, length) = unpack_domain(buf, *off);
+                *off += length;
+                domain
+            }
+        };
 
         let record = match RRTypes::from_code(u16::from_be_bytes([buf[*off], buf[*off+1]])).unwrap() {
             RRTypes::A => {
@@ -88,7 +98,7 @@ pub fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> OrderedMap
     records
 }
 
-pub fn records_to_bytes(off: usize, records: &OrderedMap<Names, Vec<Box<dyn RecordBase>>>, label_map: &mut HashMap<String, usize>, max_payload_len: usize) -> (Vec<u8>, u16, bool) {
+pub fn records_to_bytes(off: usize, records: &OrderedMap<String, Vec<Box<dyn RecordBase>>>, label_map: &mut HashMap<String, usize>, max_payload_len: usize) -> (Vec<u8>, u16, bool) {
     let mut truncated = false;
     
     let mut buf = Vec::new();
@@ -99,7 +109,11 @@ pub fn records_to_bytes(off: usize, records: &OrderedMap<Names, Vec<Box<dyn Reco
         for record in records {
             match record.to_bytes(label_map, off) {
                 Ok(r) => {
-                    let q = query.to_wire(label_map, off);
+                    let q = if query.is_empty() {
+                        vec![0]
+                    } else {
+                        pack_domain(query, label_map, off)
+                    };
 
                     let len = q.len()+r.len();
 

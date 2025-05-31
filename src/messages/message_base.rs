@@ -6,7 +6,6 @@ use crate::messages::inter::op_codes::OpCodes;
 use crate::messages::inter::response_codes::ResponseCodes;
 use crate::records::inter::record_base::RecordBase;
 use crate::messages::dns_query::DnsQuery;
-use crate::messages::inter::names::Names;
 use crate::utils::ordered_map::OrderedMap;
 use crate::utils::record_utils::{records_from_bytes, records_to_bytes};
 /*
@@ -44,9 +43,9 @@ pub struct MessageBase {
     origin: Option<SocketAddr>,
     destination: Option<SocketAddr>,
     queries: Vec<DnsQuery>,
-    answers: OrderedMap<Names, Vec<Box<dyn RecordBase>>>,
-    name_servers: OrderedMap<Names, Vec<Box<dyn RecordBase>>>,
-    additional_records: OrderedMap<Names, Vec<Box<dyn RecordBase>>>
+    answers: OrderedMap<String, Vec<Box<dyn RecordBase>>>,
+    name_servers: OrderedMap<String, Vec<Box<dyn RecordBase>>>,
+    additional_records: OrderedMap<String, Vec<Box<dyn RecordBase>>>
 }
 
 impl Default for MessageBase {
@@ -293,7 +292,7 @@ impl MessageBase {
     pub fn get_queries_mut(&mut self) -> &mut Vec<DnsQuery> {
         &mut self.queries
     }
-/*
+
     pub fn has_answers(&self) -> bool {
         !self.answers.is_empty()
     }
@@ -355,7 +354,7 @@ impl MessageBase {
 
     pub fn get_additional_records_mut(&mut self) -> &mut OrderedMap<String, Vec<Box<dyn RecordBase>>> {
         &mut self.additional_records
-    }*/
+    }
 }
 
 impl fmt::Display for MessageBase {
@@ -389,10 +388,7 @@ impl fmt::Display for MessageBase {
             writeln!(f, "\r\n;; ANSWER SECTION:")?;
             for (q, r) in self.answers.iter() {
                 for r in r.iter() {
-                    match q {
-                        Names::Root => writeln!(f, ".\t\t\t{}", r)?,
-                        Names::Domain(q) => writeln!(f, "{q}.\t\t\t{}", r)?,
-                    }
+                    writeln!(f, "{q}.\t\t\t{}", r)?;
                 }
             }
         }
@@ -401,10 +397,7 @@ impl fmt::Display for MessageBase {
             writeln!(f, "\r\n;; AUTHORITATIVE SECTION:")?;
             for (q, r) in self.name_servers.iter() {
                 for r in r.iter() {
-                    match q {
-                        Names::Root => writeln!(f, ".\t\t\t{}", r)?,
-                        Names::Domain(q) => writeln!(f, "{q}.\t\t\t{}", r)?,
-                    }
+                    writeln!(f, "{q}.\t\t\t{}", r)?;
                 }
             }
         }
@@ -415,10 +408,7 @@ impl fmt::Display for MessageBase {
             writeln!(f, "\r\n;; ADDITIONAL SECTION:")?;
             for (q, r) in self.additional_records.iter() {
                 for r in r.iter() {
-                    match q {
-                        Names::Root => writeln!(f, ".\t\t\t{}", r)?,
-                        Names::Domain(q) => writeln!(f, "{q}.\t\t\t{}", r)?,
-                    }
+                    writeln!(f, "{q}.\t\t\t{}", r)?;
                 }
             }
         }

@@ -2,7 +2,6 @@ use std::fs::File;
 use std::io;
 use std::io::{BufRead, BufReader, Read};
 use std::ops::DerefMut;
-use crate::messages::inter::names::Names;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::a_record::ARecord;
@@ -32,20 +31,20 @@ enum ParserState {
 
 pub struct ZoneParser {
     reader: BufReader<File>,
-    origin: Names,
+    origin: String,
     name: String,
     default_ttl: u32
 }
 
 impl ZoneParser {
 
-    pub fn new(file_path: &str, origin: Names) -> io::Result<Self> {
+    pub fn new(file_path: &str, origin: &str) -> io::Result<Self> {
         let file = File::open(file_path)?;
         let reader = BufReader::new(file);
 
         Ok(Self {
             reader,
-            origin,
+            origin: origin.to_string(),
             name: String::new(),
             default_ttl: 300
         })
@@ -158,7 +157,7 @@ impl ZoneParser {
                             self.default_ttl = value.parse().unwrap();//.expect(&format!("Parse error on line {} pos {}", self.line_no, pos));
 
                         } else if directive_buf == "$origin" {
-                            self.origin = Names::from_str(&value);
+                            self.origin = value;
 
                         } else {
                             panic!("Unknown directive {}", directive_buf);
@@ -216,10 +215,10 @@ impl ZoneParser {
         record
     }
 
-    pub fn get_origin(&self) -> Names {
+    pub fn get_origin(&self) -> String {
         self.origin.clone()
     }
-/*
+
     pub fn absolute_name(&self, name: &str) -> String {
         assert!(name != "");
 
@@ -234,7 +233,7 @@ impl ZoneParser {
             format!("{}.{}", name, self.origin)
         }
     }
-*/
+
     pub fn iter(&mut self) -> ZoneParserIter {
         ZoneParserIter {
             parser: self
