@@ -107,8 +107,8 @@ impl MessageBase {
         let mut off = DNS_HEADER_LEN;
 
         for _ in 0..qd_count {
-            let query = DnsQuery::from_bytes(buf, off);
-            off += query.get_length();
+            let (query, length) = DnsQuery::from_bytes(buf, off);
+            off += length;
             queries.push(query);
         }
 

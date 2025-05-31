@@ -9,8 +9,7 @@ use crate::utils::domain_utils::{pack_domain, unpack_domain};
 pub struct DnsQuery {
     name: String,
     _type: RRTypes,
-    class: RRClasses,
-    length: usize
+    class: RRClasses
 }
 
 impl DnsQuery {
@@ -19,28 +18,26 @@ impl DnsQuery {
         Self {
             name: name.to_string(),
             _type,
-            class,
-            length: name.len()+6
+            class
         }
     }
 
-    pub fn from_bytes(buf: &[u8], off: usize) -> Self {
+    pub fn from_bytes(buf: &[u8], off: usize) -> (Self, usize) {
         let (name, length) = unpack_domain(buf, off);
         let off = off+length;
 
         let _type = RRTypes::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
         let class = RRClasses::from_code(u16::from_be_bytes([buf[off+2], buf[off+3]])).unwrap();
 
-        Self {
+        (Self {
             name,
             _type,
-            class,
-            length: length+4
-        }
+            class
+        }, length+4)
     }
 
     pub fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Vec<u8> {
-        let mut buf = vec![0u8; self.length];
+        let mut buf = vec![0u8; self.name.len() + 6];
 
         let address = pack_domain(self.name.as_str(), label_map, off);
         buf[0..address.len()].copy_from_slice(&address);
@@ -75,10 +72,6 @@ impl DnsQuery {
 
     pub fn get_class(&self) -> RRClasses {
         self.class
-    }
-
-    pub fn get_length(&self) -> usize {
-        self.length
     }
 }
 
