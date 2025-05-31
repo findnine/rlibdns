@@ -157,7 +157,10 @@ impl ZoneParser {
                             self.default_ttl = value.parse().unwrap();//.expect(&format!("Parse error on line {} pos {}", self.line_no, pos));
 
                         } else if directive_buf == "$origin" {
-                            self.origin = value;
+                            self.origin = match value.strip_suffix('.') {
+                                Some(base) => base.to_string(),
+                                None => panic!("Domain is not fully qualified (missing trailing dot)")
+                            };
 
                         } else {
                             panic!("Unknown directive {}", directive_buf);
