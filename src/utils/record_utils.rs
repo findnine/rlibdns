@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use crate::messages::inter::names::Names;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::a_record::ARecord;
 use crate::records::aaaa_record::AaaaRecord;
@@ -15,68 +16,56 @@ use crate::records::rrsig_record::RRSigRecord;
 use crate::records::soa_record::SoaRecord;
 use crate::records::srv_record::SrvRecord;
 use crate::records::txt_record::TxtRecord;
-use crate::utils::domain_utils::{pack_domain, unpack_domain};
 use crate::utils::ordered_map::OrderedMap;
 
-pub fn records_from_bytes(buf: &[u8], off: usize, count: u16) -> (OrderedMap<String, Vec<Box<dyn RecordBase>>>, usize) {
-    let mut records: OrderedMap<String, Vec<Box<dyn RecordBase>>> = OrderedMap::new();
-    let mut pos = off;
+pub fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> OrderedMap<Names, Vec<Box<dyn RecordBase>>> {
+    let mut records: OrderedMap<Names, Vec<Box<dyn RecordBase>>> = OrderedMap::new();
 
     for _ in 0..count {
-        let domain = match buf[pos] {
-            0 => {
-                pos += 1;
-                String::new()
-            }
-            _ => {
-                let (domain, length) = unpack_domain(buf, pos);
-                pos += length;
-                domain
-            }
-        };
+        let name = Names::from_wire(buf, off);
 
-        let record = match RRTypes::from_code(u16::from_be_bytes([buf[pos], buf[pos+1]])).unwrap() {
+        let record = match RRTypes::from_code(u16::from_be_bytes([buf[*off], buf[*off+1]])).unwrap() {
             RRTypes::A => {
-                ARecord::from_bytes(buf, pos+2).upcast()
+                ARecord::from_bytes(buf, *off+2).upcast()
             }
             RRTypes::Aaaa => {
-                AaaaRecord::from_bytes(buf, pos+2).upcast()
+                AaaaRecord::from_bytes(buf, *off+2).upcast()
             }
             RRTypes::Ns => {
-                NsRecord::from_bytes(buf, pos+2).upcast()
+                NsRecord::from_bytes(buf, *off+2).upcast()
             }
             RRTypes::CName => {
-                CNameRecord::from_bytes(buf, pos+2).upcast()
+                CNameRecord::from_bytes(buf, *off+2).upcast()
             }
             RRTypes::Soa => {
-                SoaRecord::from_bytes(buf, pos+2).upcast()
+                SoaRecord::from_bytes(buf, *off+2).upcast()
             }
             RRTypes::Ptr => {
-                PtrRecord::from_bytes(buf, pos+2).upcast()
+                PtrRecord::from_bytes(buf, *off+2).upcast()
             }
             RRTypes::Mx => {
-                MxRecord::from_bytes(buf, pos+2).upcast()
+                MxRecord::from_bytes(buf, *off+2).upcast()
             }
             RRTypes::Txt => {
-                TxtRecord::from_bytes(buf, pos+2).upcast()
+                TxtRecord::from_bytes(buf, *off+2).upcast()
             }
             RRTypes::Srv => {
-                SrvRecord::from_bytes(buf, pos+2).upcast()
+                SrvRecord::from_bytes(buf, *off+2).upcast()
             }
             RRTypes::Opt => {
-                OptRecord::from_bytes(buf, pos+2).upcast()
+                OptRecord::from_bytes(buf, *off+2).upcast()
             }
             RRTypes::RRSig => {
-                RRSigRecord::from_bytes(buf, pos+2).upcast()
+                RRSigRecord::from_bytes(buf, *off+2).upcast()
             }
             RRTypes::Nsec => {
-                NSecRecord::from_bytes(buf, pos+2).upcast()
+                NSecRecord::from_bytes(buf, *off+2).upcast()
             }
             RRTypes::DnsKey => {
-                DnsKeyRecord::from_bytes(buf, pos+2).upcast()
+                DnsKeyRecord::from_bytes(buf, *off+2).upcast()
             }
             RRTypes::Https => {
-                HttpsRecord::from_bytes(buf, pos+2).upcast()
+                HttpsRecord::from_bytes(buf, *off+2).upcast()
             }
             RRTypes::Spf => {
                 todo!()
@@ -92,14 +81,14 @@ pub fn records_from_bytes(buf: &[u8], off: usize, count: u16) -> (OrderedMap<Str
             }
         };
 
-        records.entry(domain).or_insert_with(Vec::new).push(record);
-        pos += 10+u16::from_be_bytes([buf[pos+8], buf[pos+9]]) as usize;
+        records.entry(name).or_insert_with(Vec::new).push(record);
+        *off += 10+u16::from_be_bytes([buf[*off+8], buf[*off+9]]) as usize;
     }
 
-    (records, pos-off)
+    records
 }
 
-pub fn records_to_bytes(off: usize, records: &OrderedMap<String, Vec<Box<dyn RecordBase>>>, label_map: &mut HashMap<String, usize>, max_payload_len: usize) -> (Vec<u8>, u16, bool) {
+pub fn records_to_bytes(off: usize, records: &OrderedMap<Names, Vec<Box<dyn RecordBase>>>, label_map: &mut HashMap<String, usize>, max_payload_len: usize) -> (Vec<u8>, u16, bool) {
     let mut truncated = false;
     
     let mut buf = Vec::new();
@@ -110,11 +99,7 @@ pub fn records_to_bytes(off: usize, records: &OrderedMap<String, Vec<Box<dyn Rec
         for record in records {
             match record.to_bytes(label_map, off) {
                 Ok(r) => {
-                    let q = if query.is_empty() {
-                        vec![0]
-                    } else {
-                        pack_domain(query, label_map, off)
-                    };
+                    let q = query.to_wire(label_map, off);
 
                     let len = q.len()+r.len();
 

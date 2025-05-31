@@ -6,6 +6,7 @@ use crate::messages::inter::op_codes::OpCodes;
 use crate::messages::inter::response_codes::ResponseCodes;
 use crate::records::inter::record_base::RecordBase;
 use crate::messages::dns_query::DnsQuery;
+use crate::messages::inter::names::Names;
 use crate::utils::ordered_map::OrderedMap;
 use crate::utils::record_utils::{records_from_bytes, records_to_bytes};
 /*
@@ -43,9 +44,9 @@ pub struct MessageBase {
     origin: Option<SocketAddr>,
     destination: Option<SocketAddr>,
     queries: Vec<DnsQuery>,
-    answers: OrderedMap<String, Vec<Box<dyn RecordBase>>>,
-    name_servers: OrderedMap<String, Vec<Box<dyn RecordBase>>>,
-    additional_records: OrderedMap<String, Vec<Box<dyn RecordBase>>>
+    answers: OrderedMap<Names, Vec<Box<dyn RecordBase>>>,
+    name_servers: OrderedMap<Names, Vec<Box<dyn RecordBase>>>,
+    additional_records: OrderedMap<Names, Vec<Box<dyn RecordBase>>>
 }
 
 impl Default for MessageBase {
@@ -107,19 +108,12 @@ impl MessageBase {
         let mut off = DNS_HEADER_LEN;
 
         for _ in 0..qd_count {
-            let (query, length) = DnsQuery::from_bytes(buf, off);
-            off += length;
-            queries.push(query);
+            queries.push(DnsQuery::from_bytes(buf, &mut off));
         }
 
-        let (answers, length) = records_from_bytes(buf, off, an_count);
-        off += length;
-
-        let (name_servers, length) = records_from_bytes(buf, off, ns_count);
-        off += length;
-
-        let (additional_records, length) = records_from_bytes(buf, off, ar_count);
-        //off += length;
+        let answers = records_from_bytes(buf, &mut off, an_count);
+        let name_servers = records_from_bytes(buf, &mut off, ns_count);
+        let additional_records = records_from_bytes(buf, &mut off, ar_count);
 
         Ok(Self {
             id,
@@ -165,24 +159,24 @@ impl MessageBase {
         }
 
         if !truncated {
-            let (answers, i, t) = records_to_bytes(off, &self.answers, &mut label_map, max_payload_len);
-            buf.extend_from_slice(&answers);
+            let (records, i, t) = records_to_bytes(off, &self.answers, &mut label_map, max_payload_len);
+            buf.extend_from_slice(&records);
             truncated = t;
 
             buf.splice(6..8, i.to_be_bytes());
         }
 
         if !truncated {
-            let (answers, i, t) = records_to_bytes(off, &self.name_servers, &mut label_map, max_payload_len);
-            buf.extend_from_slice(&answers);
+            let (records, i, t) = records_to_bytes(off, &self.name_servers, &mut label_map, max_payload_len);
+            buf.extend_from_slice(&records);
             truncated = t;
 
             buf.splice(8..10, i.to_be_bytes());
         }
 
         if !truncated {
-            let (answers, i, t) = records_to_bytes(off, &self.additional_records, &mut label_map, max_payload_len);
-            buf.extend_from_slice(&answers);
+            let (records, i, t) = records_to_bytes(off, &self.additional_records, &mut label_map, max_payload_len);
+            buf.extend_from_slice(&records);
             truncated = t;
 
             buf.splice(10..12, i.to_be_bytes());
@@ -299,7 +293,7 @@ impl MessageBase {
     pub fn get_queries_mut(&mut self) -> &mut Vec<DnsQuery> {
         &mut self.queries
     }
-
+/*
     pub fn has_answers(&self) -> bool {
         !self.answers.is_empty()
     }
@@ -361,7 +355,7 @@ impl MessageBase {
 
     pub fn get_additional_records_mut(&mut self) -> &mut OrderedMap<String, Vec<Box<dyn RecordBase>>> {
         &mut self.additional_records
-    }
+    }*/
 }
 
 impl fmt::Display for MessageBase {
@@ -395,7 +389,10 @@ impl fmt::Display for MessageBase {
             writeln!(f, "\r\n;; ANSWER SECTION:")?;
             for (q, r) in self.answers.iter() {
                 for r in r.iter() {
-                    writeln!(f, "{}.\t\t\t{}", q, r)?;
+                    match q {
+                        Names::Root => writeln!(f, ".\t\t\t{}", r)?,
+                        Names::Domain(q) => writeln!(f, "{q}.\t\t\t{}", r)?,
+                    }
                 }
             }
         }
@@ -404,7 +401,10 @@ impl fmt::Display for MessageBase {
             writeln!(f, "\r\n;; AUTHORITATIVE SECTION:")?;
             for (q, r) in self.name_servers.iter() {
                 for r in r.iter() {
-                    writeln!(f, "{}.\t\t\t{}", q, r)?;
+                    match q {
+                        Names::Root => writeln!(f, ".\t\t\t{}", r)?,
+                        Names::Domain(q) => writeln!(f, "{q}.\t\t\t{}", r)?,
+                    }
                 }
             }
         }
@@ -415,7 +415,10 @@ impl fmt::Display for MessageBase {
             writeln!(f, "\r\n;; ADDITIONAL SECTION:")?;
             for (q, r) in self.additional_records.iter() {
                 for r in r.iter() {
-                    writeln!(f, "{}.\t\t\t{}", q, r)?;
+                    match q {
+                        Names::Root => writeln!(f, ".\t\t\t{}", r)?,
+                        Names::Domain(q) => writeln!(f, "{q}.\t\t\t{}", r)?,
+                    }
                 }
             }
         }
