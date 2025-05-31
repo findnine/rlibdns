@@ -37,15 +37,15 @@ impl DnsQuery {
     }
 
     pub fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Vec<u8> {
-        let mut buf = vec![0u8; self.name.len() + 6];
+        let mut buf = pack_domain(self.name.as_str(), label_map, off);
+        //let mut buf = vec![0u8; address.len() + 4];
+        
+        //buf[0..address.len()].copy_from_slice(&address);
 
-        let address = pack_domain(self.name.as_str(), label_map, off);
-        buf[0..address.len()].copy_from_slice(&address);
+        //let length = address.len();
 
-        let length = address.len();
-
-        buf.splice(length..length+2, self._type.get_code().to_be_bytes());
-        buf.splice(length+2..length+4, self.class.get_code().to_be_bytes());
+        buf.extend_from_slice(&self._type.get_code().to_be_bytes());
+        buf.extend_from_slice(&self.class.get_code().to_be_bytes());
 
         buf
     }
