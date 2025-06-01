@@ -114,6 +114,58 @@ impl OptRecord {
             options: OrderedMap::new()
         }
     }
+
+    pub fn set_payload_size(&mut self, payload_size: u16) {
+        self.payload_size = payload_size;
+    }
+
+    pub fn get_payload_size(&self) -> u16 {
+        self.payload_size
+    }
+
+    pub fn set_ext_rcode(&mut self, ext_rcode: u8) {
+        self.ext_rcode = ext_rcode;
+    }
+
+    pub fn get_ext_rcode(&self) -> u8 {
+        self.ext_rcode
+    }
+
+    pub fn set_edns_version(&mut self, edns_version: u8) {
+        self.edns_version = edns_version;
+    }
+
+    pub fn get_edns_version(&self) -> u8 {
+        self.edns_version
+    }
+
+    pub fn set_flags(&mut self, flags: u16) {
+        self.flags = flags;
+    }
+
+    pub fn get_flags(&self) -> u16 {
+        self.flags
+    }
+
+    pub fn has_option(&mut self, code: &OptCodes) -> bool {
+        self.options.contains_key(code)
+    }
+
+    pub fn insert_option(&mut self, code: OptCodes, option: Vec<u8>) {
+        self.options.insert(code, option);
+    }
+
+    pub fn get_option(&mut self, code: &OptCodes) -> Option<&Vec<u8>> {
+        self.options.get(code)
+    }
+
+    pub fn get_options(&self) -> &OrderedMap<OptCodes, Vec<u8>> {
+        &self.options
+    }
+
+    pub fn get_options_mut(&mut self) -> &mut OrderedMap<OptCodes, Vec<u8>> {
+        &mut self.options
+    }
 }
 
 impl fmt::Display for OptRecord {
