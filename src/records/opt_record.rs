@@ -159,6 +159,10 @@ impl OptRecord {
         self.options.get(code)
     }
 
+    pub fn get_option_mut(&mut self, code: &OptCodes) -> Option<&mut Vec<u8>> {
+        self.options.get_mut(code)
+    }
+
     pub fn get_options(&self) -> &OrderedMap<OptCodes, Vec<u8>> {
         &self.options
     }
