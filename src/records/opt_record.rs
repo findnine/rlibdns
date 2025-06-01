@@ -155,7 +155,7 @@ impl OptRecord {
         self.options.insert(code, option);
     }
 
-    pub fn get_option(&mut self, code: &OptCodes) -> Option<&Vec<u8>> {
+    pub fn get_option(&self, code: &OptCodes) -> Option<&Vec<u8>> {
         self.options.get(code)
     }
 
