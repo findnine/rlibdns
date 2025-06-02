@@ -25,7 +25,7 @@ impl DnsQuery {
     pub fn from_bytes(buf: &[u8], off: &mut usize) -> Self {
         let (name, len) = unpack_domain(buf, *off);
         *off += len;
-        
+
         let _type = RRTypes::from_code(u16::from_be_bytes([buf[*off], buf[*off+1]])).unwrap();
         let class = RRClasses::from_code(u16::from_be_bytes([buf[*off+2], buf[*off+3]])).unwrap();
         *off += 4;
@@ -74,6 +74,6 @@ impl DnsQuery {
 impl fmt::Display for DnsQuery {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{}.\t\t\t\t{}\t\t{}", self.name, self.class, self._type)
+        write!(f, "{:<31}{:<8}{}", format!("{}.", self.name), self.class.to_string(), self._type)
     }
 }

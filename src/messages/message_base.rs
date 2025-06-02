@@ -6,6 +6,7 @@ use crate::messages::inter::op_codes::OpCodes;
 use crate::messages::inter::response_codes::ResponseCodes;
 use crate::records::inter::record_base::RecordBase;
 use crate::messages::dns_query::DnsQuery;
+use crate::messages::inter::rr_types::RRTypes;
 use crate::utils::ordered_map::OrderedMap;
 use crate::utils::record_utils::{records_from_bytes, records_to_bytes};
 /*
@@ -372,14 +373,24 @@ impl fmt::Display for MessageBase {
         if self.authenticated_data { flags.push("ad"); }
         if self.checking_disabled { flags.push("cd"); }
 
-        writeln!(f, ";; flags: {}; QUERY: {}, ANSWER: {}, AUTHORITY: {}, ADDITIONAL: {}\r\n",
+        writeln!(f, ";; flags: {}; QUERY: {}, ANSWER: {}, AUTHORITY: {}, ADDITIONAL: {}",
                 flags.join(" "),
                 self.queries.len(),
                 self.answers.len(),
                 self.name_servers.len(),
                 self.additional_records.len())?;
 
-        writeln!(f, ";; QUESTION SECTION:")?;
+
+        if let Some(r) = self.additional_records.get(&String::new()) {
+            for r in r {
+                if r.get_type().eq(&RRTypes::Opt) {
+                    writeln!(f, "\r\n;; OPT PSEUDOSECTION:")?;
+                    writeln!(f, "{}", self.additional_records.get(&String::new()).unwrap().get(0).unwrap())?;
+                }
+            }
+        }
+
+        writeln!(f, "\r\n;; QUESTION SECTION:")?;
         for q in &self.queries {
             writeln!(f, ";{}", q)?;
         }
@@ -388,7 +399,7 @@ impl fmt::Display for MessageBase {
             writeln!(f, "\r\n;; ANSWER SECTION:")?;
             for (q, r) in self.answers.iter() {
                 for r in r.iter() {
-                    writeln!(f, "{q}.\t\t\t{}", r)?;
+                    writeln!(f, "{:<24}{}", format!("{}.", q), r)?;
                 }
             }
         }
@@ -397,18 +408,18 @@ impl fmt::Display for MessageBase {
             writeln!(f, "\r\n;; AUTHORITATIVE SECTION:")?;
             for (q, r) in self.name_servers.iter() {
                 for r in r.iter() {
-                    writeln!(f, "{q}.\t\t\t{}", r)?;
+                    writeln!(f, "{:<24}{}", format!("{}.", q), r)?;
                 }
             }
         }
 
         if !self.additional_records.is_empty() {
-            //writeln!(f, "\r\n;; OPT PSEUDOSECTION:")?;
-            //; EDNS: version: 0, flags: do; udp: 1232
             writeln!(f, "\r\n;; ADDITIONAL SECTION:")?;
             for (q, r) in self.additional_records.iter() {
                 for r in r.iter() {
-                    writeln!(f, "{q}.\t\t\t{}", r)?;
+                    if !q.eq("") && !r.get_type().eq(&RRTypes::Opt) {
+                        writeln!(f, "{:<24}{}", format!("{}.", q), r)?;
+                    }
                 }
             }
         }

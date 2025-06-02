@@ -13,7 +13,7 @@ use crate::utils::ordered_map::OrderedMap;
 pub struct OptRecord {
     payload_size: u16,
     ext_rcode: u8,
-    edns_version: u8,
+    version: u8,
     flags: u16,
     options: OrderedMap<OptCodes, Vec<u8>>
 }
@@ -24,7 +24,7 @@ impl Default for OptRecord {
         Self {
             payload_size: 512,
             ext_rcode: 0,
-            edns_version: 0,
+            version: 0,
             flags: 0x8000,
             options: OrderedMap::new()
         }
@@ -36,7 +36,7 @@ impl RecordBase for OptRecord {
     fn from_bytes(buf: &[u8], off: usize) -> Self {
         let payload_size = u16::from_be_bytes([buf[off], buf[off+1]]);
         let ext_rcode = buf[off+2];
-        let edns_version = buf[off+3];
+        let version = buf[off+3];
         let flags = u16::from_be_bytes([buf[off+4], buf[off+5]]);
 
         let data_length = off+8+u16::from_be_bytes([buf[off+6], buf[off+7]]) as usize;
@@ -54,7 +54,7 @@ impl RecordBase for OptRecord {
         Self {
             payload_size,
             ext_rcode,
-            edns_version,
+            version,
             flags,
             options
         }
@@ -67,7 +67,7 @@ impl RecordBase for OptRecord {
         buf.splice(2..4, self.payload_size.to_be_bytes());
 
         buf[4] = self.ext_rcode;
-        buf[5] = self.edns_version;
+        buf[5] = self.version;
 
         buf.splice(6..8, self.flags.to_be_bytes());
 
@@ -105,11 +105,11 @@ impl RecordBase for OptRecord {
 
 impl OptRecord {
 
-    pub fn new(payload_size: u16, ext_rcode: u8, edns_version: u8, flags: u16) -> Self {
+    pub fn new(payload_size: u16, ext_rcode: u8, version: u8, flags: u16) -> Self {
         Self {
             payload_size,
             ext_rcode,
-            edns_version,
+            version,
             flags,
             options: OrderedMap::new()
         }
@@ -131,12 +131,12 @@ impl OptRecord {
         self.ext_rcode
     }
 
-    pub fn set_edns_version(&mut self, edns_version: u8) {
-        self.edns_version = edns_version;
+    pub fn set_version(&mut self, version: u8) {
+        self.version = version;
     }
 
-    pub fn get_edns_version(&self) -> u8 {
-        self.edns_version
+    pub fn get_version(&self) -> u8 {
+        self.version
     }
 
     pub fn set_flags(&mut self, flags: u16) {
@@ -175,42 +175,30 @@ impl OptRecord {
 impl fmt::Display for OptRecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "\t\t\t\t\t\t{}\t\tUDPsize={}; ext-rcode {}; edns-version {}",
-               self.get_type(),
-               self.payload_size,
-               self.ext_rcode,
-               self.edns_version)?;
+        write!(f, "; EDNS: version: {}, flags: {}; udp: {}", self.version, self.flags, self.payload_size)?;
 
-        if self.flags & 0x8000 != 0 {
-            write!(f, "; flags: do")?;
-        }
+        for (code, option) in self.options.iter() {
+            match code {
+                OptCodes::Ecs => {
+                    if option.len() >= 4 {
+                        let family = u16::from_be_bytes([option[0], option[1]]);
+                        let src_prefix = option[2];
+                        let scope_prefix = option[3];
+                        let addr = &option[4..];
 
-        if !self.options.is_empty() {
-            write!(f, "; options:")?;
+                        let ip_str = match family {
+                            1 => format!("{}", Ipv4Addr::new(addr[0], addr[1], addr[2], addr[3])),
+                            2 => format!("{}", Ipv6Addr::from(<[u8; 16]>::try_from(addr).unwrap_or_default())),
+                            _ => format!("unknown family {}", family),
+                        };
 
-            for (code, option) in self.options.iter() {
-                match code {
-                    OptCodes::Ecs => {
-                        if option.len() >= 4 {
-                            let family = u16::from_be_bytes([option[0], option[1]]);
-                            let src_prefix = option[2];
-                            let scope_prefix = option[3];
-                            let addr = &option[4..];
+                        write!(f, "\r\n; EDE: {code}: {ip_str}/{src_prefix}/{scope_prefix}")?;
 
-                            let ip_str = match family {
-                                1 => format!("{}", Ipv4Addr::new(addr[0], addr[1], addr[2], addr[3])),
-                                2 => format!("{}", Ipv6Addr::from(<[u8; 16]>::try_from(addr).unwrap_or_default())),
-                                _ => format!("unknown family {}", family),
-                            };
-
-                            write!(f, " {code} {ip_str}/{src_prefix}/{scope_prefix}")?;
-
-                        } else {
-                            write!(f, " {code} (invalid)")?;
-                        }
+                    } else {
+                        write!(f, "\r\n; EDE: {code}: (invalid)")?;
                     }
-                    _ => write!(f, " {code} {}", hex::encode(option))?
                 }
+                _ => write!(f, "\r\n; EDE: {code}: {}", hex::encode(option))?
             }
         }
 
