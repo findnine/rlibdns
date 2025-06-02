@@ -21,24 +21,22 @@ pub fn pack_domain(domain: &str, labels_map: &mut HashMap<String, usize>, off: u
 
     let parts: Vec<&str> = domain.split('.').collect();
 
-    if parts.len() < 2 {
-        buf.push(0x00);
-        return buf;
-    }
-
     for i in 0..parts.len() {
         let label = parts[i..].join(".");
 
         if let Some(&ptr_offset) = labels_map.get(&label) {
-            buf.extend_from_slice(&[(0xC0 | (ptr_offset >> 8)) as u8, (ptr_offset & 0xFF) as u8]);
+            buf.extend_from_slice(&[
+                (0xC0 | ((ptr_offset >> 8) & 0x3F)) as u8,
+                (ptr_offset & 0xFF) as u8
+            ]);
             return buf;
         }
 
-        let addr = parts.get(i).unwrap().as_bytes();
-        buf.push(addr.len() as u8);
-        buf.extend_from_slice(addr);
-        labels_map.insert(label.clone(), off);
-        off += addr.len()+1;
+        let label_bytes = parts[i].as_bytes();
+        buf.push(label_bytes.len() as u8);
+        buf.extend_from_slice(label_bytes);
+        labels_map.insert(label, off);
+        off += label_bytes.len() + 1;
     }
 
     buf.push(0x00);
