@@ -87,5 +87,5 @@ pub fn unpack_domain(buf: &[u8], off: usize) -> (String, usize) {
     }
 
     let final_pos = if jumped { original_pos } else { pos };
-    (builder, final_pos - off)
+    (builder.to_lowercase(), final_pos - off)
 }
