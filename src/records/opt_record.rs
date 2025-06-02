@@ -192,13 +192,13 @@ impl fmt::Display for OptRecord {
                             _ => format!("unknown family {}", family),
                         };
 
-                        write!(f, "\r\n; EDE: {code}: {ip_str}/{src_prefix}/{scope_prefix}")?;
+                        write!(f, "\r\n; {code}: {ip_str}/{src_prefix}/{scope_prefix}")?;
 
                     } else {
-                        write!(f, "\r\n; EDE: {code}: (invalid)")?;
+                        write!(f, "\r\n; {code}: (invalid)")?;
                     }
                 }
-                _ => write!(f, "\r\n; EDE: {code}: {}", hex::encode(option))?
+                _ => write!(f, "\r\n; {code}: {}", hex::encode(option))?
             }
         }
 
