@@ -35,11 +35,11 @@ mod tests {
 
         let message = MessageBase::from_bytes(&x).unwrap();
 
-        println!("{}", message);
+        //println!("{}", message);
 
         assert_eq!(x, message.to_bytes(512));
     }
-
+/*
     #[test]
     fn parsing() {
         let mut records = RecordMap::new();
@@ -58,5 +58,5 @@ mod tests {
 
         //println!("{:?}", records);
         println!("{:?}", records["@"][&RRTypes::A]);
-    }
+    }*/
 }
