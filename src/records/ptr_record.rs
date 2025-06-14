@@ -35,7 +35,7 @@ impl RecordBase for PtrRecord {
         let class = RRClasses::from_code(class & 0x7FFF).unwrap();
         let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
 
-        let z = u16::from_be_bytes([buf[off+6], buf[off+7]]);
+        //let z = u16::from_be_bytes([buf[off+6], buf[off+7]]);
 
         let (domain, _) = unpack_domain(buf, off+8);
 
