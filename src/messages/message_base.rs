@@ -45,7 +45,7 @@ pub struct MessageBase {
     destination: Option<SocketAddr>,
     queries: Vec<DnsQuery>,
     answers: OrderedMap<String, Vec<Box<dyn RecordBase>>>,
-    name_servers: OrderedMap<String, Vec<Box<dyn RecordBase>>>,
+    authority_records: OrderedMap<String, Vec<Box<dyn RecordBase>>>,
     additional_records: OrderedMap<String, Vec<Box<dyn RecordBase>>>
 }
 
@@ -68,7 +68,7 @@ impl Default for MessageBase {
             destination: None,
             queries: Vec::new(),
             answers: OrderedMap::new(),
-            name_servers: OrderedMap::new(),
+            authority_records: OrderedMap::new(),
             additional_records: OrderedMap::new()
         }
     }
@@ -112,7 +112,7 @@ impl MessageBase {
         }
 
         let answers = records_from_bytes(buf, &mut off, an_count);
-        let name_servers = records_from_bytes(buf, &mut off, ns_count);
+        let authority_records = records_from_bytes(buf, &mut off, ns_count);
         let additional_records = records_from_bytes(buf, &mut off, ar_count);
 
         Ok(Self {
@@ -131,7 +131,7 @@ impl MessageBase {
             destination: None,
             queries,
             answers,
-            name_servers,
+            authority_records,
             additional_records
         })
     }
@@ -167,7 +167,7 @@ impl MessageBase {
         }
 
         if !truncated {
-            let (records, i, t) = records_to_bytes(off, &self.name_servers, &mut label_map, max_payload_len);
+            let (records, i, t) = records_to_bytes(off, &self.authority_records, &mut label_map, max_payload_len);
             buf.extend_from_slice(&records);
             truncated = t;
 
@@ -315,25 +315,25 @@ impl MessageBase {
         &mut self.answers
     }
 
-    pub fn has_name_servers(&self) -> bool {
-        !self.name_servers.is_empty()
+    pub fn has_authority_records(&self) -> bool {
+        !self.authority_records.is_empty()
     }
 
     pub fn add_name_server(&mut self, query: &str, record: Box<dyn RecordBase>) {
-        if self.name_servers.contains_key(&query.to_string()) {
-            self.name_servers.get_mut(&query.to_string()).unwrap().push(record);
+        if self.authority_records.contains_key(&query.to_string()) {
+            self.authority_records.get_mut(&query.to_string()).unwrap().push(record);
             return;
         }
 
-        self.name_servers.insert(query.to_string(), vec![record]);
+        self.authority_records.insert(query.to_string(), vec![record]);
     }
 
-    pub fn get_name_servers(&self) -> &OrderedMap<String, Vec<Box<dyn RecordBase>>> {
-        &self.name_servers
+    pub fn get_authority_records(&self) -> &OrderedMap<String, Vec<Box<dyn RecordBase>>> {
+        &self.authority_records
     }
 
-    pub fn get_name_servers_mut(&mut self) -> &mut OrderedMap<String, Vec<Box<dyn RecordBase>>> {
-        &mut self.name_servers
+    pub fn get_authority_records_mut(&mut self) -> &mut OrderedMap<String, Vec<Box<dyn RecordBase>>> {
+        &mut self.authority_records
     }
 
     pub fn has_additional_records(&self) -> bool {
@@ -377,7 +377,7 @@ impl fmt::Display for MessageBase {
                 flags.join(" "),
                 self.queries.len(),
                 self.answers.len(),
-                self.name_servers.len(),
+                self.authority_records.len(),
                 self.additional_records.len())?;
 
 
@@ -404,9 +404,9 @@ impl fmt::Display for MessageBase {
             }
         }
 
-        if !self.name_servers.is_empty() {
+        if !self.authority_records.is_empty() {
             writeln!(f, "\r\n;; AUTHORITATIVE SECTION:")?;
-            for (q, r) in self.name_servers.iter() {
+            for (q, r) in self.authority_records.iter() {
                 for r in r.iter() {
                     writeln!(f, "{:<24}{}", format!("{}.", q), r)?;
                 }
