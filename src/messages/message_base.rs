@@ -317,7 +317,7 @@ impl MessageBase {
         !self.authority_records.is_empty()
     }
 
-    pub fn add_name_server(&mut self, query: &str, record: Box<dyn RecordBase>) {
+    pub fn add_authority_record(&mut self, query: &str, record: Box<dyn RecordBase>) {
         if self.authority_records.contains_key(&query.to_string()) {
             self.authority_records.get_mut(&query.to_string()).unwrap().push(record);
             return;
