@@ -71,8 +71,7 @@ impl RecordBase for HttpsRecord {
 
         buf.splice(10..12, self.priority.to_be_bytes());
 
-        let target = pack_domain(self.target.as_ref().unwrap().as_str(), label_map, off+12);
-        buf.extend_from_slice(&target);
+        buf.extend_from_slice(&pack_domain(self.target.as_ref().unwrap().as_str(), label_map, off+12, true));
 
         for (key, value) in self.params.iter() {
             buf.extend_from_slice(&key.to_be_bytes());

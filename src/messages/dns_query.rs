@@ -38,7 +38,7 @@ impl DnsQuery {
     }
 
     pub fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Vec<u8> {
-        let mut buf = pack_domain(&self.name, label_map, off);
+        let mut buf = pack_domain(&self.name, label_map, off, true);
 
         buf.extend_from_slice(&self._type.get_code().to_be_bytes());
         buf.extend_from_slice(&self.class.get_code().to_be_bytes());

@@ -5,7 +5,7 @@ use std::fmt::Formatter;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::RecordBase;
-use crate::utils::domain_utils::{pack_domain_uncompressed, unpack_domain};
+use crate::utils::domain_utils::{pack_domain, unpack_domain};
 
 #[derive(Clone, Debug)]
 pub struct RRSigRecord {
@@ -98,7 +98,7 @@ impl RecordBase for RRSigRecord {
         buf.splice(22..26, self.inception.to_be_bytes());
         buf.splice(26..28, self.key_tag.to_be_bytes());
 
-        buf.extend_from_slice(&pack_domain_uncompressed(self.signer_name.as_ref().unwrap()));
+        buf.extend_from_slice(&pack_domain(self.signer_name.as_ref().unwrap(), label_map, off+16, true));
 
         buf.extend_from_slice(&self.signature);
 

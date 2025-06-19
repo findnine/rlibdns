@@ -22,7 +22,7 @@ pub fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> OrderedMap
     let mut records: OrderedMap<String, Vec<Box<dyn RecordBase>>> = OrderedMap::new();
 
     for _ in 0..count {
-        let name = match buf[*off] {
+        let query = match buf[*off] {
             0 => {
                 *off += 1;
                 String::new()
@@ -91,7 +91,7 @@ pub fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> OrderedMap
             }
         };
 
-        records.entry(name).or_insert_with(Vec::new).push(record);
+        records.entry(query).or_insert_with(Vec::new).push(record);
         *off += 10+u16::from_be_bytes([buf[*off+8], buf[*off+9]]) as usize;
     }
 
@@ -112,7 +112,7 @@ pub fn records_to_bytes(off: usize, records: &OrderedMap<String, Vec<Box<dyn Rec
                     let q = if query.is_empty() {
                         vec![0]
                     } else {
-                        pack_domain(query, label_map, off)
+                        pack_domain(query, label_map, off, true)
                     };
 
                     let len = q.len()+r.len();

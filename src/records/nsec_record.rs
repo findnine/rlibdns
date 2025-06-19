@@ -89,7 +89,7 @@ impl RecordBase for NSecRecord {
         buf.splice(2..4, class.to_be_bytes());
         buf.splice(4..8, self.ttl.to_be_bytes());
 
-        buf.extend_from_slice(&pack_domain(self.domain.as_ref().unwrap().as_str(), label_map, off+12));
+        buf.extend_from_slice(&pack_domain(self.domain.as_ref().unwrap().as_str(), label_map, off+12, true));
 
         let mut windows: BTreeMap<u8, Vec<u8>> = BTreeMap::new();
 

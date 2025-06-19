@@ -41,7 +41,7 @@ impl RecordBase for SrvRecord {
         let class = RRClasses::from_code(class & 0x7FFF).unwrap();
         let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
 
-        let z = u16::from_be_bytes([buf[off+6], buf[off+7]]);
+        //let z = u16::from_be_bytes([buf[off+6], buf[off+7]]);
 
         let priority = u16::from_be_bytes([buf[off+8], buf[off+9]]);
         let weight = u16::from_be_bytes([buf[off+10], buf[off+11]]);
@@ -77,7 +77,7 @@ impl RecordBase for SrvRecord {
         buf.splice(12..14, self.weight.to_be_bytes());
         buf.splice(14..16, self.port.to_be_bytes());
 
-        buf.extend_from_slice(&pack_domain(self.target.as_ref().unwrap().as_str(), label_map, off+16));
+        buf.extend_from_slice(&pack_domain(self.target.as_ref().unwrap().as_str(), label_map, off+18, true));
 
         buf.splice(8..10, ((buf.len()-10) as u16).to_be_bytes());
 

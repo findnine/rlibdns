@@ -1,21 +1,6 @@
 use std::collections::HashMap;
 
-pub fn pack_domain_uncompressed(domain: &str) -> Vec<u8> {
-    let mut buf = Vec::new();
-
-    let parts: Vec<&str> = domain.split('.').collect();
-
-    for part in parts {
-        buf.push(part.len() as u8);
-        buf.extend(part.as_bytes());
-    }
-
-    buf.push(0x00);
-
-    buf
-}
-
-pub fn pack_domain(domain: &str, labels_map: &mut HashMap<String, usize>, off: usize) -> Vec<u8> {
+pub fn pack_domain(domain: &str, labels_map: &mut HashMap<String, usize>, off: usize, compress: bool) -> Vec<u8> {
     let mut buf = Vec::new();
     let mut off = off;
 
@@ -24,12 +9,14 @@ pub fn pack_domain(domain: &str, labels_map: &mut HashMap<String, usize>, off: u
     for i in 0..parts.len() {
         let label = parts[i..].join(".");
 
-        if let Some(&ptr_offset) = labels_map.get(&label) {
-            buf.extend_from_slice(&[
-                (0xC0 | ((ptr_offset >> 8) & 0x3F)) as u8,
-                (ptr_offset & 0xFF) as u8
-            ]);
-            return buf;
+        if compress {
+            if let Some(&ptr_offset) = labels_map.get(&label) {
+                buf.extend_from_slice(&[
+                    (0xC0 | ((ptr_offset >> 8) & 0x3F)) as u8,
+                    (ptr_offset & 0xFF) as u8
+                ]);
+                return buf;
+            }
         }
 
         let label_bytes = parts[i].as_bytes();

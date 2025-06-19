@@ -60,7 +60,7 @@ impl RecordBase for PtrRecord {
         buf.splice(2..4, class.to_be_bytes());
         buf.splice(4..8, self.ttl.to_be_bytes());
 
-        buf.extend_from_slice(&pack_domain(self.domain.as_ref().unwrap().as_str(), label_map, off+12));
+        buf.extend_from_slice(&pack_domain(self.domain.as_ref().unwrap().as_str(), label_map, off+12, true));
 
         buf.splice(8..10, ((buf.len()-10) as u16).to_be_bytes());
 
