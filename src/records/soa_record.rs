@@ -207,6 +207,15 @@ impl SoaRecord {
 impl fmt::Display for SoaRecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "type {:?}, class {:?}, domain {}", self.get_type(), self.class, self.domain.as_ref().unwrap())
+        write!(f, "{:<8}{:<8}{:<8}{} {} {} {} {} {} {}", self.ttl,
+               self.class.to_string(),
+               self.get_type().to_string(),
+               format!("{}.", self.domain.as_ref().unwrap()),
+               format!("{}.", self.mailbox.as_ref().unwrap()),
+               self.serial,
+               self.refresh,
+               self.retry,
+               self.expire,
+               self.minimum_ttl)
     }
 }

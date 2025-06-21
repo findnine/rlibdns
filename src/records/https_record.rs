@@ -135,6 +135,12 @@ impl HttpsRecord {
 impl fmt::Display for HttpsRecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "type {:?}, class {:?}", self.get_type(), self.class)
+        write!(f, "{:<8}{:<8}{:<8}{} {}", self.ttl,
+               self.class.to_string(),
+               self.get_type().to_string(),
+               self.priority,
+               format!("{}.", self.target.as_ref().unwrap()))
+               //self.address.as_ref().unwrap())
+        //write!(f, "type {:?}, class {:?}", self.get_type(), self.class)
     }
 }

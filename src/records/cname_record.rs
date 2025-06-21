@@ -115,6 +115,9 @@ impl CNameRecord {
 impl fmt::Display for CNameRecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:<8}{:<8}{:<8}{}", self.ttl, self.class.to_string(), self.get_type().to_string(), self.target.as_ref().unwrap())
+        write!(f, "{:<8}{:<8}{:<8}{}", self.ttl,
+               self.class.to_string(),
+               self.get_type().to_string(),
+               format!("{}.", self.target.as_ref().unwrap()))
     }
 }

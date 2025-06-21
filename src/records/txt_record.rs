@@ -138,9 +138,12 @@ impl TxtRecord {
 impl fmt::Display for TxtRecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:<8}{:<8}{:<8}{}", self.ttl, self.class.to_string(), self.get_type().to_string(), self.data.iter()
-            .map(|s| format!("\"{}\"", s))
-            .collect::<Vec<_>>()
-            .join(" "))
+        write!(f, "{:<8}{:<8}{:<8}{}", self.ttl,
+               self.class.to_string(),
+               self.get_type().to_string(),
+               self.data.iter()
+                    .map(|s| format!("\"{}\"", s))
+                    .collect::<Vec<_>>()
+                    .join(" "))
     }
 }

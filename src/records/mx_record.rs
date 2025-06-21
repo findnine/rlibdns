@@ -130,6 +130,10 @@ impl MxRecord {
 impl fmt::Display for MxRecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "type {:?}, class {:?}, priority {}, server {}", self.get_type(), self.class, self.priority, self.server.as_ref().unwrap())
+        write!(f, "{:<8}{:<8}{:<8}{} {}", self.ttl,
+               self.class.to_string(),
+               self.get_type().to_string(),
+               self.priority,
+               format!("{}.", self.server.as_ref().unwrap()))
     }
 }
