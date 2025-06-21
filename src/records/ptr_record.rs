@@ -126,6 +126,6 @@ impl PtrRecord {
 impl fmt::Display for PtrRecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "type {:?}, class {:?}, domain {}", self.get_type(), self.class, self.domain.as_ref().unwrap())
+        write!(f, "{:<8}{:<8}{:<8}{}", self.ttl, self.class.to_string(), self.get_type().to_string(), self.domain.as_ref().unwrap())
     }
 }
