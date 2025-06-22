@@ -355,14 +355,13 @@ fn set_rdata(record: &mut dyn RecordBase, pos: usize, value: &str) {
                                     .map(|k| HttpsParamKeys::from_str(k).unwrap() as u16)
                                     .flat_map(|code| code.to_be_bytes())
                                     .collect(),
-                                HttpsParamKeys::Alpn => {
-                                    let mut out = Vec::new();
-                                    for proto in value.trim_matches('"').split(',') {
-                                        out.push(proto.len() as u8);
-                                        out.extend_from_slice(proto.as_bytes());
-                                    }
-                                    out
-                                }
+                                HttpsParamKeys::Alpn => value
+                                    .trim_matches('"')
+                                    .split(',')
+                                    .flat_map(|proto| {
+                                        std::iter::once(proto.len() as u8).chain(proto.bytes())
+                                    })
+                                    .collect(),
                                 HttpsParamKeys::NoDefaultAlpn => Vec::new(),
                                 HttpsParamKeys::Port => value.parse::<u16>().unwrap().to_be_bytes().to_vec(),
                                 HttpsParamKeys::Ipv4Hint => value.split(',')
