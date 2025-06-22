@@ -25,6 +25,45 @@ pub fn decode(input: &str) -> io::Result<Vec<u8>> {
     Ok(output)
 }
 
+pub fn encode(input: &[u8]) -> String {
+    const TABLE: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+    let mut output = String::new();
+    let mut i = 0;
+
+    while i + 3 <= input.len() {
+        let b1 = input[i];
+        let b2 = input[i + 1];
+        let b3 = input[i + 2];
+
+        output.push(TABLE[(b1 >> 2) as usize] as char);
+        output.push(TABLE[((b1 & 0x03) << 4 | (b2 >> 4)) as usize] as char);
+        output.push(TABLE[((b2 & 0x0F) << 2 | (b3 >> 6)) as usize] as char);
+        output.push(TABLE[(b3 & 0x3F) as usize] as char);
+
+        i += 3;
+    }
+
+    let rem = input.len() - i;
+    if rem == 1 {
+        let b1 = input[i];
+        output.push(TABLE[(b1 >> 2) as usize] as char);
+        output.push(TABLE[((b1 & 0x03) << 4) as usize] as char);
+        output.push('=');
+        output.push('=');
+        
+    } else if rem == 2 {
+        let b1 = input[i];
+        let b2 = input[i + 1];
+        output.push(TABLE[(b1 >> 2) as usize] as char);
+        output.push(TABLE[((b1 & 0x03) << 4 | (b2 >> 4)) as usize] as char);
+        output.push(TABLE[((b2 & 0x0F) << 2) as usize] as char);
+        output.push('=');
+    }
+
+    output
+}
+
 fn val(c: u8) -> Option<u8> {
     match c {
         b'A'..=b'Z' => Some(c - b'A'),
