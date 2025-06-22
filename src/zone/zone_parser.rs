@@ -348,8 +348,34 @@ fn set_rdata(record: &mut dyn RecordBase, pos: usize, value: &str) {
                 }),
                 _ => {
                     match value.split_once('=') {
-                        Some((key, val)) => {
-                            record.params.insert(HttpsParamKeys::from_str(key).unwrap(), val.as_bytes().to_vec());
+                        Some((key, value)) => {
+                            let key = HttpsParamKeys::from_str(key).unwrap();
+                            let value = match key {
+                                HttpsParamKeys::Mandatory => value.split(',')
+                                    .map(|k| HttpsParamKeys::from_str(k).unwrap() as u16)
+                                    .flat_map(|code| code.to_be_bytes())
+                                    .collect(),
+                                HttpsParamKeys::Alpn => {
+                                    let mut out = Vec::new();
+                                    for proto in value.trim_matches('"').split(',') {
+                                        out.push(proto.len() as u8);
+                                        out.extend_from_slice(proto.as_bytes());
+                                    }
+                                    out
+                                }
+                                HttpsParamKeys::NoDefaultAlpn => Vec::new(),
+                                HttpsParamKeys::Port => value.parse::<u16>().unwrap().to_be_bytes().to_vec(),
+                                HttpsParamKeys::Ipv4Hint => value.split(',')
+                                    .map(|ip| ip.parse::<std::net::Ipv4Addr>().expect("Invalid IPv4").octets().to_vec())
+                                    .flatten()
+                                    .collect(),
+                                HttpsParamKeys::Ech => base64::decode(value).unwrap(),
+                                HttpsParamKeys::Ipv6Hint => value.split(',')
+                                    .map(|ip| ip.parse::<std::net::Ipv6Addr>().expect("Invalid IPv6").octets().to_vec())
+                                    .flatten()
+                                    .collect()
+                            };
+                            record.params.insert(key, value);
                         }
                         None => panic!("Invalid HTTPS parameter format: expected key=value")
                     }
