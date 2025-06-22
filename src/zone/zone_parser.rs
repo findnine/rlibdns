@@ -338,7 +338,19 @@ fn set_rdata(record: &mut dyn RecordBase, pos: usize, value: &str) {
         }
         RRTypes::Nsec => {}//example.com.  NSEC  next.example.com. A MX RRSIG NSEC
         RRTypes::DnsKey => {}//DNSKEY  <flags> <protocol> <algorithm> <public key>
-        RRTypes::Https => {}//HTTPS   <priority> <target> [key=value params...]
+        RRTypes::Https => {
+            let record = record.as_any_mut().downcast_mut::<HttpsRecord>().unwrap();
+            match pos {
+                0 => record.priority = value.parse().unwrap(),
+                2 => record.target = Some(match value.strip_suffix('.') {
+                    Some(base) => base.to_string(),
+                    None => panic!("Domain is not fully qualified (missing trailing dot)")
+                }),
+                //_ => record.params.insert(0, value.to_string())
+                _ => unimplemented!()
+            }
+            println!("{value}");
+        }//HTTPS   <priority> <target> [key=value params...]
         RRTypes::Spf => {}//@       SPF   "v=spf1 include:_spf.example.com ~all"
         RRTypes::Caa => {}//CAA     <flags> <tag> <value>
         _ => unimplemented!()

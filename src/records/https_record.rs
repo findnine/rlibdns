@@ -14,9 +14,9 @@ use crate::utils::ordered_map::OrderedMap;
 pub struct HttpsRecord {
     class: RRClasses,
     ttl: u32,
-    priority: u16,
-    target: Option<String>,
-    params: OrderedMap<HttpsParamKeys, Vec<u8>>
+    pub(crate) priority: u16,
+    pub(crate) target: Option<String>,
+    pub(crate) params: OrderedMap<HttpsParamKeys, Vec<u8>>
 }
 
 impl Default for HttpsRecord {
