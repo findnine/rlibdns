@@ -9,6 +9,7 @@ use crate::records::aaaa_record::AaaaRecord;
 use crate::records::cname_record::CNameRecord;
 use crate::records::dnskey_record::DnsKeyRecord;
 use crate::records::https_record::HttpsRecord;
+use crate::records::inter::https_param_keys::HttpsParamKeys;
 use crate::records::inter::record_base::RecordBase;
 use crate::records::mx_record::MxRecord;
 use crate::records::ns_record::NsRecord;
@@ -258,7 +259,6 @@ impl<'a> Iterator for ZoneParserIter<'a> {
 }
 
 fn set_rdata(record: &mut dyn RecordBase, pos: usize, value: &str) {
-    //WE NEED TO FIX DOMAINS CONTAINING PERIOD...
     match record.get_type() {
         RRTypes::A => record.as_any_mut().downcast_mut::<ARecord>().unwrap().address = Some(value.parse().unwrap()),
         RRTypes::Aaaa => record.as_any_mut().downcast_mut::<AaaaRecord>().unwrap().address = Some(value.parse().unwrap()),
@@ -342,15 +342,20 @@ fn set_rdata(record: &mut dyn RecordBase, pos: usize, value: &str) {
             let record = record.as_any_mut().downcast_mut::<HttpsRecord>().unwrap();
             match pos {
                 0 => record.priority = value.parse().unwrap(),
-                2 => record.target = Some(match value.strip_suffix('.') {
+                1 => record.target = Some(match value.strip_suffix('.') {
                     Some(base) => base.to_string(),
                     None => panic!("Domain is not fully qualified (missing trailing dot)")
                 }),
-                //_ => record.params.insert(0, value.to_string())
-                _ => unimplemented!()
+                _ => {
+                    match value.split_once('=') {
+                        Some((key, val)) => {
+                            record.params.insert(HttpsParamKeys::from_str(key).unwrap(), val.as_bytes().to_vec());
+                        }
+                        None => panic!("Invalid HTTPS parameter format: expected key=value")
+                    }
+                }
             }
-            println!("{value}");
-        }//HTTPS   <priority> <target> [key=value params...]
+        }
         RRTypes::Spf => {}//@       SPF   "v=spf1 include:_spf.example.com ~all"
         RRTypes::Caa => {}//CAA     <flags> <tag> <value>
         _ => unimplemented!()

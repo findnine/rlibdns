@@ -43,6 +43,24 @@ impl HttpsParamKeys {
             Self::Ipv6Hint => 6
         }
     }
+
+    pub fn from_str(value: &str) -> Option<Self> {
+        for c in [
+            Self::Mandatory,
+            Self::Alpn,
+            Self::NoDefaultAlpn,
+            Self::Port,
+            Self::Ipv4Hint,
+            Self::Ech,
+            Self::Ipv6Hint
+        ] {
+            if c.to_string() == value {
+                return Some(c);
+            }
+        }
+
+        None
+    }
 }
 
 impl fmt::Display for HttpsParamKeys {
