@@ -54,7 +54,7 @@ impl fmt::Display for HttpsParamKeys {
             Self::NoDefaultAlpn => "no-default-alpn",
             Self::Port => "port",
             Self::Ipv4Hint => "ipv4hint",
-            Self::Ech => "echconfig",
+            Self::Ech => "ech",
             Self::Ipv6Hint => "ipv6hint"
         })
     }
