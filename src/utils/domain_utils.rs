@@ -1,6 +1,10 @@
 use std::collections::HashMap;
 
 pub fn pack_domain(domain: &str, labels_map: &mut HashMap<String, usize>, off: usize, compress: bool) -> Vec<u8> {
+    if domain.is_empty() {
+        return vec![0x00];
+    }
+
     let mut buf = Vec::new();
     let mut off = off;
 
@@ -32,6 +36,8 @@ pub fn pack_domain(domain: &str, labels_map: &mut HashMap<String, usize>, off: u
 }
 
 pub fn unpack_domain(buf: &[u8], off: usize) -> (String, usize) {
+    
+    
     let mut builder = String::new();
     let mut pos = off;
     let mut jumped = false;
