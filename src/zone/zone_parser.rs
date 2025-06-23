@@ -11,6 +11,7 @@ use crate::records::dnskey_record::DnsKeyRecord;
 use crate::records::https_record::HttpsRecord;
 use crate::records::inter::svc_param_keys::SvcParamKeys;
 use crate::records::inter::record_base::RecordBase;
+use crate::records::loc_record::LocRecord;
 use crate::records::mx_record::MxRecord;
 use crate::records::ns_record::NsRecord;
 use crate::records::nsec_record::NSecRecord;
@@ -137,6 +138,7 @@ impl ZoneParser {
                                 RRTypes::Ptr => PtrRecord::new(ttl, class).upcast(),
                                 RRTypes::Mx => MxRecord::new(ttl, class).upcast(),
                                 RRTypes::Txt => TxtRecord::new(ttl, class).upcast(),
+                                RRTypes::Loc => LocRecord::new(ttl, class).upcast(),
                                 RRTypes::Srv => SrvRecord::new(ttl, class).upcast(),
                                 RRTypes::RRSig => RRSigRecord::new(ttl, class).upcast(),
                                 RRTypes::Nsec => NSecRecord::new(ttl, class).upcast(),
@@ -309,6 +311,9 @@ fn set_rdata(record: &mut dyn RecordBase, pos: usize, value: &str) {
             }
         }
         RRTypes::Txt => record.as_any_mut().downcast_mut::<TxtRecord>().unwrap().data.push(value.to_string()),
+        RRTypes::Loc => {
+
+        }
         RRTypes::Srv => {
             let record = record.as_any_mut().downcast_mut::<SrvRecord>().unwrap();
             match pos {
