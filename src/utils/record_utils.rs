@@ -15,6 +15,7 @@ use crate::records::rrsig_record::RRSigRecord;
 use crate::records::soa_record::SoaRecord;
 use crate::records::srv_record::SrvRecord;
 use crate::records::txt_record::TxtRecord;
+use crate::records::uri_record::UriRecord;
 use crate::utils::domain_utils::{pack_domain, unpack_domain};
 use crate::utils::ordered_map::OrderedMap;
 
@@ -40,54 +41,27 @@ pub fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> OrderedMap
         *off += length;
 
         let record = match RRTypes::from_code(u16::from_be_bytes([buf[*off], buf[*off+1]])).unwrap() {
-            RRTypes::A => {
-                ARecord::from_bytes(buf, *off+2).upcast()
-            }
-            RRTypes::Aaaa => {
-                AaaaRecord::from_bytes(buf, *off+2).upcast()
-            }
-            RRTypes::Ns => {
-                NsRecord::from_bytes(buf, *off+2).upcast()
-            }
-            RRTypes::CName => {
-                CNameRecord::from_bytes(buf, *off+2).upcast()
-            }
-            RRTypes::Soa => {
-                SoaRecord::from_bytes(buf, *off+2).upcast()
-            }
-            RRTypes::Ptr => {
-                PtrRecord::from_bytes(buf, *off+2).upcast()
-            }
-            RRTypes::Mx => {
-                MxRecord::from_bytes(buf, *off+2).upcast()
-            }
-            RRTypes::Txt => {
-                TxtRecord::from_bytes(buf, *off+2).upcast()
-            }
-            RRTypes::Srv => {
-                SrvRecord::from_bytes(buf, *off+2).upcast()
-            }
-            RRTypes::Opt => {
-                OptRecord::from_bytes(buf, *off+2).upcast()
-            }
-            RRTypes::RRSig => {
-                RRSigRecord::from_bytes(buf, *off+2).upcast()
-            }
-            RRTypes::Nsec => {
-                NSecRecord::from_bytes(buf, *off+2).upcast()
-            }
-            RRTypes::DnsKey => {
-                DnsKeyRecord::from_bytes(buf, *off+2).upcast()
-            }
-            RRTypes::Https => {
-                HttpsRecord::from_bytes(buf, *off+2).upcast()
-            }
+            RRTypes::A => ARecord::from_bytes(buf, *off+2).upcast(),
+            RRTypes::Aaaa =>AaaaRecord::from_bytes(buf, *off+2).upcast(),
+            RRTypes::Ns => NsRecord::from_bytes(buf, *off+2).upcast(),
+            RRTypes::CName => CNameRecord::from_bytes(buf, *off+2).upcast(),
+            RRTypes::Soa => SoaRecord::from_bytes(buf, *off+2).upcast(),
+            RRTypes::Ptr => PtrRecord::from_bytes(buf, *off+2).upcast(),
+            RRTypes::Mx => MxRecord::from_bytes(buf, *off+2).upcast(),
+            RRTypes::Txt => TxtRecord::from_bytes(buf, *off+2).upcast(),
+            RRTypes::Srv => SrvRecord::from_bytes(buf, *off+2).upcast(),
+            RRTypes::Opt => OptRecord::from_bytes(buf, *off+2).upcast(),
+            RRTypes::RRSig => RRSigRecord::from_bytes(buf, *off+2).upcast(),
+            RRTypes::Nsec => NSecRecord::from_bytes(buf, *off+2).upcast(),
+            RRTypes::DnsKey => DnsKeyRecord::from_bytes(buf, *off+2).upcast(),
+            RRTypes::Https => HttpsRecord::from_bytes(buf, *off+2).upcast(),
             RRTypes::Spf => {
                 todo!()
             }
             RRTypes::Tsig => {
                 todo!()
             }
+            RRTypes::Uri => UriRecord::from_bytes(buf, *off+2).upcast(),
             RRTypes::Caa => {
                 todo!()
             }
