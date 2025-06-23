@@ -67,13 +67,19 @@ impl RecordBase for LocRecord {
     }
 
     fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {
-        let mut buf = vec![0u8; 10];
+        let mut buf = vec![0u8; 26];
 
         buf.splice(0..2, self.get_type().get_code().to_be_bytes());
         buf.splice(2..4, self.class.get_code().to_be_bytes());
         buf.splice(4..8, self.ttl.to_be_bytes());
 
-
+        buf[11] = self.version;
+        buf[12] = self.size;
+        buf[13] = self.h_precision;
+        buf[14] = self.v_precision;
+        buf.splice(14..18, self.latitude.to_be_bytes());
+        buf.splice(18..22, self.longitude.to_be_bytes());
+        buf.splice(22..26, self.altitude.to_be_bytes());
 
         buf.splice(8..10, ((buf.len()-10) as u16).to_be_bytes());
 
