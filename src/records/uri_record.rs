@@ -10,9 +10,10 @@ use crate::records::inter::record_base::RecordBase;
 #[derive(Clone, Debug)]
 pub struct UriRecord {
     class: RRClasses,
-    cache_flush: bool,
     ttl: u32,
-    pub(crate) address: Option<Ipv4Addr>
+    pub(crate) priority: u16,
+    pub(crate) weight: u16,
+    pub(crate) target: Option<String>,
 }
 
 impl Default for UriRecord {
@@ -20,9 +21,10 @@ impl Default for UriRecord {
     fn default() -> Self {
         Self {
             class: RRClasses::default(),
-            cache_flush: false,
             ttl: 0,
-            address: None
+            priority: 0,
+            weight: 0,
+            target: None
         }
     }
 }
@@ -30,24 +32,22 @@ impl Default for UriRecord {
 impl RecordBase for UriRecord {
 
     fn from_bytes(buf: &[u8], off: usize) -> Self {
-        let class = u16::from_be_bytes([buf[off], buf[off+1]]);
-        let cache_flush = (class & 0x8000) != 0;
-        let class = RRClasses::from_code(class & 0x7FFF).unwrap();
+        let class = RRClasses::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
         let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
 
-        let length = u16::from_be_bytes([buf[off+6], buf[off+7]]) as usize;
-        let record = &buf[off + 8..off + 8 + length];
+        //let z = u16::from_be_bytes([buf[off+6], buf[off+7]]);
 
-        let address = match record.len() {
-            4 => Ipv4Addr::from(<[u8; 4]>::try_from(record).expect("Invalid IPv4 address")),
-            _ => panic!("Invalid Inet Address")
-        };
+        let priority = u16::from_be_bytes([buf[off+8], buf[off+9]]);
+        let weight = u16::from_be_bytes([buf[off+10], buf[off+11]]);
+
+        let target = Some("ASD".to_string());
 
         Self {
             class,
-            cache_flush,
             ttl,
-            address: Some(address)
+            priority,
+            weight,
+            target
         }
     }
 
@@ -56,15 +56,10 @@ impl RecordBase for UriRecord {
 
         buf.splice(0..2, self.get_type().get_code().to_be_bytes());
 
-        let mut class = self.class.get_code();
-        if self.cache_flush {
-            class = class | 0x8000;
-        }
-
-        buf.splice(2..4, class.to_be_bytes());
+        buf.splice(2..4, self.class.get_code().to_be_bytes());
         buf.splice(4..8, self.ttl.to_be_bytes());
 
-        buf.extend_from_slice(&self.address.unwrap().octets().to_vec());
+        //buf.extend_from_slice(&self.address.unwrap().octets().to_vec());
 
         buf.splice(8..10, ((buf.len()-10) as u16).to_be_bytes());
 
@@ -117,22 +112,16 @@ impl UriRecord {
     pub fn get_ttl(&self) -> u32 {
         self.ttl
     }
-
-    pub fn set_address(&mut self, address: Ipv4Addr) {
-        self.address = Some(address);
-    }
-
-    pub fn get_address(&self) -> Option<Ipv4Addr> {
-        self.address
-    }
 }
 
 impl fmt::Display for UriRecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:<8}{:<8}{:<8}{}", self.ttl,
+        write!(f, "{:<8}{:<8}{:<8}{} {} \"{}\"", self.ttl,
                self.class.to_string(),
                self.get_type().to_string(),
-               self.address.as_ref().unwrap())
+               self.priority,
+               self.weight,
+               self.target.as_ref().unwrap())
     }
 }

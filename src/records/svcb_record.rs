@@ -44,11 +44,11 @@ impl RecordBase for SvcbRecord {
 
         let (target, length) = unpack_domain(&buf, off+10);
 
-        let data_length = off+8+u16::from_be_bytes([buf[off+6], buf[off+7]]) as usize;
+        let length = off+8+u16::from_be_bytes([buf[off+6], buf[off+7]]) as usize;
         off += length+10;
 
         let mut params = OrderedMap::new();
-        while off < data_length {
+        while off < length {
             let key = SvcParamKeys::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
             let length = u16::from_be_bytes([buf[off+2], buf[off+3]]) as usize;
             params.insert(key, buf[off + 4..off + 4 + length].to_vec());
