@@ -312,7 +312,32 @@ fn set_data(record: &mut dyn RecordBase, pos: usize, value: &str) {
         }
         RRTypes::Txt => record.as_any_mut().downcast_mut::<TxtRecord>().unwrap().data.push(value.to_string()),
         RRTypes::Loc => {
+            /*
+            let record = record.as_any_mut().downcast_mut::<LocRecord>().unwrap();
+            match pos {
+                0 => {
+                    let deg: u32 = value.parse().unwrap();
+                    deg * 3_600_000
+                }
+                1 => {
+                    prev + val.parse::<u32>().unwrap() * 60_000
+                }
+                2 => {
+                    let sec = (val.parse::<f64>().unwrap() * 1000.0).round() as u32;
+                    prev + sec
+                }
+                3 => {
+                    let sign = match val {
+                        "S" | "W" => -1,
+                        "N" | "E" => 1,
+                        _ => panic!("Invalid direction"),
+                    };
 
+                    let val = (sign * (prev as i64)) + (1 << 31);
+                    val as u32
+                }
+            }
+            */
         }
         RRTypes::Srv => {
             let record = record.as_any_mut().downcast_mut::<SrvRecord>().unwrap();
