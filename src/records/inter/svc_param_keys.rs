@@ -2,7 +2,7 @@ use std::fmt;
 use std::fmt::Formatter;
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
-pub enum HttpsParamKeys {
+pub enum SvcParamKeys {
     Mandatory,
     Alpn,
     NoDefaultAlpn,
@@ -12,7 +12,7 @@ pub enum HttpsParamKeys {
     Ipv6Hint
 }
 
-impl HttpsParamKeys {
+impl SvcParamKeys {
 
     pub fn from_code(code: u16) ->  Option<Self> {
         for c in [
@@ -63,7 +63,7 @@ impl HttpsParamKeys {
     }
 }
 
-impl fmt::Display for HttpsParamKeys {
+impl fmt::Display for SvcParamKeys {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{}", match self {

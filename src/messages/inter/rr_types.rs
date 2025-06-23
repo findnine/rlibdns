@@ -1,6 +1,8 @@
 use std::fmt;
 use std::fmt::Formatter;
 
+//https://www.iana.org/assignments/dns-parameters/dns-parameters.xhtml
+
 #[derive(Copy, Default, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum RRTypes {
     #[default]
@@ -17,6 +19,7 @@ pub enum RRTypes {
     RRSig,
     Nsec,
     DnsKey,
+    Svcb,
     Https,
     Spf,
     Tsig,
@@ -43,6 +46,7 @@ impl RRTypes {
             Self::RRSig,
             Self::Nsec,
             Self::DnsKey,
+            Self::Svcb,
             Self::Https,
             Self::Spf,
             Self::Tsig,
@@ -74,6 +78,7 @@ impl RRTypes {
             Self::RRSig => 46,
             Self::Nsec => 47,
             Self::DnsKey => 48,
+            Self::Svcb => 64,
             Self::Https => 65,
             Self::Spf => 99,
             Self::Tsig => 250,
@@ -99,6 +104,7 @@ impl RRTypes {
             Self::RRSig,
             Self::Nsec,
             Self::DnsKey,
+            Self::Svcb,
             Self::Https,
             Self::Spf,
             Self::Tsig,
@@ -133,6 +139,7 @@ impl fmt::Display for RRTypes {
             Self::RRSig => "RRSIG",
             Self::Nsec => "NSEC",
             Self::DnsKey => "DNSKEY",
+            Self::Svcb => "SVCB",
             Self::Https => "HTTPS",
             Self::Spf => "SPF",
             Self::Tsig => "TSIG",

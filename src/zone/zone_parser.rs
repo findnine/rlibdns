@@ -9,7 +9,7 @@ use crate::records::aaaa_record::AaaaRecord;
 use crate::records::cname_record::CNameRecord;
 use crate::records::dnskey_record::DnsKeyRecord;
 use crate::records::https_record::HttpsRecord;
-use crate::records::inter::https_param_keys::HttpsParamKeys;
+use crate::records::inter::svc_param_keys::SvcParamKeys;
 use crate::records::inter::record_base::RecordBase;
 use crate::records::mx_record::MxRecord;
 use crate::records::ns_record::NsRecord;
@@ -18,6 +18,7 @@ use crate::records::ptr_record::PtrRecord;
 use crate::records::rrsig_record::RRSigRecord;
 use crate::records::soa_record::SoaRecord;
 use crate::records::srv_record::SrvRecord;
+use crate::records::svcb_record::SvcbRecord;
 use crate::records::txt_record::TxtRecord;
 use crate::utils::base64;
 
@@ -139,6 +140,7 @@ impl ZoneParser {
                                 RRTypes::RRSig => RRSigRecord::new(ttl, class).upcast(),
                                 RRTypes::Nsec => NSecRecord::new(ttl, class).upcast(),
                                 RRTypes::DnsKey => DnsKeyRecord::new(ttl, class).upcast(),
+                                RRTypes::Svcb => SvcbRecord::new(ttl, class).upcast(),
                                 RRTypes::Https => HttpsRecord::new(ttl, class).upcast(),
                                 //RRTypes::Spf => {}
                                 //RRTypes::Tsig => {}
@@ -338,6 +340,49 @@ fn set_rdata(record: &mut dyn RecordBase, pos: usize, value: &str) {
         }
         RRTypes::Nsec => {}//example.com.  NSEC  next.example.com. A MX RRSIG NSEC
         RRTypes::DnsKey => {}//DNSKEY  <flags> <protocol> <algorithm> <public key>
+        RRTypes::Svcb => {
+            let record = record.as_any_mut().downcast_mut::<SvcbRecord>().unwrap();
+            match pos {
+                0 => record.priority = value.parse().unwrap(),
+                1 => record.target = Some(match value.strip_suffix('.') {
+                    Some(base) => base.to_string(),
+                    None => panic!("Domain is not fully qualified (missing trailing dot)")
+                }),
+                _ => {
+                    match value.split_once('=') {
+                        Some((key, value)) => {
+                            let key = SvcParamKeys::from_str(key).unwrap();
+                            let value = match key {
+                                SvcParamKeys::Mandatory => value.split(',')
+                                    .map(|k| SvcParamKeys::from_str(k).unwrap() as u16)
+                                    .flat_map(|code| code.to_be_bytes())
+                                    .collect(),
+                                SvcParamKeys::Alpn => value
+                                    .trim_matches('"')
+                                    .split(',')
+                                    .flat_map(|proto| {
+                                        std::iter::once(proto.len() as u8).chain(proto.bytes())
+                                    })
+                                    .collect(),
+                                SvcParamKeys::NoDefaultAlpn => Vec::new(),
+                                SvcParamKeys::Port => value.parse::<u16>().unwrap().to_be_bytes().to_vec(),
+                                SvcParamKeys::Ipv4Hint => value.split(',')
+                                    .map(|ip| ip.parse::<std::net::Ipv4Addr>().expect("Invalid IPv4").octets().to_vec())
+                                    .flatten()
+                                    .collect(),
+                                SvcParamKeys::Ech => base64::decode(value).unwrap(),
+                                SvcParamKeys::Ipv6Hint => value.split(',')
+                                    .map(|ip| ip.parse::<std::net::Ipv6Addr>().expect("Invalid IPv6").octets().to_vec())
+                                    .flatten()
+                                    .collect()
+                            };
+                            record.params.insert(key, value);
+                        }
+                        None => panic!("Invalid SVCB parameter format: expected key=value")
+                    }
+                }
+            }
+        }
         RRTypes::Https => {
             let record = record.as_any_mut().downcast_mut::<HttpsRecord>().unwrap();
             match pos {
@@ -349,27 +394,27 @@ fn set_rdata(record: &mut dyn RecordBase, pos: usize, value: &str) {
                 _ => {
                     match value.split_once('=') {
                         Some((key, value)) => {
-                            let key = HttpsParamKeys::from_str(key).unwrap();
+                            let key = SvcParamKeys::from_str(key).unwrap();
                             let value = match key {
-                                HttpsParamKeys::Mandatory => value.split(',')
-                                    .map(|k| HttpsParamKeys::from_str(k).unwrap() as u16)
+                                SvcParamKeys::Mandatory => value.split(',')
+                                    .map(|k| SvcParamKeys::from_str(k).unwrap() as u16)
                                     .flat_map(|code| code.to_be_bytes())
                                     .collect(),
-                                HttpsParamKeys::Alpn => value
+                                SvcParamKeys::Alpn => value
                                     .trim_matches('"')
                                     .split(',')
                                     .flat_map(|proto| {
                                         std::iter::once(proto.len() as u8).chain(proto.bytes())
                                     })
                                     .collect(),
-                                HttpsParamKeys::NoDefaultAlpn => Vec::new(),
-                                HttpsParamKeys::Port => value.parse::<u16>().unwrap().to_be_bytes().to_vec(),
-                                HttpsParamKeys::Ipv4Hint => value.split(',')
+                                SvcParamKeys::NoDefaultAlpn => Vec::new(),
+                                SvcParamKeys::Port => value.parse::<u16>().unwrap().to_be_bytes().to_vec(),
+                                SvcParamKeys::Ipv4Hint => value.split(',')
                                     .map(|ip| ip.parse::<std::net::Ipv4Addr>().expect("Invalid IPv4").octets().to_vec())
                                     .flatten()
                                     .collect(),
-                                HttpsParamKeys::Ech => base64::decode(value).unwrap(),
-                                HttpsParamKeys::Ipv6Hint => value.split(',')
+                                SvcParamKeys::Ech => base64::decode(value).unwrap(),
+                                SvcParamKeys::Ipv6Hint => value.split(',')
                                     .map(|ip| ip.parse::<std::net::Ipv6Addr>().expect("Invalid IPv6").octets().to_vec())
                                     .flatten()
                                     .collect()

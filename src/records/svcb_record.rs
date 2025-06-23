@@ -11,7 +11,7 @@ use crate::utils::domain_utils::{pack_domain, unpack_domain};
 use crate::utils::ordered_map::OrderedMap;
 
 #[derive(Clone, Debug)]
-pub struct HttpsRecord {
+pub struct SvcbRecord {
     class: RRClasses,
     ttl: u32,
     pub(crate) priority: u16,
@@ -19,7 +19,7 @@ pub struct HttpsRecord {
     pub(crate) params: OrderedMap<SvcParamKeys, Vec<u8>>
 }
 
-impl Default for HttpsRecord {
+impl Default for SvcbRecord {
 
     fn default() -> Self {
         Self {
@@ -32,7 +32,7 @@ impl Default for HttpsRecord {
     }
 }
 
-impl RecordBase for HttpsRecord {
+impl RecordBase for SvcbRecord {
 
     fn from_bytes(buf: &[u8], off: usize) -> Self {
         let mut off = off;
@@ -87,7 +87,7 @@ impl RecordBase for HttpsRecord {
     }
 
     fn get_type(&self) -> RRTypes {
-        RRTypes::Https
+        RRTypes::Svcb
     }
 
     fn upcast(self) -> Box<dyn RecordBase> {
@@ -107,7 +107,7 @@ impl RecordBase for HttpsRecord {
     }
 }
 
-impl HttpsRecord {
+impl SvcbRecord {
 
     pub fn new(ttl: u32, class: RRClasses) -> Self {
         Self {
@@ -134,7 +134,7 @@ impl HttpsRecord {
     }
 }
 
-impl fmt::Display for HttpsRecord {
+impl fmt::Display for SvcbRecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let mut output = Vec::new();
