@@ -36,10 +36,10 @@ impl RecordBase for UriRecord {
         let class = RRClasses::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
         let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
 
-        let length = u16::from_be_bytes([buf[off+6], buf[off+7]]) as usize;
-
         let priority = u16::from_be_bytes([buf[off+8], buf[off+9]]);
         let weight = u16::from_be_bytes([buf[off+10], buf[off+11]]);
+
+        let length = u16::from_be_bytes([buf[off+6], buf[off+7]]) as usize;
 
         let target = String::from_utf8(buf[off+12..off+8+length].to_vec()).unwrap();
 
