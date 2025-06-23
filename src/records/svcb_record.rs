@@ -132,6 +132,46 @@ impl SvcbRecord {
     pub fn get_ttl(&self) -> u32 {
         self.ttl
     }
+
+    pub fn set_priority(&mut self, priority: u16) {
+        self.priority = priority;
+    }
+
+    pub fn get_priority(&self) -> u16 {
+        self.priority
+    }
+
+    pub fn set_target(&mut self, target: &str) {
+        self.target = Some(target.to_string());
+    }
+
+    pub fn get_target(&self) -> Option<String> {
+        self.target.clone()
+    }
+
+    pub fn has_param(&self, key: &SvcParamKeys) -> bool {
+        self.params.contains_key(key)
+    }
+
+    pub fn insert_param(&mut self, key: SvcParamKeys, param: Vec<u8>) {
+        self.params.insert(key, param);
+    }
+
+    pub fn get_param(&self, key: &SvcParamKeys) -> Option<&Vec<u8>> {
+        self.params.get(key)
+    }
+
+    pub fn get_param_mut(&mut self, key: &SvcParamKeys) -> Option<&mut Vec<u8>> {
+        self.params.get_mut(key)
+    }
+
+    pub fn get_params(&self) -> &OrderedMap<SvcParamKeys, Vec<u8>> {
+        &self.params
+    }
+
+    pub fn get_params_mut(&mut self) -> &mut OrderedMap<SvcParamKeys, Vec<u8>> {
+        &mut self.params
+    }
 }
 
 impl fmt::Display for SvcbRecord {

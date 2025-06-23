@@ -53,14 +53,17 @@ impl RecordBase for UriRecord {
     }
 
     fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {
-        let mut buf = vec![0u8; 10];
+        let mut buf = vec![0u8; 14];
 
         buf.splice(0..2, self.get_type().get_code().to_be_bytes());
 
         buf.splice(2..4, self.class.get_code().to_be_bytes());
         buf.splice(4..8, self.ttl.to_be_bytes());
 
-        //buf.extend_from_slice(&self.address.unwrap().octets().to_vec());
+        buf.splice(10..12, self.priority.to_be_bytes());
+        buf.splice(12..14, self.weight.to_be_bytes());
+
+        buf.extend_from_slice(self.target.as_ref().unwrap().as_bytes());
 
         buf.splice(8..10, ((buf.len()-10) as u16).to_be_bytes());
 
@@ -112,6 +115,30 @@ impl UriRecord {
 
     pub fn get_ttl(&self) -> u32 {
         self.ttl
+    }
+
+    pub fn set_priority(&mut self, priority: u16) {
+        self.priority = priority;
+    }
+
+    pub fn get_priority(&self) -> u16 {
+        self.priority
+    }
+
+    pub fn set_weight(&mut self, weight: u16) {
+        self.weight = weight;
+    }
+
+    pub fn get_weight(&self) -> u16 {
+        self.weight
+    }
+
+    pub fn set_target(&mut self, target: &str) {
+        self.target = Some(target.to_string());
+    }
+
+    pub fn get_target(&self) -> Option<String> {
+        self.target.clone()
     }
 }
 
