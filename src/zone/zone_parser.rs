@@ -312,32 +312,52 @@ fn set_data(record: &mut dyn RecordBase, pos: usize, value: &str) {
         }
         RRTypes::Txt => record.as_any_mut().downcast_mut::<TxtRecord>().unwrap().data.push(value.to_string()),
         RRTypes::Loc => {
-            /*
             let record = record.as_any_mut().downcast_mut::<LocRecord>().unwrap();
             match pos {
-                0 => {
-                    let deg: u32 = value.parse().unwrap();
-                    deg * 3_600_000
-                }
-                1 => {
-                    prev + val.parse::<u32>().unwrap() * 60_000
-                }
-                2 => {
-                    let sec = (val.parse::<f64>().unwrap() * 1000.0).round() as u32;
-                    prev + sec
-                }
+                0 => record.latitude = value.parse::<u32>().unwrap() * 3_600_000,
+                1 => record.latitude = record.latitude + value.parse::<u32>().unwrap() * 60_000,
+                2 => record.latitude += (value.parse::<f64>().unwrap() * 1000.0).round() as u32,
                 3 => {
-                    let sign = match val {
+                    let sign = match value {
                         "S" | "W" => -1,
                         "N" | "E" => 1,
-                        _ => panic!("Invalid direction"),
+                        _ => panic!("Invalid direction")
                     };
 
-                    let val = (sign * (prev as i64)) + (1 << 31);
-                    val as u32
+                    let val = (sign * (record.latitude as i64)) + (1 << 31);
+                    record.latitude = val as u32
                 }
+                4 => record.longitude = value.parse::<u32>().unwrap() * 3_600_000,
+                5 => record.longitude = record.longitude + value.parse::<u32>().unwrap() * 60_000,
+                6 => record.longitude += (value.parse::<f64>().unwrap() * 1000.0).round() as u32,
+                7 => {
+                    let sign = match value {
+                        "S" | "W" => -1,
+                        "N" | "E" => 1,
+                        _ => panic!("Invalid direction")
+                    };
+
+                    let val = (sign * (record.longitude as i64)) + (1 << 31);
+                    record.longitude = val as u32
+                }
+                8 => {
+                    let clean = value.trim_end_matches('m');
+                    record.altitude = (clean.parse::<f64>().unwrap() * 100.0).round() as u32;
+                }
+                9 => {
+                    let clean = value.strip_suffix('m').unwrap_or(value);
+                    record.size = encode_loc_precision(clean);
+                }
+                10 => {
+                    let clean = value.strip_suffix('m').unwrap_or(value);
+                    record.h_precision = encode_loc_precision(clean);
+                }
+                11 => {
+                    let clean = value.strip_suffix('m').unwrap_or(value);
+                    record.v_precision = encode_loc_precision(clean);
+                }
+                _ => unimplemented!()
             }
-            */
         }
         RRTypes::Srv => {
             let record = record.as_any_mut().downcast_mut::<SrvRecord>().unwrap();
@@ -460,9 +480,28 @@ fn set_data(record: &mut dyn RecordBase, pos: usize, value: &str) {
         }
         RRTypes::Spf => {}//@       SPF   "v=spf1 include:_spf.example.com ~all"
         RRTypes::Uri => {
-            
-        }//@		300	IN	URI	1 1 "find9://nameserver"
+            let record = record.as_any_mut().downcast_mut::<UriRecord>().unwrap();
+            match pos {
+                0 => record.priority = value.parse().unwrap(),
+                1 => record.weight = value.parse().unwrap(),
+                2 => record.target = Some(value.to_string()),
+                _ => unimplemented!()
+            }
+        }
         RRTypes::Caa => {}//CAA     <flags> <tag> <value>
         _ => unimplemented!()
     }
+}
+
+fn encode_loc_precision(s: &str) -> u8 {
+    let val = s.parse::<f64>().unwrap();
+    for exp in 0..=9 {
+        for base in 0..=9 {
+            let encoded = (base as f64) * 10f64.powi(exp);
+            if (val - encoded).abs() < 0.5 {
+                return ((base << 4) | exp).try_into().unwrap();
+            }
+        }
+    }
+    panic!("Cannot encode LOC precision from value: {}", s);
 }

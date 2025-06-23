@@ -132,6 +132,62 @@ impl LocRecord {
     pub fn get_ttl(&self) -> u32 {
         self.ttl
     }
+
+    pub fn set_version(&mut self, version: u8) {
+        self.version = version;
+    }
+
+    pub fn get_version(&self) -> u8 {
+        self.version
+    }
+
+    pub fn set_size(&mut self, size: u8) {
+        self.size = size;
+    }
+
+    pub fn get_size(&self) -> u8 {
+        self.size
+    }
+
+    pub fn set_h_precision(&mut self, h_precision: u8) {
+        self.h_precision = h_precision;
+    }
+
+    pub fn get_h_precision(&self) -> u8 {
+        self.h_precision
+    }
+
+    pub fn set_v_precision(&mut self, h_precision: u8) {
+        self.v_precision = h_precision;
+    }
+
+    pub fn get_v_precision(&self) -> u8 {
+        self.v_precision
+    }
+    
+    pub fn set_latitude(&mut self, latitude: u32) {
+        self.latitude = latitude;
+    }
+    
+    pub fn get_latitude(&self) -> u32 {
+        self.latitude
+    }
+    
+    pub fn set_longitude(&mut self, longitude: u32) {
+        self.longitude = longitude;
+    }
+    
+    pub fn get_longitude(&self) -> u32 {
+        self.longitude
+    }
+    
+    pub fn set_altitude(&mut self, altitude: u32) {
+        self.altitude = altitude;
+    }
+    
+    pub fn get_altitude(&self) -> u32 {
+        self.altitude
+    }
 }
 
 impl fmt::Display for LocRecord {
