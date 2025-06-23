@@ -6,6 +6,7 @@ use std::net::Ipv4Addr;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::RecordBase;
+use crate::utils::domain_utils::unpack_domain;
 
 #[derive(Clone, Debug)]
 pub struct UriRecord {
@@ -35,19 +36,19 @@ impl RecordBase for UriRecord {
         let class = RRClasses::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
         let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
 
-        //let z = u16::from_be_bytes([buf[off+6], buf[off+7]]);
+        let length = u16::from_be_bytes([buf[off+6], buf[off+7]]) as usize;
 
         let priority = u16::from_be_bytes([buf[off+8], buf[off+9]]);
         let weight = u16::from_be_bytes([buf[off+10], buf[off+11]]);
 
-        let target = Some("ASD".to_string());
+        let target = String::from_utf8(buf[off+12..off+8+length].to_vec()).unwrap();
 
         Self {
             class,
             ttl,
             priority,
             weight,
-            target
+            target: Some(target)
         }
     }
 

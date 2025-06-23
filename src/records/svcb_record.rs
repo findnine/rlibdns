@@ -42,7 +42,7 @@ impl RecordBase for SvcbRecord {
 
         let priority = u16::from_be_bytes([buf[off+8], buf[off+9]]);
 
-        let (target, length) = unpack_domain(&buf, off+10);
+        let (target, _) = unpack_domain(&buf, off+10);
 
         let length = off+8+u16::from_be_bytes([buf[off+6], buf[off+7]]) as usize;
         off += length+10;
