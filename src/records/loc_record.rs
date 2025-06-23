@@ -11,7 +11,13 @@ use crate::records::inter::record_base::RecordBase;
 pub struct LocRecord {
     class: RRClasses,
     ttl: u32,
-    //pub(crate) address: Option<Ipv4Addr>
+    pub(crate) version: u8,
+    pub(crate) size: u8,
+    pub(crate) h_precision: u8,
+    pub(crate) v_precision: u8,
+    pub(crate) latitude: u32,
+    pub(crate) longitude: u32,
+    pub(crate) altitude: u32
 }
 
 impl Default for LocRecord {
@@ -20,6 +26,13 @@ impl Default for LocRecord {
         Self {
             class: RRClasses::default(),
             ttl: 0,
+            version: 0,
+            size: 0,
+            h_precision: 0,
+            v_precision: 0,
+            latitude: 0,
+            longitude: 0,
+            altitude: 0
         }
     }
 }
@@ -32,9 +45,24 @@ impl RecordBase for LocRecord {
 
         //let z = u16::from_be_bytes([buf[off+6], buf[off+7]]);
 
+        let version = buf[off+8];
+        let size = buf[off+9];
+        let h_precision = buf[off+10];
+        let v_precision = buf[off+11];
+        let latitude = u32::from_be_bytes([buf[off+12], buf[off+13], buf[off+14], buf[off+15]]);
+        let longitude = u32::from_be_bytes([buf[off+16], buf[off+17], buf[off+18], buf[off+19]]);
+        let altitude = u32::from_be_bytes([buf[off+20], buf[off+21], buf[off+22], buf[off+23]]);
+
         Self {
             class,
-            ttl
+            ttl,
+            version,
+            size,
+            h_precision,
+            v_precision,
+            latitude,
+            longitude,
+            altitude
         }
     }
 
