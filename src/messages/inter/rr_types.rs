@@ -26,6 +26,7 @@ pub enum RRTypes {
     Any,
     Ixfr,
     Axfr,
+    Uri,
     Caa
 }
 
@@ -53,6 +54,7 @@ impl RRTypes {
             Self::Ixfr,
             Self::Axfr,
             Self::Any,
+            Self::Uri,
             Self::Caa
         ] {
             if c.get_code() == code {
@@ -85,6 +87,7 @@ impl RRTypes {
             Self::Ixfr => 251,
             Self::Axfr => 252,
             Self::Any => 255,
+            Self::Uri => 256,
             Self::Caa => 257
         }
     }
@@ -111,6 +114,7 @@ impl RRTypes {
             Self::Ixfr,
             Self::Axfr,
             Self::Any,
+            Self::Uri,
             Self::Caa
         ] {
             if c.to_string() == value {
@@ -146,6 +150,7 @@ impl fmt::Display for RRTypes {
             Self::Ixfr => "IXFR",
             Self::Axfr => "AXFR",
             Self::Any => "ANY",
+            Self::Uri => "URI",
             Self::Caa => "CAA"
         })
     }

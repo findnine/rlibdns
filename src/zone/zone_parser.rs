@@ -20,6 +20,7 @@ use crate::records::soa_record::SoaRecord;
 use crate::records::srv_record::SrvRecord;
 use crate::records::svcb_record::SvcbRecord;
 use crate::records::txt_record::TxtRecord;
+use crate::records::uri_record::UriRecord;
 use crate::utils::base64;
 
 #[derive(Debug, PartialEq, Eq)]
@@ -145,6 +146,7 @@ impl ZoneParser {
                                 //RRTypes::Spf => {}
                                 //RRTypes::Tsig => {}
                                 //RRTypes::Any => {}
+                                RRTypes::Uri => UriRecord::new(ttl, class).upcast(),
                                 //RRTypes::Caa => {}
                                 _ => unreachable!()
                             }));
@@ -427,6 +429,9 @@ fn set_rdata(record: &mut dyn RecordBase, pos: usize, value: &str) {
             }
         }
         RRTypes::Spf => {}//@       SPF   "v=spf1 include:_spf.example.com ~all"
+        RRTypes::Uri => {
+            
+        }//@		300	IN	URI	1 1 "find9://nameserver"
         RRTypes::Caa => {}//CAA     <flags> <tag> <value>
         _ => unimplemented!()
     }

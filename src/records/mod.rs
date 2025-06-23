@@ -16,3 +16,4 @@ pub mod spf_record;
 pub mod srv_record;
 pub mod tsig_record;
 pub mod txt_record;
+pub mod uri_record;
