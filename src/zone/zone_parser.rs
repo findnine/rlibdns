@@ -179,7 +179,7 @@ impl ZoneParser {
                         if part[0] == b'"' {
                             if part[word_len - 1] == b'"' {
                                 if let Some((_, ref mut record)) = record {
-                                    set_rdata(record.deref_mut(), data_count, &String::from_utf8(part[1..word_len - 1].to_vec()).unwrap());
+                                    set_data(record.deref_mut(), data_count, &String::from_utf8(part[1..word_len - 1].to_vec()).unwrap());
                                 }
 
                                 data_count += 1;
@@ -191,7 +191,7 @@ impl ZoneParser {
 
                         } else {
                             if let Some((_, ref mut record)) = record {
-                                set_rdata(record.deref_mut(), data_count, &String::from_utf8(part[0..word_len].to_vec()).unwrap());
+                                set_data(record.deref_mut(), data_count, &String::from_utf8(part[0..word_len].to_vec()).unwrap());
                             }
 
                             data_count += 1;
@@ -202,7 +202,7 @@ impl ZoneParser {
                             quoted_buf.push_str(&format!("{}", String::from_utf8(part[0..word_len - 1].to_vec()).unwrap()));
 
                             if let Some((_, ref mut record)) = record {
-                                set_rdata(record.deref_mut(), data_count, &quoted_buf);
+                                set_data(record.deref_mut(), data_count, &quoted_buf);
                             }
 
                             data_count += 1;
@@ -264,7 +264,7 @@ impl<'a> Iterator for ZoneParserIter<'a> {
     }
 }
 
-fn set_rdata(record: &mut dyn RecordBase, pos: usize, value: &str) {
+fn set_data(record: &mut dyn RecordBase, pos: usize, value: &str) {
     match record.get_type() {
         RRTypes::A => record.as_any_mut().downcast_mut::<ARecord>().unwrap().address = Some(value.parse().unwrap()),
         RRTypes::Aaaa => record.as_any_mut().downcast_mut::<AaaaRecord>().unwrap().address = Some(value.parse().unwrap()),
