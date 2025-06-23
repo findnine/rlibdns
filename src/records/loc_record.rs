@@ -2,66 +2,50 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
+use std::net::Ipv4Addr;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::RecordBase;
 
 #[derive(Clone, Debug)]
-pub struct UriRecord {
+pub struct LocRecord {
     class: RRClasses,
     ttl: u32,
-    pub(crate) priority: u16,
-    pub(crate) weight: u16,
-    pub(crate) target: Option<String>,
+    //pub(crate) address: Option<Ipv4Addr>
 }
 
-impl Default for UriRecord {
+impl Default for LocRecord {
 
     fn default() -> Self {
         Self {
             class: RRClasses::default(),
             ttl: 0,
-            priority: 0,
-            weight: 0,
-            target: None
         }
     }
 }
 
-impl RecordBase for UriRecord {
+impl RecordBase for LocRecord {
 
     fn from_bytes(buf: &[u8], off: usize) -> Self {
         let class = RRClasses::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
         let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
 
-        let priority = u16::from_be_bytes([buf[off+8], buf[off+9]]);
-        let weight = u16::from_be_bytes([buf[off+10], buf[off+11]]);
-
-        let length = u16::from_be_bytes([buf[off+6], buf[off+7]]) as usize;
-
-        let target = String::from_utf8(buf[off+12..off+8+length].to_vec()).unwrap();
+        //let z = u16::from_be_bytes([buf[off+6], buf[off+7]]);
 
         Self {
             class,
-            ttl,
-            priority,
-            weight,
-            target: Some(target)
+            ttl
         }
     }
 
     fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {
-        let mut buf = vec![0u8; 14];
+        let mut buf = vec![0u8; 10];
 
         buf.splice(0..2, self.get_type().get_code().to_be_bytes());
-
         buf.splice(2..4, self.class.get_code().to_be_bytes());
         buf.splice(4..8, self.ttl.to_be_bytes());
 
-        buf.splice(10..12, self.priority.to_be_bytes());
-        buf.splice(12..14, self.weight.to_be_bytes());
 
-        buf.extend_from_slice(self.target.as_ref().unwrap().as_bytes());
 
         buf.splice(8..10, ((buf.len()-10) as u16).to_be_bytes());
 
@@ -69,7 +53,7 @@ impl RecordBase for UriRecord {
     }
 
     fn get_type(&self) -> RRTypes {
-        RRTypes::Uri
+        RRTypes::Loc
     }
 
     fn upcast(self) -> Box<dyn RecordBase> {
@@ -89,7 +73,7 @@ impl RecordBase for UriRecord {
     }
 }
 
-impl UriRecord {
+impl LocRecord {
 
     pub fn new(ttl: u32, class: RRClasses) -> Self {
         Self {
@@ -114,40 +98,14 @@ impl UriRecord {
     pub fn get_ttl(&self) -> u32 {
         self.ttl
     }
-
-    pub fn set_priority(&mut self, priority: u16) {
-        self.priority = priority;
-    }
-
-    pub fn get_priority(&self) -> u16 {
-        self.priority
-    }
-
-    pub fn set_weight(&mut self, weight: u16) {
-        self.weight = weight;
-    }
-
-    pub fn get_weight(&self) -> u16 {
-        self.weight
-    }
-
-    pub fn set_target(&mut self, target: &str) {
-        self.target = Some(target.to_string());
-    }
-
-    pub fn get_target(&self) -> Option<String> {
-        self.target.clone()
-    }
 }
 
-impl fmt::Display for UriRecord {
+impl fmt::Display for LocRecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:<8}{:<8}{:<8}{} {} \"{}\"", self.ttl,
+        write!(f, "{:<8}{:<8}{:<8}{}", self.ttl,
                self.class.to_string(),
                self.get_type().to_string(),
-               self.priority,
-               self.weight,
-               self.target.as_ref().unwrap())
+               "")
     }
 }
