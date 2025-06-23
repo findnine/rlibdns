@@ -3,9 +3,42 @@ pub mod records;
 pub mod utils;
 pub mod zone;
 
+
+pub fn build_coord_step(prev: u32, pos: usize, val: &str) -> u32 {
+    match pos {
+        0 => {
+            // Degrees (max 90 or 180)
+            let deg: u32 = val.parse().unwrap();
+            deg * 3_600_000
+        }
+        1 => {
+            // Minutes
+            prev + val.parse::<u32>().unwrap() * 60_000
+        }
+        2 => {
+            // Seconds
+            let sec = (val.parse::<f64>().unwrap() * 1000.0).round() as u32;
+            prev + sec
+        }
+        3 => {
+            // Direction: N/S/E/W
+            let sign = match val {
+                "S" | "W" => -1,
+                "N" | "E" => 1,
+                _ => panic!("Invalid direction"),
+            };
+
+            let val = (sign * (prev as i64)) + (1 << 31);
+            val as u32
+        }
+        _ => panic!("Invalid coordinate part index"),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;
+    use crate::build_coord_step;
     use crate::messages::inter::rr_types::RRTypes;
     use crate::messages::message_base::MessageBase;
     use crate::records::inter::record_base::RecordBase;
@@ -16,6 +49,20 @@ mod tests {
 
     #[test]
     fn encode_and_decode() {
+        let mut lat = 0;
+        lat = build_coord_step(lat, 0, "82");       // degrees
+        lat = build_coord_step(lat, 1, "0");        // minutes
+        lat = build_coord_step(lat, 2, "28.000");   // seconds
+        lat = build_coord_step(lat, 3, "S");        // direction
+
+        let (x, y, z, d) = lat.to_coord(true);
+
+        println!("Latitude u32: {}", lat);
+        println!("{x} {y} {z} {d}");
+
+
+        return;
+
         let x = vec![ 0xa7, 0xa2, 0x81, 0x80, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x06, 0x67, 0x6f, 0x6f,
                       0x67, 0x6c, 0x65, 0x03, 0x63, 0x6f, 0x6d, 0x00, 0x00, 0x01, 0x00, 0x01, 0xc0, 0x0c, 0x00, 0x01,
                       0x00, 0x01, 0x00, 0x00, 0x01, 0x23, 0x00, 0x04, 0x8e, 0xfa, 0x45, 0xee, 0x00, 0x00, 0x29, 0x04,
