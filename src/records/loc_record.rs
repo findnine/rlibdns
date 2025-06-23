@@ -2,10 +2,10 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
-use std::net::Ipv4Addr;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::RecordBase;
+use crate::utils::coord_utils::Coord;
 
 #[derive(Clone, Debug)]
 pub struct LocRecord {
@@ -137,9 +137,24 @@ impl LocRecord {
 impl fmt::Display for LocRecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:<8}{:<8}{:<8}{}", self.ttl,
+        let (lat_deg, lat_min, lat_sec, lat_dir) = self.latitude.to_coord(true);
+        let (lon_deg, lon_min, lon_sec, lon_dir) = self.longitude.to_coord(false);
+        let alt = (self.altitude as f64 - 100_000.0 * 100.0) / 100.0;
+
+        write!(f, "{:<8}{:<8}{:<8}{} {} {:.3} {} {} {} {:.3} {} {:.2}m {:.2}m {:.2}m {:.2}m", self.ttl,
                self.class.to_string(),
                self.get_type().to_string(),
-               "")
+               lat_deg,
+               lat_min,
+               lat_sec,
+               lat_dir,
+               lon_deg,
+               lon_min,
+               lon_sec,
+               lon_dir,
+               alt,
+               self.size as f64 / 100.0,
+               self.h_precision as f64 / 100.0,
+               self.v_precision as f64 / 100.0)
     }
 }

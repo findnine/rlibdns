@@ -9,6 +9,7 @@ mod tests {
     use crate::messages::inter::rr_types::RRTypes;
     use crate::messages::message_base::MessageBase;
     use crate::records::inter::record_base::RecordBase;
+    use crate::utils::coord_utils::Coord;
     use crate::zone::zone_parser::ZoneParser;
 
     type RecordMap = HashMap<String, HashMap<RRTypes, Vec<Box<dyn RecordBase>>>>;
