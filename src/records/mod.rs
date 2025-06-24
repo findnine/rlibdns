@@ -10,6 +10,7 @@ pub mod ns_record;
 pub mod nsec_record;
 pub mod opt_record;
 pub mod ptr_record;
+pub mod hinfo_record;
 pub mod rrsig_record;
 pub mod soa_record;
 pub mod spf_record;

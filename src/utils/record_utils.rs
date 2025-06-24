@@ -4,6 +4,7 @@ use crate::records::a_record::ARecord;
 use crate::records::aaaa_record::AaaaRecord;
 use crate::records::cname_record::CNameRecord;
 use crate::records::dnskey_record::DnsKeyRecord;
+use crate::records::hinfo_record::HInfoRecord;
 use crate::records::https_record::HttpsRecord;
 use crate::records::inter::record_base::RecordBase;
 use crate::records::loc_record::LocRecord;
@@ -48,6 +49,7 @@ pub fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> OrderedMap
             RRTypes::CName => CNameRecord::from_bytes(buf, *off+2).upcast(),
             RRTypes::Soa => SoaRecord::from_bytes(buf, *off+2).upcast(),
             RRTypes::Ptr => PtrRecord::from_bytes(buf, *off+2).upcast(),
+            RRTypes::HInfo => HInfoRecord::from_bytes(buf, *off+2).upcast(),
             RRTypes::Mx => MxRecord::from_bytes(buf, *off+2).upcast(),
             RRTypes::Txt => TxtRecord::from_bytes(buf, *off+2).upcast(),
             RRTypes::Loc => LocRecord::from_bytes(buf, *off+2).upcast(),

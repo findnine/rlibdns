@@ -1,0 +1,128 @@
+use std::any::Any;
+use std::collections::HashMap;
+use std::fmt;
+use std::fmt::Formatter;
+use crate::messages::inter::rr_classes::RRClasses;
+use crate::messages::inter::rr_types::RRTypes;
+use crate::records::inter::record_base::RecordBase;
+use crate::utils::domain_utils::pack_domain;
+
+#[derive(Clone, Debug)]
+pub struct HInfoRecord {
+    class: RRClasses,
+    ttl: u32,
+    pub(crate) cpu: Option<String>,
+    pub(crate) os: Option<String>
+}
+
+impl Default for HInfoRecord {
+
+    fn default() -> Self {
+        Self {
+            class: RRClasses::default(),
+            ttl: 0,
+            cpu: None,
+            os: None
+        }
+    }
+}
+
+impl RecordBase for HInfoRecord {
+
+    fn from_bytes(buf: &[u8], off: usize) -> Self {
+        let class = RRClasses::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
+        let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
+
+        //let z = u16::from_be_bytes([buf[off+6], buf[off+7]]);
+
+        let length = u16::from_be_bytes([buf[off+6], buf[off+7]]) as usize;
+        let cpu = String::from_utf8(buf[off+8..off+8+length].to_vec()).unwrap();
+        let off = off+8+length;
+
+        let length = u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
+        let os = String::from_utf8(buf[off+2..off+2+length].to_vec()).unwrap();
+
+
+        Self {
+            class,
+            ttl,
+            cpu: Some(cpu),
+            os: Some(os)
+        }
+    }
+
+    fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {
+        let mut buf = vec![0u8; 10];
+
+        buf.splice(0..2, self.get_type().get_code().to_be_bytes());
+        buf.splice(2..4, self.class.get_code().to_be_bytes());
+        buf.splice(4..8, self.ttl.to_be_bytes());
+
+        //buf.extend_from_slice(&pack_domain(self.target.as_ref().unwrap().as_str(), label_map, off+12, true));
+
+
+
+
+        buf.splice(8..10, ((buf.len()-10) as u16).to_be_bytes());
+
+        Ok(buf)
+    }
+
+    fn get_type(&self) -> RRTypes {
+        RRTypes::Txt
+    }
+
+    fn upcast(self) -> Box<dyn RecordBase> {
+        Box::new(self)
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
+    }
+
+    fn clone_box(&self) -> Box<dyn RecordBase> {
+        Box::new(self.clone())
+    }
+}
+
+impl HInfoRecord {
+
+    pub fn new(ttl: u32, class: RRClasses) -> Self {
+        Self {
+            class,
+            ttl,
+            ..Self::default()
+        }
+    }
+
+    pub fn set_class(&mut self, class: RRClasses) {
+        self.class = class;
+    }
+
+    pub fn get_class(&self) -> RRClasses {
+        self.class
+    }
+
+    pub fn set_ttl(&mut self, ttl: u32) {
+        self.ttl = ttl;
+    }
+
+    pub fn get_ttl(&self) -> u32 {
+        self.ttl
+    }
+}
+
+impl fmt::Display for HInfoRecord {
+
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{:<8}{:<8}{:<8}\"{}\" \"{}\"", self.ttl,
+               self.class.to_string(),
+               self.get_type().to_string(),
+               self.cpu.as_ref().unwrap(),
+               self.os.as_ref().unwrap())
+    }
+}
