@@ -33,6 +33,8 @@ impl RecordBase for HInfoRecord {
         let class = RRClasses::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
         let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
 
+        println!("{:#?}", class);
+
         //let z = u16::from_be_bytes([buf[off+6], buf[off+7]]);
 
         let length = u16::from_be_bytes([buf[off+6], buf[off+7]]) as usize;
@@ -41,7 +43,6 @@ impl RecordBase for HInfoRecord {
 
         let length = u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
         let os = String::from_utf8(buf[off+2..off+2+length].to_vec()).unwrap();
-
 
         Self {
             class,
@@ -69,7 +70,7 @@ impl RecordBase for HInfoRecord {
     }
 
     fn get_type(&self) -> RRTypes {
-        RRTypes::Txt
+        RRTypes::HInfo
     }
 
     fn upcast(self) -> Box<dyn RecordBase> {
