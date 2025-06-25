@@ -50,7 +50,7 @@ mod tests {
 
         assert_eq!(x, message.to_bytes(512));
     }
-    /*
+
     #[test]
     fn parsing() {
         let mut records = RecordMap::new();
@@ -70,5 +70,4 @@ mod tests {
         //println!("{:?}", records);
         println!("{:?}", records["@"][&RRTypes::A]);
     }
-    */
 }
