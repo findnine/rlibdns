@@ -33,16 +33,14 @@ impl RecordBase for HInfoRecord {
         let class = RRClasses::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
         let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
 
-        println!("{:#?}", class);
-
         //let z = u16::from_be_bytes([buf[off+6], buf[off+7]]);
 
-        let length = u16::from_be_bytes([buf[off+6], buf[off+7]]) as usize;
-        let cpu = String::from_utf8(buf[off+8..off+8+length].to_vec()).unwrap();
-        let off = off+8+length;
+        let length = buf[off+8] as usize;
+        let cpu = String::from_utf8(buf[off+9..off+9+length].to_vec()).unwrap();
+        let off = off+9+length;
 
-        let length = u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
-        let os = String::from_utf8(buf[off+2..off+2+length].to_vec()).unwrap();
+        let length = buf[off] as usize;
+        let os = String::from_utf8(buf[off+1..off+1+length].to_vec()).unwrap();
 
         Self {
             class,
@@ -61,8 +59,13 @@ impl RecordBase for HInfoRecord {
 
         //buf.extend_from_slice(&pack_domain(self.target.as_ref().unwrap().as_str(), label_map, off+12, true));
 
+        let cpu = self.cpu.as_ref().unwrap().as_bytes();
+        buf.push(cpu.len() as u8);
+        buf.extend_from_slice(cpu);
 
-
+        let os = self.os.as_ref().unwrap().as_bytes();
+        buf.push(os.len() as u8);
+        buf.extend_from_slice(os);
 
         buf.splice(8..10, ((buf.len()-10) as u16).to_be_bytes());
 
