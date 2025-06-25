@@ -115,6 +115,22 @@ impl HInfoRecord {
     pub fn get_ttl(&self) -> u32 {
         self.ttl
     }
+
+    pub fn set_cpu(&mut self, cpu: &str) {
+        self.cpu = Some(cpu.to_string());
+    }
+
+    pub fn get_cpu(&self) -> Option<String> {
+        self.cpu.clone()
+    }
+
+    pub fn set_os(&mut self, os: &str) {
+        self.os = Some(os.to_string());
+    }
+
+    pub fn get_os(&self) -> Option<String> {
+        self.os.clone()
+    }
 }
 
 impl fmt::Display for HInfoRecord {
