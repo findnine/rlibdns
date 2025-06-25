@@ -106,6 +106,7 @@ impl RRTypes {
             Self::CName,
             Self::Soa,
             Self::Ptr,
+            Self::HInfo,
             Self::Mx,
             Self::Txt,
             Self::Loc,
