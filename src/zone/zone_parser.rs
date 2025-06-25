@@ -156,6 +156,7 @@ impl ZoneParser {
                             }));
 
                         } else {
+                            println!("{word}");
                             ttl = word.parse().unwrap();//.expect(&format!("Parse error on line {} pos {}", self.line_no, pos));
                         }
                     }
