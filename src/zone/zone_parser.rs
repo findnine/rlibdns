@@ -8,6 +8,7 @@ use crate::records::a_record::ARecord;
 use crate::records::aaaa_record::AaaaRecord;
 use crate::records::cname_record::CNameRecord;
 use crate::records::dnskey_record::DnsKeyRecord;
+use crate::records::hinfo_record::HInfoRecord;
 use crate::records::https_record::HttpsRecord;
 use crate::records::inter::svc_param_keys::SvcParamKeys;
 use crate::records::inter::record_base::RecordBase;
@@ -136,6 +137,7 @@ impl ZoneParser {
                                 RRTypes::CName => CNameRecord::new(ttl, class).upcast(),
                                 RRTypes::Soa => SoaRecord::new(ttl, class).upcast(),
                                 RRTypes::Ptr => PtrRecord::new(ttl, class).upcast(),
+                                RRTypes::HInfo => HInfoRecord::new(ttl, class).upcast(),
                                 RRTypes::Mx => MxRecord::new(ttl, class).upcast(),
                                 RRTypes::Txt => TxtRecord::new(ttl, class).upcast(),
                                 RRTypes::Loc => LocRecord::new(ttl, class).upcast(),
@@ -299,6 +301,14 @@ fn set_data(record: &mut dyn RecordBase, pos: usize, value: &str) {
             Some(base) => base.to_string(),
             None => panic!("Domain is not fully qualified (missing trailing dot)")
         }),
+        RRTypes::HInfo => {
+            let record = record.as_any_mut().downcast_mut::<HInfoRecord>().unwrap();
+            match pos {
+                0 => record.cpu = Some(value.to_string()),
+                1 => record.os = Some(value.to_string()),
+                _ => unimplemented!()
+            }
+        }
         RRTypes::Mx => {
             let record = record.as_any_mut().downcast_mut::<MxRecord>().unwrap();
             match pos {

@@ -57,8 +57,6 @@ impl RecordBase for HInfoRecord {
         buf.splice(2..4, self.class.get_code().to_be_bytes());
         buf.splice(4..8, self.ttl.to_be_bytes());
 
-        //buf.extend_from_slice(&pack_domain(self.target.as_ref().unwrap().as_str(), label_map, off+12, true));
-
         let cpu = self.cpu.as_ref().unwrap().as_bytes();
         buf.push(cpu.len() as u8);
         buf.extend_from_slice(cpu);

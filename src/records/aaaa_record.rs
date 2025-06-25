@@ -64,7 +64,7 @@ impl RecordBase for AaaaRecord {
         buf.splice(2..4, class.to_be_bytes());
         buf.splice(4..8, self.ttl.to_be_bytes());
 
-        buf.extend_from_slice(&self.address.unwrap().octets().to_vec());
+        buf.extend_from_slice(&self.address.as_ref().unwrap().octets().to_vec());
 
         buf.splice(8..10, ((buf.len()-10) as u16).to_be_bytes());
 
