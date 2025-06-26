@@ -385,7 +385,7 @@ fn set_data(record: &mut dyn RecordBase, pos: usize, value: &str) {
         RRTypes::RRSig => {
             let record = record.as_any_mut().downcast_mut::<RRSigRecord>().unwrap();
             match pos {
-                0 => record.type_covered = value.parse().unwrap(),
+                0 => record.type_covered = RRTypes::from_str(value).unwrap(),
                 1 => record.algorithm = value.parse().unwrap(),
                 2 => record.labels = value.parse().unwrap(),
                 3 => record.original_ttl = value.parse().unwrap(),

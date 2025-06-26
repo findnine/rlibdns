@@ -11,7 +11,7 @@ use crate::utils::domain_utils::{pack_domain, unpack_domain};
 pub struct RRSigRecord {
     class: RRClasses,
     ttl: u32,
-    pub(crate) type_covered: u16,
+    pub(crate) type_covered: RRTypes,
     pub(crate) algorithm: u8,
     pub(crate) labels: u8,
     pub(crate) original_ttl: u32,
@@ -28,7 +28,7 @@ impl Default for RRSigRecord {
         Self {
             class: RRClasses::default(),
             ttl: 0,
-            type_covered: 0,
+            type_covered: RRTypes::default(),
             algorithm: 0,
             labels: 0,
             original_ttl: 0,
@@ -49,7 +49,7 @@ impl RecordBase for RRSigRecord {
         let class = RRClasses::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
         let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
 
-        let type_covered = u16::from_be_bytes([buf[off+8], buf[off+9]]);
+        let type_covered = RRTypes::from_code(u16::from_be_bytes([buf[off+8], buf[off+9]])).unwrap();
 
         let algorithm = buf[off+10];
         let labels = buf[off+11];
@@ -88,7 +88,7 @@ impl RecordBase for RRSigRecord {
         buf.splice(2..4, self.class.get_code().to_be_bytes());
         buf.splice(4..8, self.ttl.to_be_bytes());
 
-        buf.splice(10..12, self.type_covered.to_be_bytes());
+        buf.splice(10..12, self.type_covered.get_code().to_be_bytes());
 
         buf[12] = self.algorithm;
         buf[13] = self.labels;
@@ -154,11 +154,11 @@ impl RRSigRecord {
         self.ttl
     }
 
-    pub fn set_type_covered(&mut self, type_covered: u16) {
+    pub fn set_type_covered(&mut self, type_covered: RRTypes) {
         self.type_covered = type_covered;
     }
 
-    pub fn get_type_covered(&self) -> u16 {
+    pub fn get_type_covered(&self) -> RRTypes {
         self.type_covered
     }
 
