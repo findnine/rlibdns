@@ -9,6 +9,7 @@ mod tests {
     use crate::messages::inter::rr_types::RRTypes;
     use crate::messages::message_base::MessageBase;
     use crate::records::inter::record_base::RecordBase;
+    use crate::utils::base64;
     use crate::zone::zone_parser::ZoneParser;
 
     type RecordMap = HashMap<String, HashMap<RRTypes, Vec<Box<dyn RecordBase>>>>;
@@ -57,7 +58,7 @@ mod tests {
 
         let mut parser = ZoneParser::new("/home/brad/Downloads/find9.net.test.zone", "find9.net").unwrap();
         for (name, record) in parser.iter() {
-            println!("{}: {:?}", name, record);
+            println!("{}: {}", name, record);
 
             records
                 .entry(name)

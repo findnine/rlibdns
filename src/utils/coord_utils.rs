@@ -1,4 +1,4 @@
-pub trait Coord {
+pub trait CoordUtils {
 
     fn to_coord(&self, is_lat: bool) -> (u8, u8, f64, char);
 
@@ -7,7 +7,7 @@ pub trait Coord {
     fn from_str_coord(s: &str) -> Option<u32>;
 }
 
-impl Coord for u32 {
+impl CoordUtils for u32 {
 
     fn to_coord(&self, is_lat: bool) -> (u8, u8, f64, char) {
         let mut val = *self as i64 - (1 << 31);
@@ -22,7 +22,7 @@ impl Coord for u32 {
         (degrees, minutes, seconds, dir)
     }
 
-    fn from_coord(degrees: u8, minutes: u8, seconds: f64, dir: char) -> u32 {
+    fn from_coord(degrees: u8, minutes: u8, seconds: f64, dir: char) -> Self {
         let mut val = (degrees as i64) * 3_600_000
             + (minutes as i64) * 60_000
             + (seconds * 1000.0).round() as i64;
@@ -33,10 +33,10 @@ impl Coord for u32 {
             _ => panic!("Invalid direction: {}", dir),
         }
 
-        (val + (1 << 31)) as u32
+        (val + (1 << 31)) as Self
     }
 
-    fn from_str_coord(s: &str) -> Option<u32> {
+    fn from_str_coord(s: &str) -> Option<Self> {
         let parts: Vec<&str> = s.trim().split_whitespace().collect();
         if parts.len() != 4 {
             return None;
@@ -47,6 +47,6 @@ impl Coord for u32 {
         let seconds = parts[2].parse::<f64>().ok()?;
         let dir = parts[3].chars().next()?;
 
-        Some(u32::from_coord(degrees, minutes, seconds, dir))
+        Some(Self::from_coord(degrees, minutes, seconds, dir))
     }
 }

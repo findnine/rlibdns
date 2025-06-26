@@ -24,6 +24,7 @@ use crate::records::svcb_record::SvcbRecord;
 use crate::records::txt_record::TxtRecord;
 use crate::records::uri_record::UriRecord;
 use crate::utils::base64;
+use crate::utils::time_utils::TimeUtils;
 
 #[derive(Debug, PartialEq, Eq)]
 enum ParserState {
@@ -389,15 +390,15 @@ fn set_data(record: &mut dyn RecordBase, pos: usize, value: &str) {
                 1 => record.algorithm = value.parse().unwrap(),
                 2 => record.labels = value.parse().unwrap(),
                 3 => record.original_ttl = value.parse().unwrap(),
-                4 => record.expiration = value.parse().unwrap(),
-                5 => record.inception = value.parse().unwrap(),
+                4 => record.expiration = u32::from_time_format(value),
+                5 => record.inception = u32::from_time_format(value),
                 6 => record.key_tag = value.parse().unwrap(),
                 7 => record.signer_name = Some(match value.strip_suffix('.') {
                     Some(base) => base.to_string(),
                     None => panic!("Domain is not fully qualified (missing trailing dot)")
                 }),
-                8 => record.set_signature(&base64::decode(value).unwrap()),
-                _ => unimplemented!()
+                8 => record.signature = base64::decode(value).unwrap(),
+                _ => record.signature.extend_from_slice(&base64::decode(value).unwrap())
             }
         }
         RRTypes::Nsec => {}//example.com.  NSEC  next.example.com. A MX RRSIG NSEC

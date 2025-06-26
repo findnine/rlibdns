@@ -5,7 +5,7 @@ use std::fmt::Formatter;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::RecordBase;
-use crate::utils::coord_utils::Coord;
+use crate::utils::coord_utils::CoordUtils;
 
 #[derive(Clone, Debug)]
 pub struct LocRecord {

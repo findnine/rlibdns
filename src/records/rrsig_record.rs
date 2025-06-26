@@ -6,6 +6,8 @@ use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::RecordBase;
 use crate::utils::domain_utils::{pack_domain, unpack_domain};
+use crate::utils::base64;
+use crate::utils::time_utils::TimeUtils;
 
 #[derive(Clone, Debug)]
 pub struct RRSigRecord {
@@ -230,6 +232,17 @@ impl RRSigRecord {
 impl fmt::Display for RRSigRecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "type {:?}, class {:?}", self.get_type(), self.class)
+        write!(f, "{:<8}{:<8}{:<8}{} {} {} {} {} {} {} {} {}", self.ttl,
+               self.class.to_string(),
+               self.get_type().to_string(),
+               self.type_covered.to_string(),
+               self.algorithm,
+               self.labels,
+               self.original_ttl,
+               self.expiration.to_time_format(),
+               self.inception.to_time_format(),
+               self.key_tag,
+               format!("{}.", self.signer_name.as_ref().unwrap()),
+               base64::encode(&self.signature))
     }
 }
