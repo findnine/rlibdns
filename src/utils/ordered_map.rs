@@ -72,6 +72,10 @@ where
     pub fn keys(&self) -> &Vec<K> {
         &self.keys
     }
+    
+    pub fn values(&self) -> impl Iterator<Item = &V> {
+        self.map.values()
+    }
 
     pub fn len(&self) -> usize {
         self.map.len()
