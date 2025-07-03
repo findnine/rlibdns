@@ -36,8 +36,6 @@ pub fn pack_domain(domain: &str, labels_map: &mut HashMap<String, usize>, off: u
 }
 
 pub fn unpack_domain(buf: &[u8], off: usize) -> (String, usize) {
-    
-    
     let mut builder = String::new();
     let mut pos = off;
     let mut jumped = false;

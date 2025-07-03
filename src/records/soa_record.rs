@@ -86,7 +86,7 @@ impl RecordBase for SoaRecord {
 
         off += 12+domain.len();
 
-        let mailbox = pack_domain(self.mailbox.as_ref().unwrap().as_str(), label_map, off+12, true);
+        let mailbox = pack_domain(self.mailbox.as_ref().unwrap().as_str(), label_map, off, true);
         buf.extend_from_slice(&mailbox);
 
         buf.extend_from_slice(&self.serial.to_be_bytes());
