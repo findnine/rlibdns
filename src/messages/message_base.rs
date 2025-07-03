@@ -43,9 +43,9 @@ pub struct MessageBase {
     origin: Option<SocketAddr>,
     destination: Option<SocketAddr>,
     queries: Vec<DnsQuery>,
-    answers: OrderedMap<String, Vec<Box<dyn RecordBase>>>,
-    authority_records: OrderedMap<String, Vec<Box<dyn RecordBase>>>,
-    additional_records: OrderedMap<String, Vec<Box<dyn RecordBase>>>
+    answers: Vec<(String, Box<dyn RecordBase>)>, //WE HAVE TO SWITCH FROM ORDERED_MAP TO VEC FOR RFC 5936
+    authority_records: Vec<(String, Box<dyn RecordBase>)>,
+    additional_records: Vec<(String, Box<dyn RecordBase>)>
 }
 
 impl Default for MessageBase {
@@ -66,9 +66,9 @@ impl Default for MessageBase {
             origin: None,
             destination: None,
             queries: Vec::new(),
-            answers: OrderedMap::new(),
-            authority_records: OrderedMap::new(),
-            additional_records: OrderedMap::new()
+            answers: Vec::new(),
+            authority_records: Vec::new(),
+            additional_records: Vec::new()
         }
     }
 }
@@ -297,24 +297,19 @@ impl MessageBase {
     }
 
     pub fn add_answer(&mut self, query: &str, record: Box<dyn RecordBase>) {
-        if self.answers.contains_key(&query.to_string()) {
-            self.answers.get_mut(&query.to_string()).unwrap().push(record);
-            return;
-        }
-
-        self.answers.insert(query.to_string(), vec![record]);
+        self.answers.push((query.to_string(), record));
     }
 
-    pub fn get_answers(&self) -> &OrderedMap<String, Vec<Box<dyn RecordBase>>> {
+    pub fn get_answers(&self) -> &Vec<(String, Box<dyn RecordBase>)> {
         &self.answers
     }
 
-    pub fn get_answers_mut(&mut self) -> &mut OrderedMap<String, Vec<Box<dyn RecordBase>>> {
+    pub fn get_answers_mut(&mut self) -> &mut Vec<(String, Box<dyn RecordBase>)> {
         &mut self.answers
     }
 
     pub fn calculate_total_answers(&self) -> usize {
-        self.answers.values().map(|v| v.len()).sum()
+        self.answers.len()
     }
 
     pub fn has_authority_records(&self) -> bool {
@@ -322,24 +317,19 @@ impl MessageBase {
     }
 
     pub fn add_authority_record(&mut self, query: &str, record: Box<dyn RecordBase>) {
-        if self.authority_records.contains_key(&query.to_string()) {
-            self.authority_records.get_mut(&query.to_string()).unwrap().push(record);
-            return;
-        }
-
-        self.authority_records.insert(query.to_string(), vec![record]);
+        self.authority_records.push((query.to_string(), record));
     }
 
-    pub fn get_authority_records(&self) -> &OrderedMap<String, Vec<Box<dyn RecordBase>>> {
+    pub fn get_authority_records(&self) -> &Vec<(String, Box<dyn RecordBase>)> {
         &self.authority_records
     }
 
-    pub fn get_authority_records_mut(&mut self) -> &mut OrderedMap<String, Vec<Box<dyn RecordBase>>> {
+    pub fn get_authority_records_mut(&mut self) -> &mut Vec<(String, Box<dyn RecordBase>)> {
         &mut self.authority_records
     }
 
     pub fn calculate_total_authority_records(&self) -> usize {
-        self.authority_records.values().map(|v| v.len()).sum()
+        self.authority_records.len()
     }
 
     pub fn has_additional_records(&self) -> bool {
@@ -347,24 +337,19 @@ impl MessageBase {
     }
 
     pub fn add_additional_record(&mut self, query: &str, record: Box<dyn RecordBase>) {
-        if self.additional_records.contains_key(&query.to_string()) {
-            self.additional_records.get_mut(&query.to_string()).unwrap().push(record);
-            return;
-        }
-
-        self.additional_records.insert(query.to_string(), vec![record]);
+        self.additional_records.push((query.to_string(), record));
     }
 
-    pub fn get_additional_records(&self) -> &OrderedMap<String, Vec<Box<dyn RecordBase>>> {
+    pub fn get_additional_records(&self) -> &Vec<(String, Box<dyn RecordBase>)> {
         &self.additional_records
     }
 
-    pub fn get_additional_records_mut(&mut self) -> &mut OrderedMap<String, Vec<Box<dyn RecordBase>>> {
+    pub fn get_additional_records_mut(&mut self) -> &mut Vec<(String, Box<dyn RecordBase>)> {
         &mut self.additional_records
     }
 
     pub fn calculate_total_additional_records(&self) -> usize {
-        self.additional_records.values().map(|v| v.len()).sum()
+        self.additional_records.len()
     }
 }
 
@@ -390,7 +375,7 @@ impl fmt::Display for MessageBase {
                 self.authority_records.len(),
                 self.additional_records.len())?;
 
-
+/*
         if let Some(r) = self.additional_records.get(&String::new()) {
             for r in r {
                 if r.get_type().eq(&RRTypes::Opt) {
@@ -432,7 +417,7 @@ impl fmt::Display for MessageBase {
                     }
                 }
             }
-        }
+        }*/
 
         Ok(())
     }

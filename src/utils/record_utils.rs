@@ -21,8 +21,8 @@ use crate::records::uri_record::UriRecord;
 use crate::utils::domain_utils::{pack_domain, unpack_domain};
 use crate::utils::ordered_map::OrderedMap;
 
-pub fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> OrderedMap<String, Vec<Box<dyn RecordBase>>> {
-    let mut records: OrderedMap<String, Vec<Box<dyn RecordBase>>> = OrderedMap::new();
+pub fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> Vec<(String, Box<dyn RecordBase>)> {
+    let mut records: Vec<(String, Box<dyn RecordBase>)> = Vec::new();
 
     for _ in 0..count {
         /*
@@ -74,40 +74,38 @@ pub fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> OrderedMap
             }
         };
 
-        records.entry(query).or_insert_with(Vec::new).push(record);
+        records.push((query, record));
         *off += 10+u16::from_be_bytes([buf[*off+8], buf[*off+9]]) as usize;
     }
 
     records
 }
 
-pub fn records_to_bytes(off: usize, records: &OrderedMap<String, Vec<Box<dyn RecordBase>>>, label_map: &mut HashMap<String, usize>, max_payload_len: usize) -> (Vec<u8>, u16, bool) {
+pub fn records_to_bytes(off: usize, records: &Vec<(String, Box<dyn RecordBase>)>, label_map: &mut HashMap<String, usize>, max_payload_len: usize) -> (Vec<u8>, u16, bool) {
     let mut truncated = false;
     
     let mut buf = Vec::new();
     let mut i = 0;
     let mut off = off;
 
-    'outer: for (query, records) in records.iter() {
-        for record in records {
-            match record.to_bytes(label_map, off) {
-                Ok(r) => {
-                    let q = pack_domain(query, label_map, off, true);
+    for (query, record) in records.iter() {
+        match record.to_bytes(label_map, off) {
+            Ok(r) => {
+                let q = pack_domain(query, label_map, off, true);
 
-                    let len = q.len()+r.len();
+                let len = q.len()+r.len();
 
-                    if off+len > max_payload_len {
-                        truncated = true;
-                        break 'outer;
-                    }
-
-                    buf.extend_from_slice(&q);
-                    buf.extend_from_slice(&r);
-                    off += len;
-                    i += 1;
+                if off+len > max_payload_len {
+                    truncated = true;
+                    break;
                 }
-                Err(_) => continue
+
+                buf.extend_from_slice(&q);
+                buf.extend_from_slice(&r);
+                off += len;
+                i += 1;
             }
+            Err(_) => continue
         }
     }
 
