@@ -89,11 +89,11 @@ pub fn records_to_bytes(off: usize, records: &Vec<(String, Box<dyn RecordBase>)>
     let mut off = off;
 
     for (query, record) in records.iter() {
-        match record.to_bytes(label_map, off) {
-            Ok(r) => {
-                let q = pack_domain(query, label_map, off, true);
+        let q = pack_domain(query, label_map, off, true);
 
-                let len = q.len()+r.len();
+        match record.to_bytes(label_map, off+q.len()+2) {
+            Ok(r) => {
+                let len = q.len()+r.len()+2;
 
                 if off+len > max_payload_len {
                     truncated = true;
@@ -103,7 +103,7 @@ pub fn records_to_bytes(off: usize, records: &Vec<(String, Box<dyn RecordBase>)>
                 buf.extend_from_slice(&q);
                 buf.extend_from_slice(&record.get_type().get_code().to_be_bytes());
                 buf.extend_from_slice(&r);
-                off += len+2;
+                off += len;
                 i += 1;
             }
             Err(_) => continue

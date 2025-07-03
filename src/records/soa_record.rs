@@ -80,10 +80,10 @@ impl RecordBase for SoaRecord {
         buf.splice(0..2, self.class.get_code().to_be_bytes());
         buf.splice(2..6, self.ttl.to_be_bytes());
 
-        let domain = pack_domain(self.domain.as_ref().unwrap().as_str(), label_map, off+10, true);
+        let domain = pack_domain(self.domain.as_ref().unwrap().as_str(), label_map, off+8, true);
         buf.extend_from_slice(&domain);
 
-        off += 10+domain.len();
+        off += domain.len()+8;
 
         let mailbox = pack_domain(self.mailbox.as_ref().unwrap().as_str(), label_map, off, true);
         buf.extend_from_slice(&mailbox);
