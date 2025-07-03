@@ -51,19 +51,17 @@ impl RecordBase for UriRecord {
     }
 
     fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {
-        let mut buf = vec![0u8; 14];
+        let mut buf = vec![0u8; 12];
 
-        buf.splice(0..2, self.get_type().get_code().to_be_bytes());
+        buf.splice(0..2, self.class.get_code().to_be_bytes());
+        buf.splice(2..6, self.ttl.to_be_bytes());
 
-        buf.splice(2..4, self.class.get_code().to_be_bytes());
-        buf.splice(4..8, self.ttl.to_be_bytes());
-
-        buf.splice(10..12, self.priority.to_be_bytes());
-        buf.splice(12..14, self.weight.to_be_bytes());
+        buf.splice(8..10, self.priority.to_be_bytes());
+        buf.splice(10..12, self.weight.to_be_bytes());
 
         buf.extend_from_slice(self.target.as_ref().unwrap().as_bytes());
 
-        buf.splice(8..10, ((buf.len()-10) as u16).to_be_bytes());
+        buf.splice(6..8, ((buf.len()-8) as u16).to_be_bytes());
 
         Ok(buf)
     }

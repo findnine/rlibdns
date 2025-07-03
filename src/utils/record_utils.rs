@@ -101,8 +101,9 @@ pub fn records_to_bytes(off: usize, records: &Vec<(String, Box<dyn RecordBase>)>
                 }
 
                 buf.extend_from_slice(&q);
+                buf.extend_from_slice(&record.get_type().get_code().to_be_bytes());
                 buf.extend_from_slice(&r);
-                off += len;
+                off += len+2;
                 i += 1;
             }
             Err(_) => continue

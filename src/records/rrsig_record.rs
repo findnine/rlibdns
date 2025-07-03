@@ -84,27 +84,26 @@ impl RecordBase for RRSigRecord {
     }
 
     fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {
-        let mut buf = vec![0u8; 28];
+        let mut buf = vec![0u8; 26];
 
-        buf.splice(0..2, self.get_type().get_code().to_be_bytes());
-        buf.splice(2..4, self.class.get_code().to_be_bytes());
-        buf.splice(4..8, self.ttl.to_be_bytes());
+        buf.splice(0..2, self.class.get_code().to_be_bytes());
+        buf.splice(2..6, self.ttl.to_be_bytes());
 
-        buf.splice(10..12, self.type_covered.get_code().to_be_bytes());
+        buf.splice(8..10, self.type_covered.get_code().to_be_bytes());
 
-        buf[12] = self.algorithm;
-        buf[13] = self.labels;
+        buf[10] = self.algorithm;
+        buf[11] = self.labels;
 
-        buf.splice(14..18, self.original_ttl.to_be_bytes());
-        buf.splice(18..22, self.expiration.to_be_bytes());
-        buf.splice(22..26, self.inception.to_be_bytes());
-        buf.splice(26..28, self.key_tag.to_be_bytes());
+        buf.splice(12..16, self.original_ttl.to_be_bytes());
+        buf.splice(16..20, self.expiration.to_be_bytes());
+        buf.splice(20..24, self.inception.to_be_bytes());
+        buf.splice(24..26, self.key_tag.to_be_bytes());
 
-        buf.extend_from_slice(&pack_domain(self.signer_name.as_ref().unwrap(), label_map, off+16, true));
+        buf.extend_from_slice(&pack_domain(self.signer_name.as_ref().unwrap(), label_map, off+14, true));
 
         buf.extend_from_slice(&self.signature);
 
-        buf.splice(8..10, ((buf.len()-10) as u16).to_be_bytes());
+        buf.splice(6..8, ((buf.len()-8) as u16).to_be_bytes());
 
         Ok(buf)
     }

@@ -66,19 +66,18 @@ impl RecordBase for DnsKeyRecord {
     }
 
     fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {
-        let mut buf = vec![0u8; 14];
+        let mut buf = vec![0u8; 12];
 
-        buf.splice(0..2, self.get_type().get_code().to_be_bytes());
-        buf.splice(2..4, self.class.get_code().to_be_bytes());
-        buf.splice(4..8, self.ttl.to_be_bytes());
+        buf.splice(0..2, self.class.get_code().to_be_bytes());
+        buf.splice(2..6, self.ttl.to_be_bytes());
 
-        buf.splice(10..12, self.flags.to_be_bytes());
-        buf[12] = self.protocol;
-        buf[13] = self.algorithm;
+        buf.splice(8..10, self.flags.to_be_bytes());
+        buf[10] = self.protocol;
+        buf[11] = self.algorithm;
 
         buf.extend_from_slice(&self.public_key);
 
-        buf.splice(8..10, ((buf.len()-10) as u16).to_be_bytes());
+        buf.splice(6..8, ((buf.len()-8) as u16).to_be_bytes());
 
         Ok(buf)
     }

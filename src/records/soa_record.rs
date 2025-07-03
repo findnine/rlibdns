@@ -75,16 +75,15 @@ impl RecordBase for SoaRecord {
     fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {
         let mut off = off;
 
-        let mut buf = vec![0u8; 10];
+        let mut buf = vec![0u8; 8];
 
-        buf.splice(0..2, self.get_type().get_code().to_be_bytes());
-        buf.splice(2..4, self.class.get_code().to_be_bytes());
-        buf.splice(4..8, self.ttl.to_be_bytes());
+        buf.splice(0..2, self.class.get_code().to_be_bytes());
+        buf.splice(2..6, self.ttl.to_be_bytes());
 
-        let domain = pack_domain(self.domain.as_ref().unwrap().as_str(), label_map, off+12, true);
+        let domain = pack_domain(self.domain.as_ref().unwrap().as_str(), label_map, off+10, true);
         buf.extend_from_slice(&domain);
 
-        off += 12+domain.len();
+        off += 10+domain.len();
 
         let mailbox = pack_domain(self.mailbox.as_ref().unwrap().as_str(), label_map, off, true);
         buf.extend_from_slice(&mailbox);
@@ -95,7 +94,7 @@ impl RecordBase for SoaRecord {
         buf.extend_from_slice(&self.expire.to_be_bytes());
         buf.extend_from_slice(&self.minimum_ttl.to_be_bytes());
 
-        buf.splice(8..10, ((buf.len()-10) as u16).to_be_bytes());
+        buf.splice(6..8, ((buf.len()-8) as u16).to_be_bytes());
 
         Ok(buf)
     }

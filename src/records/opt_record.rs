@@ -61,15 +61,14 @@ impl RecordBase for OptRecord {
     }
 
     fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {
-        let mut buf = vec![0u8; 10];
+        let mut buf = vec![0u8; 8];
 
-        buf.splice(0..2, self.get_type().get_code().to_be_bytes());
-        buf.splice(2..4, self.payload_size.to_be_bytes());
+        buf.splice(0..2, self.payload_size.to_be_bytes());
 
-        buf[4] = self.ext_rcode;
-        buf[5] = self.version;
+        buf[2] = self.ext_rcode;
+        buf[3] = self.version;
 
-        buf.splice(6..8, self.flags.to_be_bytes());
+        buf.splice(4..6, self.flags.to_be_bytes());
 
         for (code, option) in self.options.iter() {
             buf.extend_from_slice(&code.get_code().to_be_bytes());
@@ -77,7 +76,7 @@ impl RecordBase for OptRecord {
             buf.extend_from_slice(&option);
         }
 
-        buf.splice(8..10, ((buf.len()-10) as u16).to_be_bytes());
+        buf.splice(6..8, ((buf.len()-8) as u16).to_be_bytes());
 
         Ok(buf)
     }

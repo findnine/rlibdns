@@ -52,21 +52,19 @@ impl RecordBase for AaaaRecord {
     }
 
     fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {
-        let mut buf = vec![0u8; 10];
-
-        buf.splice(0..2, self.get_type().get_code().to_be_bytes());
+        let mut buf = vec![0u8; 8];
 
         let mut class = self.class.get_code();
         if self.cache_flush {
             class = class | 0x8000;
         }
 
-        buf.splice(2..4, class.to_be_bytes());
-        buf.splice(4..8, self.ttl.to_be_bytes());
+        buf.splice(0..2, class.to_be_bytes());
+        buf.splice(2..6, self.ttl.to_be_bytes());
 
         buf.extend_from_slice(&self.address.as_ref().unwrap().octets().to_vec());
 
-        buf.splice(8..10, ((buf.len()-10) as u16).to_be_bytes());
+        buf.splice(6..8, ((buf.len()-8) as u16).to_be_bytes());
 
         Ok(buf)
     }
