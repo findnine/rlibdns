@@ -75,7 +75,7 @@ impl RecordBase for SrvRecord {
         buf.splice(10..12, self.weight.to_be_bytes());
         buf.splice(12..14, self.port.to_be_bytes());
 
-        buf.extend_from_slice(&pack_domain(self.target.as_ref().unwrap().as_str(), label_map, off+18, true));
+        buf.extend_from_slice(&pack_domain(self.target.as_ref().unwrap().as_str(), label_map, off+14, true));
 
         buf.splice(6..8, ((buf.len()-8) as u16).to_be_bytes());
 
