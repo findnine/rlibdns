@@ -24,7 +24,7 @@ use crate::records::sshfp_record::SshFpRecord;
 use crate::records::svcb_record::SvcbRecord;
 use crate::records::txt_record::TxtRecord;
 use crate::records::uri_record::UriRecord;
-use crate::utils::base64;
+use crate::utils::{base64, hex};
 use crate::utils::time_utils::TimeUtils;
 
 #[derive(Debug, PartialEq, Eq)]
@@ -386,7 +386,13 @@ fn set_data(record: &mut dyn RecordBase, pos: usize, value: &str) {
             }
         }
         RRTypes::SshFp => {
-            //TODO
+            let record = record.as_any_mut().downcast_mut::<SshFpRecord>().unwrap();
+            match pos {
+                0 => record.algorithm = value.parse().unwrap(),
+                1 => record.fingerprint_type = value.parse().unwrap(),
+                2 => record.fingerprint = hex::decode(value).unwrap(),
+                _ => unimplemented!()
+            };
         }
         RRTypes::RRSig => {
             let record = record.as_any_mut().downcast_mut::<RRSigRecord>().unwrap();

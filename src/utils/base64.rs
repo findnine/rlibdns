@@ -51,7 +51,7 @@ pub fn encode(input: &[u8]) -> String {
         output.push(TABLE[((b1 & 0x03) << 4) as usize] as char);
         output.push('=');
         output.push('=');
-        
+
     } else if rem == 2 {
         let b1 = input[i];
         let b2 = input[i + 1];

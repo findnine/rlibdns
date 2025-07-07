@@ -35,12 +35,12 @@ impl RecordBase for SshFpRecord {
         let class = RRClasses::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
         let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
 
-        //let z = u16::from_be_bytes([buf[off+6], buf[off+7]]) as usize;
-
         let algorithm = buf[8];
         let fingerprint_type = buf[9];
 
-        //let target = String::from_utf8(buf[off+12..off+8+length].to_vec()).unwrap();
+        let data_length = off+8+u16::from_be_bytes([buf[off+6], buf[off+7]]) as usize;
+
+        let fingerprint = buf[off+10..data_length].to_vec();
 
         Self {
             class,
