@@ -68,7 +68,7 @@ impl RecordBase for SshFpRecord {
     }
 
     fn get_type(&self) -> RRTypes {
-        RRTypes::Uri
+        RRTypes::SshFp
     }
 
     fn upcast(self) -> Box<dyn RecordBase> {

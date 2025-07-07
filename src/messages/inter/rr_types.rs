@@ -154,7 +154,7 @@ impl fmt::Display for RRTypes {
             Self::Loc => "LOC",
             Self::Srv => "SRV",
             Self::Opt => "OPT",
-            Self::SshFp => "SHFP",
+            Self::SshFp => "SSHFP",
             Self::RRSig => "RRSIG",
             Self::Nsec => "NSEC",
             Self::DnsKey => "DNSKEY",
