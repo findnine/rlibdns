@@ -5,61 +5,62 @@ use std::fmt::Formatter;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::RecordBase;
+use crate::utils::hex;
 
 #[derive(Clone, Debug)]
-pub struct UriRecord {
+pub struct SshFpRecord {
     class: RRClasses,
     ttl: u32,
-    pub(crate) priority: u16,
-    pub(crate) weight: u16,
-    pub(crate) target: Option<String>
+    pub(crate) algorithm: u8,
+    pub(crate) fingerprint_type: u8,
+    pub(crate) fingerprint: Vec<u8>
 }
 
-impl Default for UriRecord {
+impl Default for SshFpRecord {
 
     fn default() -> Self {
         Self {
             class: RRClasses::default(),
             ttl: 0,
-            priority: 0,
-            weight: 0,
-            target: None
+            algorithm: 0,
+            fingerprint_type: 0,
+            fingerprint: Vec::new()
         }
     }
 }
 
-impl RecordBase for UriRecord {
+impl RecordBase for SshFpRecord {
 
     fn from_bytes(buf: &[u8], off: usize) -> Self {
         let class = RRClasses::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
         let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
 
-        let priority = u16::from_be_bytes([buf[off+8], buf[off+9]]);
-        let weight = u16::from_be_bytes([buf[off+10], buf[off+11]]);
+        //let z = u16::from_be_bytes([buf[off+6], buf[off+7]]) as usize;
 
-        let length = u16::from_be_bytes([buf[off+6], buf[off+7]]) as usize;
+        let algorithm = buf[8];
+        let fingerprint_type = buf[9];
 
-        let target = String::from_utf8(buf[off+12..off+8+length].to_vec()).unwrap();
+        //let target = String::from_utf8(buf[off+12..off+8+length].to_vec()).unwrap();
 
         Self {
             class,
             ttl,
-            priority,
-            weight,
-            target: Some(target)
+            algorithm,
+            fingerprint_type,
+            fingerprint
         }
     }
 
     fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {
-        let mut buf = vec![0u8; 12];
+        let mut buf = vec![0u8; 10];
 
         buf.splice(0..2, self.class.get_code().to_be_bytes());
         buf.splice(2..6, self.ttl.to_be_bytes());
 
-        buf.splice(8..10, self.priority.to_be_bytes());
-        buf.splice(10..12, self.weight.to_be_bytes());
+        buf[8] = self.algorithm;
+        buf[9] = self.fingerprint_type;
 
-        buf.extend_from_slice(self.target.as_ref().unwrap().as_bytes());
+        buf.extend_from_slice(&self.fingerprint);
 
         buf.splice(6..8, ((buf.len()-8) as u16).to_be_bytes());
 
@@ -87,7 +88,7 @@ impl RecordBase for UriRecord {
     }
 }
 
-impl UriRecord {
+impl SshFpRecord {
 
     pub fn new(ttl: u32, class: RRClasses) -> Self {
         Self {
@@ -113,39 +114,39 @@ impl UriRecord {
         self.ttl
     }
 
-    pub fn set_priority(&mut self, priority: u16) {
-        self.priority = priority;
+    pub fn set_algorithm(&mut self, algorithm: u8) {
+        self.algorithm = algorithm;
     }
 
-    pub fn get_priority(&self) -> u16 {
-        self.priority
+    pub fn get_algorithm(&self) -> u8 {
+        self.algorithm
     }
 
-    pub fn set_weight(&mut self, weight: u16) {
-        self.weight = weight;
+    pub fn set_fingerprint_type(&mut self, fingerprint_type: u8) {
+        self.fingerprint_type = fingerprint_type;
     }
 
-    pub fn get_weight(&self) -> u16 {
-        self.weight
+    pub fn get_fingerprint_type(&self) -> u8 {
+        self.fingerprint_type
     }
 
-    pub fn set_target(&mut self, target: &str) {
-        self.target = Some(target.to_string());
+    pub fn set_fingerprint(&mut self, fingerprint: &[u8]) {
+        self.fingerprint = fingerprint.to_vec();
     }
 
-    pub fn get_target(&self) -> Option<String> {
-        self.target.clone()
+    pub fn get_fingerprint(&self) -> &[u8] {
+        self.fingerprint.as_ref()
     }
 }
 
-impl fmt::Display for UriRecord {
+impl fmt::Display for SshFpRecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{:<8}{:<8}{:<8}{} {} \"{}\"", self.ttl,
                self.class.to_string(),
                self.get_type().to_string(),
-               self.priority,
-               self.weight,
-               self.target.as_ref().unwrap())
+               self.algorithm,
+               self.fingerprint_type,
+               hex::encode(&self.fingerprint))
     }
 }

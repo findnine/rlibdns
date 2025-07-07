@@ -20,6 +20,7 @@ use crate::records::ptr_record::PtrRecord;
 use crate::records::rrsig_record::RRSigRecord;
 use crate::records::soa_record::SoaRecord;
 use crate::records::srv_record::SrvRecord;
+use crate::records::sshfp_record::SshFpRecord;
 use crate::records::svcb_record::SvcbRecord;
 use crate::records::txt_record::TxtRecord;
 use crate::records::uri_record::UriRecord;
@@ -143,6 +144,7 @@ impl ZoneParser {
                                 RRTypes::Txt => TxtRecord::new(ttl, class).upcast(),
                                 RRTypes::Loc => LocRecord::new(ttl, class).upcast(),
                                 RRTypes::Srv => SrvRecord::new(ttl, class).upcast(),
+                                RRTypes::SshFp => SshFpRecord::new(ttl, class).upcast(),
                                 RRTypes::RRSig => RRSigRecord::new(ttl, class).upcast(),
                                 RRTypes::Nsec => NSecRecord::new(ttl, class).upcast(),
                                 RRTypes::DnsKey => DnsKeyRecord::new(ttl, class).upcast(),
@@ -382,6 +384,9 @@ fn set_data(record: &mut dyn RecordBase, pos: usize, value: &str) {
                 }),
                 _ => unimplemented!()
             }
+        }
+        RRTypes::SshFp => {
+            //TODO
         }
         RRTypes::RRSig => {
             let record = record.as_any_mut().downcast_mut::<RRSigRecord>().unwrap();
