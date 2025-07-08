@@ -142,7 +142,7 @@ impl SshFpRecord {
 impl fmt::Display for SshFpRecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:<8}{:<8}{:<8}{} {} \"{}\"", self.ttl,
+        write!(f, "{:<8}{:<8}{:<8}{} {} {}", self.ttl,
                self.class.to_string(),
                self.get_type().to_string(),
                self.algorithm,
