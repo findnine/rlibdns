@@ -16,10 +16,10 @@ use crate::records::ptr_record::PtrRecord;
 use crate::records::rrsig_record::RRSigRecord;
 use crate::records::soa_record::SoaRecord;
 use crate::records::srv_record::SrvRecord;
+use crate::records::sshfp_record::SshFpRecord;
 use crate::records::txt_record::TxtRecord;
 use crate::records::uri_record::UriRecord;
 use crate::utils::domain_utils::{pack_domain, unpack_domain};
-use crate::utils::ordered_map::OrderedMap;
 
 pub fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> Vec<(String, Box<dyn RecordBase>)> {
     let mut records: Vec<(String, Box<dyn RecordBase>)> = Vec::new();
@@ -54,6 +54,7 @@ pub fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> Vec<(Strin
             RRTypes::Txt => TxtRecord::from_bytes(buf, *off+2).upcast(),
             RRTypes::Loc => LocRecord::from_bytes(buf, *off+2).upcast(),
             RRTypes::Srv => SrvRecord::from_bytes(buf, *off+2).upcast(),
+            RRTypes::SshFp => SshFpRecord::from_bytes(buf, *off+2).upcast(),
             RRTypes::Opt => OptRecord::from_bytes(buf, *off+2).upcast(),
             RRTypes::RRSig => RRSigRecord::from_bytes(buf, *off+2).upcast(),
             RRTypes::Nsec => NSecRecord::from_bytes(buf, *off+2).upcast(),

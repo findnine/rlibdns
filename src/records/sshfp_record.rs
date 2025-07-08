@@ -35,8 +35,8 @@ impl RecordBase for SshFpRecord {
         let class = RRClasses::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
         let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
 
-        let algorithm = buf[8];
-        let fingerprint_type = buf[9];
+        let algorithm = buf[off+8];
+        let fingerprint_type = buf[off+9];
 
         let data_length = off+8+u16::from_be_bytes([buf[off+6], buf[off+7]]) as usize;
 
