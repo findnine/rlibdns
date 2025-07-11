@@ -20,3 +20,4 @@ pub mod txt_record;
 pub mod uri_record;
 pub mod loc_record;
 pub mod sshfp_record;
+pub mod smimea_record;
