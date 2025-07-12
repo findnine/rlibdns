@@ -11,9 +11,10 @@ use crate::utils::hex;
 pub struct SmimeaRecord {
     class: RRClasses,
     ttl: u32,
-    pub(crate) algorithm: u8,
-    pub(crate) fingerprint_type: u8,
-    pub(crate) fingerprint: Vec<u8>
+    pub(crate) usage: u8,
+    pub(crate) selector: u8,
+    pub(crate) matching_type: u8,
+    pub(crate) certificate: Vec<u8>
 }
 
 impl Default for SmimeaRecord {
@@ -22,9 +23,10 @@ impl Default for SmimeaRecord {
         Self {
             class: RRClasses::default(),
             ttl: 0,
-            algorithm: 0,
-            fingerprint_type: 0,
-            fingerprint: Vec::new()
+            usage: 0,
+            selector: 0,
+            matching_type: 0,
+            certificate: Vec::new()
         }
     }
 }
@@ -45,9 +47,10 @@ impl RecordBase for SmimeaRecord {
         Self {
             class,
             ttl,
-            algorithm,
-            fingerprint_type,
-            fingerprint
+            usage,
+            selector,
+            matching_type,
+            certificate
         }
     }
 
@@ -60,7 +63,7 @@ impl RecordBase for SmimeaRecord {
         buf[8] = self.algorithm;
         buf[9] = self.fingerprint_type;
 
-        buf.extend_from_slice(&self.fingerprint);
+        buf.extend_from_slice(&self.certificate);
 
         buf.splice(6..8, ((buf.len()-8) as u16).to_be_bytes());
 
@@ -130,12 +133,20 @@ impl SmimeaRecord {
         self.fingerprint_type
     }
 
-    pub fn set_fingerprint(&mut self, fingerprint: &[u8]) {
-        self.fingerprint = fingerprint.to_vec();
+    pub fn set_fingerprint_type(&mut self, fingerprint_type: u8) {
+        self.fingerprint_type = fingerprint_type;
     }
 
-    pub fn get_fingerprint(&self) -> &[u8] {
-        self.fingerprint.as_ref()
+    pub fn get_fingerprint_type(&self) -> u8 {
+        self.fingerprint_type
+    }
+
+    pub fn set_certificate(&mut self, certificate: &[u8]) {
+        self.certificate = certificate.to_vec();
+    }
+
+    pub fn get_certificate(&self) -> &[u8] {
+        self.certificate.as_ref()
     }
 }
 
@@ -147,6 +158,6 @@ impl fmt::Display for SmimeaRecord {
                self.get_type().to_string(),
                self.algorithm,
                self.fingerprint_type,
-               hex::encode(&self.fingerprint))
+               hex::encode(&self.certificate))
     }
 }
