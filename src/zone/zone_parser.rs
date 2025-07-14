@@ -34,7 +34,7 @@ enum ParserState {
     Common,
     Directive,
     Data,
-    QString,
+    QString
 }
 
 pub struct ZoneParser {
