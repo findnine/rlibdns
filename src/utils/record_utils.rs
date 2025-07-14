@@ -14,6 +14,7 @@ use crate::records::nsec_record::NSecRecord;
 use crate::records::opt_record::OptRecord;
 use crate::records::ptr_record::PtrRecord;
 use crate::records::rrsig_record::RRSigRecord;
+use crate::records::smimea_record::SmimeaRecord;
 use crate::records::soa_record::SoaRecord;
 use crate::records::srv_record::SrvRecord;
 use crate::records::sshfp_record::SshFpRecord;
@@ -59,6 +60,7 @@ pub fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> Vec<(Strin
             RRTypes::RRSig => RRSigRecord::from_bytes(buf, *off+2).upcast(),
             RRTypes::Nsec => NSecRecord::from_bytes(buf, *off+2).upcast(),
             RRTypes::DnsKey => DnsKeyRecord::from_bytes(buf, *off+2).upcast(),
+            RRTypes::Smimea => SmimeaRecord::from_bytes(buf, *off+2).upcast(),
             RRTypes::Https => HttpsRecord::from_bytes(buf, *off+2).upcast(),
             RRTypes::Spf => {
                 todo!()

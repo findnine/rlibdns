@@ -18,6 +18,7 @@ use crate::records::ns_record::NsRecord;
 use crate::records::nsec_record::NSecRecord;
 use crate::records::ptr_record::PtrRecord;
 use crate::records::rrsig_record::RRSigRecord;
+use crate::records::smimea_record::SmimeaRecord;
 use crate::records::soa_record::SoaRecord;
 use crate::records::srv_record::SrvRecord;
 use crate::records::sshfp_record::SshFpRecord;
@@ -148,6 +149,7 @@ impl ZoneParser {
                                 RRTypes::RRSig => RRSigRecord::new(ttl, class).upcast(),
                                 RRTypes::Nsec => NSecRecord::new(ttl, class).upcast(),
                                 RRTypes::DnsKey => DnsKeyRecord::new(ttl, class).upcast(),
+                                RRTypes::Smimea => SmimeaRecord::new(ttl, class).upcast(),
                                 RRTypes::Svcb => SvcbRecord::new(ttl, class).upcast(),
                                 RRTypes::Https => HttpsRecord::new(ttl, class).upcast(),
                                 //RRTypes::Spf => {}
@@ -392,7 +394,7 @@ fn set_data(record: &mut dyn RecordBase, pos: usize, value: &str) {
                 1 => record.fingerprint_type = value.parse().unwrap(),
                 2 => record.fingerprint = hex::decode(value).unwrap(),
                 _ => unimplemented!()
-            };
+            }
         }
         RRTypes::RRSig => {
             let record = record.as_any_mut().downcast_mut::<RRSigRecord>().unwrap();
@@ -414,6 +416,16 @@ fn set_data(record: &mut dyn RecordBase, pos: usize, value: &str) {
         }
         RRTypes::Nsec => {}//example.com.  NSEC  next.example.com. A MX RRSIG NSEC
         RRTypes::DnsKey => {}//DNSKEY  <flags> <protocol> <algorithm> <public key>
+        RRTypes::Smimea => {
+            let record = record.as_any_mut().downcast_mut::<SmimeaRecord>().unwrap();
+            match pos {
+                0 => record.usage = value.parse().unwrap(),
+                1 => record.selector = value.parse().unwrap(),
+                2 => record.matching_type = value.parse().unwrap(),
+                3 => record.certificate = hex::decode(value).unwrap(),
+                _ => unimplemented!()
+            }
+        }
         RRTypes::Svcb => {
             let record = record.as_any_mut().downcast_mut::<SvcbRecord>().unwrap();
             match pos {

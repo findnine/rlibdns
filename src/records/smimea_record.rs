@@ -37,12 +37,13 @@ impl RecordBase for SmimeaRecord {
         let class = RRClasses::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
         let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
 
-        let algorithm = buf[off+8];
-        let fingerprint_type = buf[off+9];
+        let usage = buf[off+8];
+        let selector = buf[off+9];
+        let matching_type = buf[off+10];
 
         let data_length = off+8+u16::from_be_bytes([buf[off+6], buf[off+7]]) as usize;
 
-        let fingerprint = buf[off+10..data_length].to_vec();
+        let certificate = buf[off+11..data_length].to_vec();
 
         Self {
             class,
@@ -60,8 +61,9 @@ impl RecordBase for SmimeaRecord {
         buf.splice(0..2, self.class.get_code().to_be_bytes());
         buf.splice(2..6, self.ttl.to_be_bytes());
 
-        buf[8] = self.algorithm;
-        buf[9] = self.fingerprint_type;
+        buf[8] = self.usage;
+        buf[9] = self.selector;
+        buf[10] = self.matching_type;
 
         buf.extend_from_slice(&self.certificate);
 
@@ -71,7 +73,7 @@ impl RecordBase for SmimeaRecord {
     }
 
     fn get_type(&self) -> RRTypes {
-        RRTypes::SshFp
+        RRTypes::Smimea
     }
 
     fn upcast(self) -> Box<dyn RecordBase> {
@@ -117,28 +119,28 @@ impl SmimeaRecord {
         self.ttl
     }
 
-    pub fn set_algorithm(&mut self, algorithm: u8) {
-        self.algorithm = algorithm;
+    pub fn set_usage(&mut self, usage: u8) {
+        self.usage = usage;
     }
 
-    pub fn get_algorithm(&self) -> u8 {
-        self.algorithm
+    pub fn get_usage(&self) -> u8 {
+        self.usage
     }
 
-    pub fn set_fingerprint_type(&mut self, fingerprint_type: u8) {
-        self.fingerprint_type = fingerprint_type;
+    pub fn set_selector(&mut self, selector: u8) {
+        self.selector = selector;
     }
 
-    pub fn get_fingerprint_type(&self) -> u8 {
-        self.fingerprint_type
+    pub fn get_selector(&self) -> u8 {
+        self.selector
     }
 
-    pub fn set_fingerprint_type(&mut self, fingerprint_type: u8) {
-        self.fingerprint_type = fingerprint_type;
+    pub fn set_matching_type(&mut self, matching_type: u8) {
+        self.matching_type = matching_type;
     }
 
-    pub fn get_fingerprint_type(&self) -> u8 {
-        self.fingerprint_type
+    pub fn get_matching_type(&self) -> u8 {
+        self.matching_type
     }
 
     pub fn set_certificate(&mut self, certificate: &[u8]) {
@@ -153,11 +155,12 @@ impl SmimeaRecord {
 impl fmt::Display for SmimeaRecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:<8}{:<8}{:<8}{} {} {}", self.ttl,
+        write!(f, "{:<8}{:<8}{:<8}{} {} {} {}", self.ttl,
                self.class.to_string(),
                self.get_type().to_string(),
-               self.algorithm,
-               self.fingerprint_type,
+               self.usage,
+               self.selector,
+               self.matching_type,
                hex::encode(&self.certificate))
     }
 }
