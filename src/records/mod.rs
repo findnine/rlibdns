@@ -15,6 +15,7 @@ pub mod rrsig_record;
 pub mod soa_record;
 pub mod spf_record;
 pub mod srv_record;
+pub mod naptr_record;
 pub mod tsig_record;
 pub mod txt_record;
 pub mod uri_record;
