@@ -113,30 +113,6 @@ impl NaptrRecord {
     pub fn get_ttl(&self) -> u32 {
         self.ttl
     }
-
-    pub fn set_algorithm(&mut self, algorithm: u8) {
-        self.algorithm = algorithm;
-    }
-
-    pub fn get_algorithm(&self) -> u8 {
-        self.algorithm
-    }
-
-    pub fn set_fingerprint_type(&mut self, fingerprint_type: u8) {
-        self.fingerprint_type = fingerprint_type;
-    }
-
-    pub fn get_fingerprint_type(&self) -> u8 {
-        self.fingerprint_type
-    }
-
-    pub fn set_fingerprint(&mut self, fingerprint: &[u8]) {
-        self.fingerprint = fingerprint.to_vec();
-    }
-
-    pub fn get_fingerprint(&self) -> &[u8] {
-        self.fingerprint.as_ref()
-    }
 }
 
 impl fmt::Display for NaptrRecord {
