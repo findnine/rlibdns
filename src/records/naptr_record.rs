@@ -11,9 +11,10 @@ use crate::utils::hex;
 pub struct NaptrRecord {
     class: RRClasses,
     ttl: u32,
-    pub(crate) algorithm: u8,
-    pub(crate) fingerprint_type: u8,
-    pub(crate) fingerprint: Vec<u8>
+    pub(crate) flags: u8,
+    pub(crate) service: String,
+    pub(crate) regex: String,
+    pub(crate) replacement: String
 }
 
 impl Default for NaptrRecord {
@@ -22,9 +23,10 @@ impl Default for NaptrRecord {
         Self {
             class: RRClasses::default(),
             ttl: 0,
-            algorithm: 0,
-            fingerprint_type: 0,
-            fingerprint: Vec::new()
+            flags: 0,
+            service: String::new(),
+            regex: String::new(),
+            replacement: String::new()
         }
     }
 }
@@ -35,12 +37,12 @@ impl RecordBase for NaptrRecord {
         let class = RRClasses::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
         let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
 
-        let algorithm = buf[off+8];
-        let fingerprint_type = buf[off+9];
+        let flags = buf[off+8];
+        //let fingerprint_type = buf[off+9];
 
         let data_length = off+8+u16::from_be_bytes([buf[off+6], buf[off+7]]) as usize;
 
-        let fingerprint = buf[off+10..data_length].to_vec();
+        //let fingerprint = buf[off+10..data_length].to_vec();
 
         Self {
             class,
