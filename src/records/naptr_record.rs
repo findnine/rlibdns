@@ -37,19 +37,30 @@ impl RecordBase for NaptrRecord {
         let class = RRClasses::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
         let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
 
+        //let z = u16::from_be_bytes([buf[off+6], buf[off+7]]);
+
         let flags = buf[off+8];
-        //let fingerprint_type = buf[off+9];
 
-        let data_length = off+8+u16::from_be_bytes([buf[off+6], buf[off+7]]) as usize;
+        let length = buf[off+9] as usize;
+        let service = String::from_utf8(buf[off + 10..off + 10 + length].to_vec()).unwrap();
 
-        //let fingerprint = buf[off+10..data_length].to_vec();
+        let mut off = off+10+length;
+
+        let length = buf[off] as usize;
+        let regex = String::from_utf8(buf[off + 1..off + 1 + length].to_vec()).unwrap();
+
+        off += off+2+length;
+
+        let length = buf[off] as usize;
+        let replacement = String::from_utf8(buf[off + 1..off + 1 + length].to_vec()).unwrap();
 
         Self {
             class,
             ttl,
-            algorithm,
-            fingerprint_type,
-            fingerprint
+            flags,
+            service,
+            regex,
+            replacement
         }
     }
 
