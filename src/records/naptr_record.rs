@@ -70,12 +70,12 @@ impl RecordBase for NaptrRecord {
         buf.splice(0..2, self.class.get_code().to_be_bytes());
         buf.splice(2..6, self.ttl.to_be_bytes());
 
-        buf[8] = self.algorithm;
-        buf[9] = self.fingerprint_type;
+        //buf[8] = self.algorithm;
+        //buf[9] = self.fingerprint_type;
 
-        buf.extend_from_slice(&self.fingerprint);
+        //buf.extend_from_slice(&self.fingerprint);
 
-        buf.splice(6..8, ((buf.len()-8) as u16).to_be_bytes());
+        //buf.splice(6..8, ((buf.len()-8) as u16).to_be_bytes());
 
         Ok(buf)
     }
@@ -131,11 +131,12 @@ impl NaptrRecord {
 impl fmt::Display for NaptrRecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:<8}{:<8}{:<8}{} {} {}", self.ttl,
+        write!(f, "{:<8}{:<8}{:<8}{} {} {} {}", self.ttl,
                self.class.to_string(),
                self.get_type().to_string(),
-               self.algorithm,
-               self.fingerprint_type,
-               hex::encode(&self.fingerprint))
+               self.flags,
+               self.service,
+               self.regex,
+               self.replacement)
     }
 }
