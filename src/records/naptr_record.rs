@@ -65,17 +65,23 @@ impl RecordBase for NaptrRecord {
     }
 
     fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {
-        let mut buf = vec![0u8; 10];
+        let mut buf = vec![0u8; 9];
 
         buf.splice(0..2, self.class.get_code().to_be_bytes());
         buf.splice(2..6, self.ttl.to_be_bytes());
 
         buf[8] = self.flags;
-        //buf[9] = self.fingerprint_type;
 
-        //buf.extend_from_slice(&self.fingerprint);
+        buf.push(self.service.len() as u8);
+        buf.extend_from_slice(self.service.as_bytes());
 
-        //buf.splice(6..8, ((buf.len()-8) as u16).to_be_bytes());
+        buf.push(self.regex.len() as u8);
+        buf.extend_from_slice(self.regex.as_bytes());
+
+        buf.push(self.replacement.len() as u8);
+        buf.extend_from_slice(self.replacement.as_bytes());
+
+        buf.splice(6..8, ((buf.len()-8) as u16).to_be_bytes());
 
         Ok(buf)
     }
