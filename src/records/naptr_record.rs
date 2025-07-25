@@ -70,7 +70,7 @@ impl RecordBase for NaptrRecord {
         buf.splice(0..2, self.class.get_code().to_be_bytes());
         buf.splice(2..6, self.ttl.to_be_bytes());
 
-        //buf[8] = self.algorithm;
+        buf[8] = self.flags;
         //buf[9] = self.fingerprint_type;
 
         //buf.extend_from_slice(&self.fingerprint);
