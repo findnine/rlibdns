@@ -14,6 +14,7 @@ use crate::records::inter::svc_param_keys::SvcParamKeys;
 use crate::records::inter::record_base::RecordBase;
 use crate::records::loc_record::LocRecord;
 use crate::records::mx_record::MxRecord;
+use crate::records::naptr_record::NaptrRecord;
 use crate::records::ns_record::NsRecord;
 use crate::records::nsec_record::NSecRecord;
 use crate::records::ptr_record::PtrRecord;
@@ -145,6 +146,7 @@ impl ZoneParser {
                                 RRTypes::Txt => TxtRecord::new(ttl, class).upcast(),
                                 RRTypes::Loc => LocRecord::new(ttl, class).upcast(),
                                 RRTypes::Srv => SrvRecord::new(ttl, class).upcast(),
+                                RRTypes::Naptr => NaptrRecord::new(ttl, class).upcast(),
                                 RRTypes::SshFp => SshFpRecord::new(ttl, class).upcast(),
                                 RRTypes::RRSig => RRSigRecord::new(ttl, class).upcast(),
                                 RRTypes::Nsec => NSecRecord::new(ttl, class).upcast(),
@@ -381,6 +383,21 @@ fn set_data(record: &mut dyn RecordBase, pos: usize, value: &str) {
                 1 => record.weight = value.parse().unwrap(),
                 2 => record.port = value.parse().unwrap() ,
                 3 => record.target = Some(match value.strip_suffix('.') {
+                    Some(base) => base.to_string(),
+                    None => panic!("Domain is not fully qualified (missing trailing dot)")
+                }),
+                _ => unimplemented!()
+            }
+        }
+        RRTypes::Naptr => {
+            let record = record.as_any_mut().downcast_mut::<NaptrRecord>().unwrap();
+            match pos {
+                0 => record.order = value.parse().unwrap(),
+                1 => record.preference = value.parse().unwrap(),
+                2 => record.flags = Some(value.to_string()),
+                3 => record.service = Some(value.to_string()),
+                4 => record.regex = Some(value.to_string()),
+                5 => record.replacement = Some(match value.strip_suffix('.') {
                     Some(base) => base.to_string(),
                     None => panic!("Domain is not fully qualified (missing trailing dot)")
                 }),

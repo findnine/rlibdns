@@ -11,10 +11,12 @@ use crate::utils::hex;
 pub struct NaptrRecord {
     class: RRClasses,
     ttl: u32,
-    pub(crate) flags: u8,
-    pub(crate) service: String,
-    pub(crate) regex: String,
-    pub(crate) replacement: String
+    pub(crate) order: u16,
+    pub(crate) preference: u16,
+    pub(crate) flags: Option<String>, //Change to enum - S,A,U,P
+    pub(crate) service: Option<String>,
+    pub(crate) regex: Option<String>,
+    pub(crate) replacement: Option<String>
 }
 
 impl Default for NaptrRecord {
@@ -23,10 +25,12 @@ impl Default for NaptrRecord {
         Self {
             class: RRClasses::default(),
             ttl: 0,
-            flags: 0,
-            service: String::new(),
-            regex: String::new(),
-            replacement: String::new()
+            order: 0,
+            preference: 0,
+            flags: None,
+            service: None,
+            regex: None,
+            replacement: None
         }
     }
 }
@@ -39,17 +43,23 @@ impl RecordBase for NaptrRecord {
 
         //let z = u16::from_be_bytes([buf[off+6], buf[off+7]]);
 
-        let flags = buf[off+8];
+        let order = u16::from_be_bytes([buf[off+8], buf[off+9]]);
+        let preference = u16::from_be_bytes([buf[off+10], buf[off+11]]);
 
-        let length = buf[off+9] as usize;
-        let service = String::from_utf8(buf[off + 10..off + 10 + length].to_vec()).unwrap();
+        let length = buf[off+12] as usize;
+        let flags = String::from_utf8(buf[off + 13..off + 13 + length].to_vec()).unwrap();
 
-        let mut off = off+10+length;
+        let mut off = off+13+length;
+
+        let length = buf[off] as usize;
+        let service = String::from_utf8(buf[off + 1..off + 1 + length].to_vec()).unwrap();
+
+        off = off+1+length;
 
         let length = buf[off] as usize;
         let regex = String::from_utf8(buf[off + 1..off + 1 + length].to_vec()).unwrap();
 
-        off += off+2+length;
+        off += off+1+length;
 
         let length = buf[off] as usize;
         let replacement = String::from_utf8(buf[off + 1..off + 1 + length].to_vec()).unwrap();
@@ -57,10 +67,12 @@ impl RecordBase for NaptrRecord {
         Self {
             class,
             ttl,
-            flags,
-            service,
-            regex,
-            replacement
+            order,
+            preference,
+            flags: Some(flags),
+            service: Some(service),
+            regex: Some(regex),
+            replacement: Some(replacement)
         }
     }
 
@@ -70,16 +82,24 @@ impl RecordBase for NaptrRecord {
         buf.splice(0..2, self.class.get_code().to_be_bytes());
         buf.splice(2..6, self.ttl.to_be_bytes());
 
-        buf[8] = self.flags;
+        buf.splice(8..10, self.order.to_be_bytes());
+        buf.splice(10..12, self.preference.to_be_bytes());
 
-        buf.push(self.service.len() as u8);
-        buf.extend_from_slice(self.service.as_bytes());
+        let flags = self.flags.as_ref().unwrap().as_bytes();
+        buf.push(flags.len() as u8);
+        buf.extend_from_slice(flags);
 
-        buf.push(self.regex.len() as u8);
-        buf.extend_from_slice(self.regex.as_bytes());
+        let service = self.service.as_ref().unwrap().as_bytes();
+        buf.push(service.len() as u8);
+        buf.extend_from_slice(service);
 
-        buf.push(self.replacement.len() as u8);
-        buf.extend_from_slice(self.replacement.as_bytes());
+        let regex = self.regex.as_ref().unwrap().as_bytes();
+        buf.push(regex.len() as u8);
+        buf.extend_from_slice(regex);
+
+        let replacement = self.replacement.as_ref().unwrap().as_bytes();
+        buf.push(replacement.len() as u8);
+        buf.extend_from_slice(replacement);
 
         buf.splice(6..8, ((buf.len()-8) as u16).to_be_bytes());
 
@@ -137,12 +157,14 @@ impl NaptrRecord {
 impl fmt::Display for NaptrRecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:<8}{:<8}{:<8}{} {} {} {}", self.ttl,
+        write!(f, "{:<8}{:<8}{:<8}{} {} \"{}\" \"{}\" \"{}\" {}", self.ttl,
                self.class.to_string(),
                self.get_type().to_string(),
-               self.flags,
-               self.service,
-               self.regex,
-               self.replacement)
+               self.order,
+               self.preference,
+               self.flags.as_ref().unwrap(),
+               self.service.as_ref().unwrap(),
+               self.regex.as_ref().unwrap(),
+               self.replacement.as_ref().unwrap())
     }
 }
