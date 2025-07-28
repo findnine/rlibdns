@@ -10,6 +10,7 @@ use crate::records::cname_record::CNameRecord;
 use crate::records::dnskey_record::DnsKeyRecord;
 use crate::records::hinfo_record::HInfoRecord;
 use crate::records::https_record::HttpsRecord;
+use crate::records::inter::naptr_flags::NaptrFlags;
 use crate::records::inter::svc_param_keys::SvcParamKeys;
 use crate::records::inter::record_base::RecordBase;
 use crate::records::loc_record::LocRecord;
@@ -394,7 +395,13 @@ fn set_data(record: &mut dyn RecordBase, pos: usize, value: &str) {
             match pos {
                 0 => record.order = value.parse().unwrap(),
                 1 => record.preference = value.parse().unwrap(),
-                2 => record.flags = Some(value.to_string()),
+                2 => record.flags = {
+                    let mut flags = Vec::new();
+                    for flag in value.split(',') {
+                        flags.push(NaptrFlags::from_str(flag).unwrap());
+                    }
+                    flags
+                },
                 3 => record.service = Some(value.to_string()),
                 4 => record.regex = Some(value.to_string()),
                 5 => record.replacement = Some(match value.strip_suffix('.') {
