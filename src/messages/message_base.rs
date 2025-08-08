@@ -375,7 +375,7 @@ impl fmt::Display for MessageBase {
                 self.authority_records.len(),
                 self.additional_records.len())?;
 
-/*
+        /*
         if let Some(r) = self.additional_records.get(&String::new()) {
             for r in r {
                 if r.get_type().eq(&RRTypes::Opt) {
@@ -384,6 +384,7 @@ impl fmt::Display for MessageBase {
                 }
             }
         }
+        */
 
         writeln!(f, "\r\n;; QUESTION SECTION:")?;
         for q in &self.queries {
@@ -393,31 +394,25 @@ impl fmt::Display for MessageBase {
         if !self.answers.is_empty() {
             writeln!(f, "\r\n;; ANSWER SECTION:")?;
             for (q, r) in self.answers.iter() {
-                for r in r.iter() {
-                    writeln!(f, "{:<24}{}", format!("{}.", q), r)?;
-                }
+                writeln!(f, "{:<24}{}", format!("{}.", q), r)?;
             }
         }
 
         if !self.authority_records.is_empty() {
             writeln!(f, "\r\n;; AUTHORITATIVE SECTION:")?;
             for (q, r) in self.authority_records.iter() {
-                for r in r.iter() {
-                    writeln!(f, "{:<24}{}", format!("{}.", q), r)?;
-                }
+                writeln!(f, "{:<24}{}", format!("{}.", q), r)?;
             }
         }
 
         if !self.additional_records.is_empty() {
             writeln!(f, "\r\n;; ADDITIONAL SECTION:")?;
             for (q, r) in self.additional_records.iter() {
-                for r in r.iter() {
-                    if !q.eq("") && !r.get_type().eq(&RRTypes::Opt) {
-                        writeln!(f, "{:<24}{}", format!("{}.", q), r)?;
-                    }
+                if !q.eq("") && !r.get_type().eq(&RRTypes::Opt) {
+                    writeln!(f, "{:<24}{}", format!("{}.", q), r)?;
                 }
             }
-        }*/
+        }
 
         Ok(())
     }
