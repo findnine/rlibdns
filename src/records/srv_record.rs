@@ -6,6 +6,7 @@ use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::RecordBase;
 use crate::utils::domain_utils::{pack_domain, unpack_domain};
+use crate::utils::hex;
 
 #[derive(Clone, Debug)]
 pub struct SrvRecord {
@@ -165,6 +166,12 @@ impl SrvRecord {
 impl fmt::Display for SrvRecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "type {:?}, class {:?}, target {}", self.get_type(), self.class, self.target.as_ref().unwrap())
+        write!(f, "{:<8}{:<8}{:<8}{} {} {} {}", self.ttl,
+               self.class.to_string(),
+               self.get_type().to_string(),
+               self.priority,
+               self.weight,
+               self.port,
+               format!("{}.", self.target.as_ref().unwrap()))
     }
 }
