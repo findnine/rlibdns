@@ -99,7 +99,7 @@ impl RecordBase for RRSigRecord {
         buf.splice(20..24, self.inception.to_be_bytes());
         buf.splice(24..26, self.key_tag.to_be_bytes());
 
-        buf.extend_from_slice(&pack_domain(self.signer_name.as_ref().unwrap(), label_map, off+14, true));
+        buf.extend_from_slice(&pack_domain(self.signer_name.as_ref().unwrap(), label_map, off+26, true));
 
         buf.extend_from_slice(&self.signature);
 

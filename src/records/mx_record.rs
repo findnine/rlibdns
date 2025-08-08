@@ -55,7 +55,7 @@ impl RecordBase for MxRecord {
 
         buf.splice(8..10, self.priority.to_be_bytes());
 
-        buf.extend_from_slice(&pack_domain(self.server.as_ref().unwrap().as_str(), label_map, off+12, true));
+        buf.extend_from_slice(&pack_domain(self.server.as_ref().unwrap().as_str(), label_map, off+10, true));
 
         buf.splice(6..8, ((buf.len()-8) as u16).to_be_bytes());
 
