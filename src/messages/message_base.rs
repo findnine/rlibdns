@@ -62,7 +62,6 @@ impl Default for MessageBase {
             recursion_available: false,
             authenticated_data: false,
             checking_disabled: false,
-            //length: 12,
             origin: None,
             destination: None,
             queries: Vec::new(),
