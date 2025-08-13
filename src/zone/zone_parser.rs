@@ -262,7 +262,7 @@ impl ZoneParser {
 }
 
 pub struct ZoneParserIter<'a> {
-    parser: &'a mut ZoneParser,
+    parser: &'a mut ZoneParser
 }
 
 impl<'a> Iterator for ZoneParserIter<'a> {

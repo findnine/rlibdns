@@ -7,7 +7,6 @@ use crate::messages::inter::response_codes::ResponseCodes;
 use crate::records::inter::record_base::RecordBase;
 use crate::messages::dns_query::DnsQuery;
 use crate::messages::inter::rr_types::RRTypes;
-use crate::utils::ordered_map::OrderedMap;
 use crate::utils::record_utils::{records_from_bytes, records_to_bytes};
 /*
                                1  1  1  1  1  1
@@ -195,6 +194,12 @@ impl MessageBase {
         buf.splice(2..4, flags.to_be_bytes());
 
         buf
+    }
+
+    pub fn to_byte_stream(&mut self) -> MessageBaseStreamIter {
+        MessageBaseStreamIter {
+            message: self
+        }
     }
 
     pub fn set_id(&mut self, id: u16) {
@@ -416,5 +421,22 @@ impl fmt::Display for MessageBase {
         }
 
         Ok(())
+    }
+}
+
+pub struct MessageBaseStreamIter<'a> {
+    message: &'a mut MessageBase
+}
+
+impl<'a> Iterator for MessageBaseStreamIter<'a> {
+
+    type Item = (u8, Vec<u8>);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        //self.parser.parse_record()
+
+
+
+        todo!()
     }
 }
