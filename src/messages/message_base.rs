@@ -428,7 +428,7 @@ impl fmt::Display for MessageBase {
 
 pub struct MessageBaseStreamIter<'a> {
     message: &'a MessageBase,
-    position: usize,
+    position: u8,
     max_payload_len: usize
 }
 
@@ -459,9 +459,6 @@ impl<'a> Iterator for MessageBaseStreamIter<'a> {
         }
 
 
-
-
-
-        todo!()
+        Some((self.position, buf))
     }
 }
