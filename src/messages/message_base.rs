@@ -29,6 +29,7 @@ use crate::utils::record_utils::{records_from_bytes, records_to_bytes};
 
 pub const DNS_HEADER_LEN: usize = 12;
 
+#[derive(Debug, Clone)]
 pub struct MessageBase {
     id: u16,
     op_code: OpCodes,
