@@ -134,6 +134,7 @@ impl MessageBase {
         })
     }
 
+    //TRUNCATE WILL BE HANDLED BY ITERATOR...
     pub fn to_bytes(&self, max_payload_len: usize) -> Vec<u8> {
         let mut buf = vec![0u8; DNS_HEADER_LEN];
 
