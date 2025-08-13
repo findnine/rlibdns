@@ -196,9 +196,11 @@ impl MessageBase {
         buf
     }
 
-    pub fn to_byte_stream(&mut self) -> MessageBaseStreamIter {
+    pub fn to_byte_stream(&self, max_payload_len: usize) -> MessageBaseStreamIter {
         MessageBaseStreamIter {
-            message: self
+            message: self,
+            position: 0,
+            max_payload_len
         }
     }
 
@@ -425,7 +427,9 @@ impl fmt::Display for MessageBase {
 }
 
 pub struct MessageBaseStreamIter<'a> {
-    message: &'a mut MessageBase
+    message: &'a MessageBase,
+    position: usize,
+    max_payload_len: usize
 }
 
 impl<'a> Iterator for MessageBaseStreamIter<'a> {
@@ -433,7 +437,28 @@ impl<'a> Iterator for MessageBaseStreamIter<'a> {
     type Item = (u8, Vec<u8>);
 
     fn next(&mut self) -> Option<Self::Item> {
-        //self.parser.parse_record()
+        let mut buf = vec![0u8; DNS_HEADER_LEN];
+
+        buf.splice(0..2, self.message.id.to_be_bytes());
+
+        buf.splice(4..6, (self.message.queries.len() as u16).to_be_bytes());
+
+        let mut label_map = HashMap::new();
+        let mut off = DNS_HEADER_LEN;
+        let mut truncated = false;
+
+        for query in &self.message.queries {
+            let q = query.to_bytes(&mut label_map, off);
+            if off+q.len() > self.max_payload_len {
+                truncated = true;
+                break;
+            }
+
+            buf.extend_from_slice(&q);
+            off += q.len();
+        }
+
+
 
 
 
