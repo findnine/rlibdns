@@ -459,6 +459,19 @@ impl<'a> Iterator for MessageBaseStreamIter<'a> {
         }
 
 
+        let flags = (if self.message.qr { 0x8000 } else { 0 }) |  // QR bit
+            ((self.message.op_code as u16 & 0x0F) << 11) |  // Opcode
+            (if self.message.authoritative { 0x0400 } else { 0 }) |  // AA bit
+            (if truncated { 0x0200 } else { 0 }) |  // TC bit
+            (if self.message.recursion_desired { 0x0100 } else { 0 }) |  // RD bit
+            (if self.message.recursion_available { 0x0080 } else { 0 }) |  // RA bit
+            //(if self.z { 0x0040 } else { 0 }) |  // Z bit (always 0)
+            (if self.message.authenticated_data { 0x0020 } else { 0 }) |  // AD bit
+            (if self.message.checking_disabled { 0x0010 } else { 0 }) |  // CD bit
+            (self.message.response_code as u16 & 0x000F);  // RCODE
+
+        buf.splice(2..4, flags.to_be_bytes());
+
         Some((self.position, buf))
     }
 }
