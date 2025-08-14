@@ -458,6 +458,29 @@ impl<'a> Iterator for MessageBaseStreamIter<'a> {
             off += q.len();
         }
 
+        if !truncated {
+            let (records, i, t) = records_to_bytes(off, &self.message.answers, &mut label_map, self.max_payload_len);
+            buf.extend_from_slice(&records);
+            truncated = t;
+
+            buf.splice(6..8, i.to_be_bytes());
+        }
+
+        if !truncated {
+            let (records, i, t) = records_to_bytes(off, &self.message.authority_records, &mut label_map, self.max_payload_len);
+            buf.extend_from_slice(&records);
+            truncated = t;
+
+            buf.splice(8..10, i.to_be_bytes());
+        }
+
+        if !truncated {
+            let (records, i, t) = records_to_bytes(off, &self.message.additional_records, &mut label_map, self.max_payload_len);
+            buf.extend_from_slice(&records);
+            truncated = t;
+
+            buf.splice(10..12, i.to_be_bytes());
+        }
 
         let flags = (if self.message.qr { 0x8000 } else { 0 }) |  // QR bit
             ((self.message.op_code as u16 & 0x0F) << 11) |  // Opcode

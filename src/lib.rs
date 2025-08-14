@@ -35,6 +35,13 @@ mod tests {
         
         println!("{}", message);
 
+
+        for (len, buf) in message.to_byte_stream(512) {
+            println!("len")
+        }
+
+
+
         assert_eq!(x, message.to_bytes(512));
     }
 
