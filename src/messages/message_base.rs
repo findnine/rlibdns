@@ -458,6 +458,9 @@ impl<'a> Iterator for MessageBaseStreamIter<'a> {
             off += q.len();
         }
 
+
+        //STOP AND CONTINUE BASED OFF OF POSITION...
+
         if !truncated {
             let (records, i, t) = records_to_bytes(off, &self.message.answers, &mut label_map, self.max_payload_len);
             buf.extend_from_slice(&records);
