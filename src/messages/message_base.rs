@@ -428,15 +428,21 @@ impl fmt::Display for MessageBase {
 
 pub struct MessageBaseStreamIter<'a> {
     message: &'a MessageBase,
-    position: u8,
+    position: usize,
     max_payload_len: usize
 }
 
 impl<'a> Iterator for MessageBaseStreamIter<'a> {
 
-    type Item = (u8, Vec<u8>);
+    type Item = (usize, Vec<u8>);
 
     fn next(&mut self) -> Option<Self::Item> {
+        if self.position >= self.message.calculate_total_answers() + self.message.calculate_total_additional_records() + self.message.calculate_total_authority_records() {
+            println!("NONE");
+            return None;
+        }
+
+
         let mut buf = vec![0u8; DNS_HEADER_LEN];
 
         buf.splice(0..2, self.message.id.to_be_bytes());
@@ -459,28 +465,34 @@ impl<'a> Iterator for MessageBaseStreamIter<'a> {
         }
 
 
-        //STOP AND CONTINUE BASED OFF OF POSITION...
-
-        if !truncated {
-            let (records, i, t) = records_to_bytes(off, &self.message.answers, &mut label_map, self.max_payload_len);
+        let total = self.message.calculate_total_answers();
+        if !truncated && self.position < total {
+            let (records, i, t) = records_to_bytes(off, &self.message.answers[self.position..], &mut label_map, self.max_payload_len);
             buf.extend_from_slice(&records);
             truncated = t;
+            self.position += i as usize;
 
             buf.splice(6..8, i.to_be_bytes());
         }
 
-        if !truncated {
-            let (records, i, t) = records_to_bytes(off, &self.message.authority_records, &mut label_map, self.max_payload_len);
+        let mut x = total;
+        let total = self.message.calculate_total_authority_records();
+        if !truncated && self.position < x + total {
+            let (records, i, t) = records_to_bytes(off, &self.message.authority_records[self.position - x..], &mut label_map, self.max_payload_len);
             buf.extend_from_slice(&records);
             truncated = t;
+            self.position += i as usize;
 
             buf.splice(8..10, i.to_be_bytes());
         }
 
-        if !truncated {
-            let (records, i, t) = records_to_bytes(off, &self.message.additional_records, &mut label_map, self.max_payload_len);
+        x += total;
+        let total = self.message.calculate_total_additional_records();
+        if !truncated && self.position < x + total {
+            let (records, i, t) = records_to_bytes(off, &self.message.additional_records[self.position - x..], &mut label_map, self.max_payload_len);
             buf.extend_from_slice(&records);
             truncated = t;
+            self.position += i as usize;
 
             buf.splice(10..12, i.to_be_bytes());
         }
@@ -488,7 +500,7 @@ impl<'a> Iterator for MessageBaseStreamIter<'a> {
         let flags = (if self.message.qr { 0x8000 } else { 0 }) |  // QR bit
             ((self.message.op_code as u16 & 0x0F) << 11) |  // Opcode
             (if self.message.authoritative { 0x0400 } else { 0 }) |  // AA bit
-            (if truncated { 0x0200 } else { 0 }) |  // TC bit
+            0 |  // TC bit
             (if self.message.recursion_desired { 0x0100 } else { 0 }) |  // RD bit
             (if self.message.recursion_available { 0x0080 } else { 0 }) |  // RA bit
             //(if self.z { 0x0040 } else { 0 }) |  // Z bit (always 0)

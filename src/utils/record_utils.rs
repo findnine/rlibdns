@@ -84,7 +84,7 @@ pub fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> Vec<(Strin
     records
 }
 
-pub fn records_to_bytes(off: usize, records: &Vec<(String, Box<dyn RecordBase>)>, label_map: &mut HashMap<String, usize>, max_payload_len: usize) -> (Vec<u8>, u16, bool) {
+pub fn records_to_bytes(off: usize, records: &[(String, Box<dyn RecordBase>)], label_map: &mut HashMap<String, usize>, max_payload_len: usize) -> (Vec<u8>, u16, bool) {
     let mut truncated = false;
     
     let mut buf = Vec::new();
