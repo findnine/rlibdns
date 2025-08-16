@@ -8,6 +8,7 @@ use crate::records::inter::record_base::RecordBase;
 use crate::messages::dns_query::DnsQuery;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::utils::record_utils::{records_from_bytes, records_to_bytes};
+
 /*
                                1  1  1  1  1  1
  0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
@@ -196,8 +197,8 @@ impl MessageBase {
         buf
     }
 
-    pub fn to_byte_stream(&self, max_payload_len: usize) -> MessageBaseStreamIter {
-        MessageBaseStreamIter {
+    pub fn wire_chunks(&self, max_payload_len: usize) -> WireIter {
+        WireIter {
             message: self,
             position: 0,
             max_payload_len
@@ -316,7 +317,7 @@ impl MessageBase {
         &mut self.answers
     }
 
-    pub fn calculate_total_answers(&self) -> usize {
+    pub fn total_answers(&self) -> usize {
         self.answers.len()
     }
 
@@ -336,7 +337,7 @@ impl MessageBase {
         &mut self.authority_records
     }
 
-    pub fn calculate_total_authority_records(&self) -> usize {
+    pub fn total_authority_records(&self) -> usize {
         self.authority_records.len()
     }
 
@@ -356,7 +357,7 @@ impl MessageBase {
         &mut self.additional_records
     }
 
-    pub fn calculate_total_additional_records(&self) -> usize {
+    pub fn total_additional_records(&self) -> usize {
         self.additional_records.len()
     }
 }
@@ -426,22 +427,20 @@ impl fmt::Display for MessageBase {
     }
 }
 
-pub struct MessageBaseStreamIter<'a> {
+pub struct WireIter<'a> {
     message: &'a MessageBase,
     position: usize,
     max_payload_len: usize
 }
 
-impl<'a> Iterator for MessageBaseStreamIter<'a> {
+impl<'a> Iterator for WireIter<'a> {
 
-    type Item = (usize, Vec<u8>);
+    type Item = Vec<u8>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.position >= self.message.calculate_total_answers() + self.message.calculate_total_additional_records() + self.message.calculate_total_authority_records() {
-            println!("NONE");
+        if self.position >= self.message.answers.len() + self.message.additional_records.len() + self.message.authority_records.len() {
             return None;
         }
-
 
         let mut buf = vec![0u8; DNS_HEADER_LEN];
 
@@ -464,8 +463,7 @@ impl<'a> Iterator for MessageBaseStreamIter<'a> {
             off += q.len();
         }
 
-
-        let total = self.message.calculate_total_answers();
+        let total = self.message.answers.len();
         if !truncated && self.position < total {
             let (records, i, t) = records_to_bytes(off, &self.message.answers[self.position..], &mut label_map, self.max_payload_len);
             buf.extend_from_slice(&records);
@@ -476,7 +474,7 @@ impl<'a> Iterator for MessageBaseStreamIter<'a> {
         }
 
         let mut x = total;
-        let total = self.message.calculate_total_authority_records();
+        let total = self.message.authority_records.len();
         if !truncated && self.position < x + total {
             let (records, i, t) = records_to_bytes(off, &self.message.authority_records[self.position - x..], &mut label_map, self.max_payload_len);
             buf.extend_from_slice(&records);
@@ -487,11 +485,10 @@ impl<'a> Iterator for MessageBaseStreamIter<'a> {
         }
 
         x += total;
-        let total = self.message.calculate_total_additional_records();
+        let total = self.message.additional_records.len();
         if !truncated && self.position < x + total {
             let (records, i, t) = records_to_bytes(off, &self.message.additional_records[self.position - x..], &mut label_map, self.max_payload_len);
             buf.extend_from_slice(&records);
-            truncated = t;
             self.position += i as usize;
 
             buf.splice(10..12, i.to_be_bytes());
@@ -510,6 +507,6 @@ impl<'a> Iterator for MessageBaseStreamIter<'a> {
 
         buf.splice(2..4, flags.to_be_bytes());
 
-        Some((self.position, buf))
+        Some(buf)
     }
 }
