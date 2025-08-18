@@ -14,11 +14,8 @@ pub fn pack_domain(domain: &str, labels_map: &mut HashMap<String, usize>, off: u
         let label = parts[i..].join(".");
 
         if compress {
-            if let Some(&ptr_offset) = labels_map.get(&label) {
-                buf.extend_from_slice(&[
-                    (0xC0 | ((ptr_offset >> 8) & 0x3F)) as u8,
-                    (ptr_offset & 0xFF) as u8
-                ]);
+            if let Some(&off) = labels_map.get(&label) {
+                buf.extend_from_slice(&[(0xC0 | ((off >> 8) & 0x3F)) as u8, (off & 0xFF) as u8]);
                 return buf;
             }
         }
