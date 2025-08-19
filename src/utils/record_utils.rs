@@ -18,6 +18,7 @@ use crate::records::smimea_record::SmimeaRecord;
 use crate::records::soa_record::SoaRecord;
 use crate::records::srv_record::SrvRecord;
 use crate::records::sshfp_record::SshFpRecord;
+use crate::records::svcb_record::SvcbRecord;
 use crate::records::txt_record::TxtRecord;
 use crate::records::uri_record::UriRecord;
 use crate::utils::domain_utils::{pack_domain, unpack_domain};
@@ -61,6 +62,7 @@ pub fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> Vec<(Strin
             RRTypes::Nsec => NSecRecord::from_bytes(buf, *off+2).upcast(),
             RRTypes::DnsKey => DnsKeyRecord::from_bytes(buf, *off+2).upcast(),
             RRTypes::Smimea => SmimeaRecord::from_bytes(buf, *off+2).upcast(),
+            RRTypes::Svcb => SvcbRecord::from_bytes(buf, *off+2).upcast(),
             RRTypes::Https => HttpsRecord::from_bytes(buf, *off+2).upcast(),
             RRTypes::Spf => {
                 println!("{:<24}SPF {}", query, off);
