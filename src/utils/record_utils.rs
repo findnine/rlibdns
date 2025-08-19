@@ -63,19 +63,25 @@ pub fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> Vec<(Strin
             RRTypes::Smimea => SmimeaRecord::from_bytes(buf, *off+2).upcast(),
             RRTypes::Https => HttpsRecord::from_bytes(buf, *off+2).upcast(),
             RRTypes::Spf => {
+                println!("{:<24}SPF {}", query, off);
                 todo!()
             }
             RRTypes::Tsig => {
+                println!("{:<24}TSIG {}", query, off);
                 todo!()
             }
             RRTypes::Uri => UriRecord::from_bytes(buf, *off+2).upcast(),
             RRTypes::Caa => {
+                println!("{:<24}CAA {}", query, off);
                 todo!()
             }
             _ => {
+                println!("{:<24}??? {}", query, off);
                 todo!()
             }
         };
+
+        println!("{:<24}{}", query, record);
 
         records.push((query, record));
         *off += 10+u16::from_be_bytes([buf[*off+8], buf[*off+9]]) as usize;
