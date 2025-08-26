@@ -1,43 +1,11 @@
 use std::collections::HashMap;
 
 pub fn pack_domain(domain: &str, labels_map: &mut HashMap<String, usize>, off: usize, compress: bool) -> Vec<u8> {
-    /*
     if domain.is_empty() {
         return vec![0x00];
     }
 
-    let mut buf = Vec::new();
-    let mut off = off;
-
     let parts: Vec<&str> = domain.split('.').collect();
-
-    for i in 0..parts.len() {
-        let label = parts[i..].join(".");
-
-        if compress {
-            if let Some(&off) = labels_map.get(&label) {
-                buf.extend_from_slice(&[(0xC0 | ((off >> 8) & 0x3F)) as u8, (off & 0xFF) as u8]);
-                return buf;
-            }
-        }
-
-        let label_bytes = parts[i].as_bytes();
-        buf.push(label_bytes.len() as u8);
-        buf.extend_from_slice(label_bytes);
-        labels_map.insert(label, off);
-        off += label_bytes.len() + 1;
-    }
-
-    buf.push(0x00);
-
-    buf
-    */
-
-
-    let d = domain.trim_end_matches('.');
-    if d.is_empty() { return vec![0]; }
-
-    let parts: Vec<&str> = d.split('.').collect();
     let mut buf = Vec::new();
     let mut off = off;
 
