@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 pub fn pack_domain(domain: &str, labels_map: &mut HashMap<String, usize>, off: usize, compress: bool) -> Vec<u8> {
+    /*
     if domain.is_empty() {
         return vec![0x00];
     }
@@ -29,6 +30,40 @@ pub fn pack_domain(domain: &str, labels_map: &mut HashMap<String, usize>, off: u
 
     buf.push(0x00);
 
+    buf
+    */
+
+
+    let d = domain.trim_end_matches('.');
+    if d.is_empty() { return vec![0]; }
+
+    let parts: Vec<&str> = d.split('.').collect();
+    let mut buf = Vec::new();
+    let mut off = off;
+
+    for i in 0..parts.len() {
+        let suffix = parts[i..].join(".").to_ascii_lowercase();
+
+        if compress {
+            if let Some(&ptr) = labels_map.get(&suffix) {
+                buf.push(0xC0 | ((ptr >> 8) as u8 & 0x3F));
+                buf.push((ptr & 0xFF) as u8);
+                return buf;
+            }
+        }
+
+        let lbl = parts[i].as_bytes();
+        assert!(lbl.len() <= 63, "label too long");
+        buf.push(lbl.len() as u8);
+        buf.extend_from_slice(lbl);
+
+        if off <= 0x3FFF {
+            labels_map.entry(suffix).or_insert(off);
+        }
+        off = off.saturating_add((lbl.len() as u16 + 1) as usize);
+    }
+
+    buf.push(0);
     buf
 }
 

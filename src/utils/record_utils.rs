@@ -9,6 +9,7 @@ use crate::records::https_record::HttpsRecord;
 use crate::records::inter::record_base::RecordBase;
 use crate::records::loc_record::LocRecord;
 use crate::records::mx_record::MxRecord;
+use crate::records::naptr_record::NaptrRecord;
 use crate::records::ns_record::NsRecord;
 use crate::records::nsec_record::NSecRecord;
 use crate::records::opt_record::OptRecord;
@@ -56,6 +57,7 @@ pub fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> Vec<(Strin
             RRTypes::Txt => TxtRecord::from_bytes(buf, *off+2).upcast(),
             RRTypes::Loc => LocRecord::from_bytes(buf, *off+2).upcast(),
             RRTypes::Srv => SrvRecord::from_bytes(buf, *off+2).upcast(),
+            RRTypes::Naptr => NaptrRecord::from_bytes(buf, *off+2).upcast(),
             RRTypes::SshFp => SshFpRecord::from_bytes(buf, *off+2).upcast(),
             RRTypes::Opt => OptRecord::from_bytes(buf, *off+2).upcast(),
             RRTypes::RRSig => RRSigRecord::from_bytes(buf, *off+2).upcast(),
@@ -65,25 +67,19 @@ pub fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> Vec<(Strin
             RRTypes::Svcb => SvcbRecord::from_bytes(buf, *off+2).upcast(),
             RRTypes::Https => HttpsRecord::from_bytes(buf, *off+2).upcast(),
             RRTypes::Spf => {
-                println!("{:<24}SPF {}", query, off);
                 todo!()
             }
             RRTypes::Tsig => {
-                println!("{:<24}TSIG {}", query, off);
                 todo!()
             }
             RRTypes::Uri => UriRecord::from_bytes(buf, *off+2).upcast(),
             RRTypes::Caa => {
-                println!("{:<24}CAA {}", query, off);
                 todo!()
             }
             _ => {
-                println!("{:<24}??? {}", query, off);
                 todo!()
             }
         };
-
-        println!("{:<24}{}", query, record);
 
         records.push((query, record));
         *off += 10+u16::from_be_bytes([buf[*off+8], buf[*off+9]]) as usize;
