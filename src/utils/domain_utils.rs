@@ -10,7 +10,7 @@ pub fn pack_domain(domain: &str, labels_map: &mut HashMap<String, usize>, off: u
     let mut off = off;
 
     for i in 0..parts.len() {
-        let suffix = parts[i..].join(".").to_ascii_lowercase();
+        let suffix = parts[i..].join(".");
 
         if compress {
             if let Some(&ptr) = labels_map.get(&suffix) {
