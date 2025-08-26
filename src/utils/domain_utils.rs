@@ -5,9 +5,10 @@ pub fn pack_domain(domain: &str, labels_map: &mut HashMap<String, usize>, off: u
         return vec![0x00];
     }
 
-    let parts: Vec<&str> = domain.split('.').collect();
     let mut buf = Vec::new();
     let mut off = off;
+
+    let parts: Vec<&str> = domain.split('.').collect();
 
     for i in 0..parts.len() {
         let suffix = parts[i..].join(".");
@@ -20,18 +21,18 @@ pub fn pack_domain(domain: &str, labels_map: &mut HashMap<String, usize>, off: u
             }
         }
 
-        let lbl = parts[i].as_bytes();
-        assert!(lbl.len() <= 63, "label too long");
-        buf.push(lbl.len() as u8);
-        buf.extend_from_slice(lbl);
+        let label_bytes = parts[i].as_bytes();
+        assert!(label_bytes.len() <= 63, "label too long");
+        buf.push(label_bytes.len() as u8);
+        buf.extend_from_slice(label_bytes);
 
         if off <= 0x3FFF {
             labels_map.entry(suffix).or_insert(off);
         }
-        off = off.saturating_add((lbl.len() as u16 + 1) as usize);
+        off = off.saturating_add((label_bytes.len() as u16 + 1) as usize);
     }
 
-    buf.push(0);
+    buf.push(0x00);
     buf
 }
 
