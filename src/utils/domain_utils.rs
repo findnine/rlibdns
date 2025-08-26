@@ -22,7 +22,6 @@ pub fn pack_domain(domain: &str, labels_map: &mut HashMap<String, usize>, off: u
         }
 
         let label_bytes = parts[i].as_bytes();
-        assert!(label_bytes.len() <= 63, "label too long");
         buf.push(label_bytes.len() as u8);
         buf.extend_from_slice(label_bytes);
 
