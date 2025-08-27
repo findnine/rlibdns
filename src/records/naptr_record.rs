@@ -59,12 +59,12 @@ impl RecordBase for NaptrRecord {
         let length = buf[off] as usize;
         let service = String::from_utf8(buf[off + 1..off + 1 + length].to_vec()).unwrap();
 
-        off = off+1+length;
+        off += 1+length;
 
         let length = buf[off] as usize;
         let regex = String::from_utf8(buf[off + 1..off + 1 + length].to_vec()).unwrap();
 
-        off += off+1+length;
+        off += 1+length;
 
         let length = buf[off] as usize;
         let replacement = String::from_utf8(buf[off + 1..off + 1 + length].to_vec()).unwrap();
@@ -90,11 +90,11 @@ impl RecordBase for NaptrRecord {
         buf.splice(8..10, self.order.to_be_bytes());
         buf.splice(10..12, self.preference.to_be_bytes());
 
-        let len = self.flags.len();
-        buf.push(((len * 2) - 1) as u8);
+        let length = self.flags.len();
+        buf.push(((length * 2) - 1) as u8);
         for (i, flag) in self.flags.iter().enumerate() {
             buf.push(flag.get_code());
-            if i < len - 1 {
+            if i < length - 1 {
                 buf.push(b',');
             }
         }
