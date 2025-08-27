@@ -29,7 +29,7 @@ pub fn pack_domain(domain: &str, labels_map: &mut HashMap<String, usize>, off: u
         if off <= 0x3FFF {
             labels_map.entry(suffix).or_insert(off);
         }
-        off = off.saturating_add((label_bytes.len() as u16 + 1) as usize);
+        off = off.saturating_add(label_bytes.len() + 1);
     }
 
     buf.push(0x00);
