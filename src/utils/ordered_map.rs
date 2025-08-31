@@ -30,28 +30,7 @@ where
             self.map.insert(key, value)
         }
     }
-/*
-    pub fn contains_key(&self, key: &K) -> bool {
-        self.map.contains_key(key)
-    }
 
-    pub fn remove(&mut self, key: &K) -> Option<V> {
-        if let Some(value) = self.map.remove(key) {
-            self.keys.retain(|k| k != key);
-            Some(value)
-        } else {
-            None
-        }
-    }
-
-    pub fn get(&self, key: &K) -> Option<&V> {
-        self.map.get(key)
-    }
-
-    pub fn get_mut(&mut self, key: &K) -> Option<&mut V> {
-        self.map.get_mut(key)
-    }
-*/
     pub fn contains_key<Q>(&self, key: &Q) -> bool
     where
         K: Borrow<Q>,
