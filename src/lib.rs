@@ -7,6 +7,7 @@ pub mod journal;
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;
+    use crate::journal::journal_parser::JournalParser;
     use crate::messages::inter::rr_types::RRTypes;
     use crate::messages::message_base::MessageBase;
     use crate::records::inter::record_base::RecordBase;
@@ -16,6 +17,14 @@ mod tests {
 
     #[test]
     fn journal() {
+        let mut records = RecordMap::new();
+
+        let mut parser = JournalParser::open("/home/brad/Downloads/db.find9.net.jnl").unwrap();
+
+
+        for (name, record) in parser.iter() {
+
+        }
     }
 
     /*
@@ -51,7 +60,7 @@ mod tests {
     fn parsing() {
         let mut records = RecordMap::new();
 
-        let mut parser = ZoneParser::new("/home/brad/Downloads/find9.net.test.zone", "find9.net").unwrap();
+        let mut parser = ZoneParser::open("/home/brad/Downloads/find9.net.test.zone", "find9.net").unwrap();
         for (name, record) in parser.iter() {
             println!("{}: {}", name, record);
 
