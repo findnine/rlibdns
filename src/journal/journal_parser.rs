@@ -1,6 +1,6 @@
 use std::fs::File;
 use std::io;
-use std::io::BufReader;
+use std::io::{BufReader, Read};
 use crate::records::inter::record_base::RecordBase;
 
 /*
@@ -106,6 +106,45 @@ impl JournalParser {
             parser: self
         }
     }
+
+    pub fn parse_record(&mut self) -> Option<(String, Box<dyn RecordBase>)> {
+        let mut state = ParserState::Init;
+
+        let mut buf = vec![0u8; 64];
+        //self.reader.read_exact(&mut buf)?;
+        self.reader.read_exact(&mut buf).unwrap();
+
+        // Magic (first 16 bytes): ";BIND LOG V9\n" or ";BIND LOG V9.2\n"
+        let magic = &buf[0..16];
+        let v9   = b";BIND LOG V9\n";
+        let v92  = b";BIND LOG V9.2\n";
+        if !(magic.starts_with(v9) || magic.starts_with(v92)) {
+            //return Err(io::Error::new(io::ErrorKind::InvalidData, "bad .jnl magic"));
+        }
+
+        let is_v92 = magic.starts_with(v92);
+
+        // Parse header fields (big-endian u32s)
+        let begin_serial = u32::from_be_bytes([buf[16], buf[17], buf[18], buf[19]]);
+        let begin_offset = u32::from_be_bytes([buf[20], buf[21], buf[22], buf[23]]);
+        let end_serial   = u32::from_be_bytes([buf[24], buf[25], buf[26], buf[27]]);
+        let end_offset   = u32::from_be_bytes([buf[28], buf[29], buf[30], buf[31]]);
+        let index_size   = u32::from_be_bytes([buf[32], buf[33], buf[34], buf[35]]);
+        let source_serial= u32::from_be_bytes([buf[36], buf[37], buf[38], buf[39]]);
+        let flags        = buf[40];
+
+        println!("{}", is_v92);
+        println!("{}", begin_serial);
+        println!("{}", begin_offset);
+        println!("{}", end_serial);
+        println!("{}", end_offset);
+        println!("{}", index_size);
+        println!("{}", source_serial);
+        println!("{}", flags);
+
+
+        None
+    }
 }
 
 pub struct JournalParserIter<'a> {
@@ -117,6 +156,6 @@ impl<'a> Iterator for JournalParserIter<'a> {
     type Item = (String, Box<dyn RecordBase>);
 
     fn next(&mut self) -> Option<Self::Item> {
-        todo!()
+        self.parser.parse_record()
     }
 }

@@ -365,16 +365,13 @@ fn set_data(record: &mut dyn RecordBase, pos: usize, value: &str) {
                     record.altitude = (clean.parse::<f64>().unwrap() * 100.0).round() as u32;
                 }
                 9 => {
-                    let clean = value.strip_suffix('m').unwrap_or(value);
-                    record.size = encode_loc_precision(clean);
+                    record.size = encode_loc_precision(value);
                 }
                 10 => {
-                    let clean = value.strip_suffix('m').unwrap_or(value);
-                    record.h_precision = encode_loc_precision(clean);
+                    record.h_precision = encode_loc_precision(value);
                 }
                 11 => {
-                    let clean = value.strip_suffix('m').unwrap_or(value);
-                    record.v_precision = encode_loc_precision(clean);
+                    record.v_precision = encode_loc_precision(value);
                 }
                 _ => unimplemented!()
             }
@@ -554,7 +551,7 @@ fn set_data(record: &mut dyn RecordBase, pos: usize, value: &str) {
 }
 
 fn encode_loc_precision(s: &str) -> u8 {
-    let val = s.parse::<f64>().unwrap();
+    let val = s.strip_suffix('m').unwrap_or(s).parse::<f64>().unwrap();
     for exp in 0..=9 {
         for base in 0..=9 {
             let encoded = (base as f64) * 10f64.powi(exp);

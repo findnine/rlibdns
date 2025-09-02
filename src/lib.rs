@@ -54,7 +54,7 @@ mod tests {
         println!("{}", message);
 
         assert_eq!(x, message.to_bytes(512));
-    }
+    }*/
 
     #[test]
     fn parsing() {
@@ -74,5 +74,5 @@ mod tests {
 
         //println!("{:?}", records);
         println!("{:?}", records["@"][&RRTypes::A]);
-    }*/
+    }
 }
