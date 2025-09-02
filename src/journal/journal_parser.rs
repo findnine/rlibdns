@@ -116,22 +116,22 @@ impl JournalParser {
 
         // Magic (first 16 bytes): ";BIND LOG V9\n" or ";BIND LOG V9.2\n"
         let magic = &buf[0..16];
-        let v9   = b";BIND LOG V9\n";
-        let v92  = b";BIND LOG V9.2\n";
-        if !(magic.starts_with(v9) || magic.starts_with(v92)) {
-            //return Err(io::Error::new(io::ErrorKind::InvalidData, "bad .jnl magic"));
-        }
+        let v9 = b";BIND LOG V9\n";
+        let v92 = b";BIND LOG V9.2\n";
+        //if !(magic.starts_with(v9) || magic.starts_with(v92)) {
+        //    //return Err(io::Error::new(io::ErrorKind::InvalidData, "bad .jnl magic"));
+        //}
 
         let is_v92 = magic.starts_with(v92);
 
         // Parse header fields (big-endian u32s)
         let begin_serial = u32::from_be_bytes([buf[16], buf[17], buf[18], buf[19]]);
         let begin_offset = u32::from_be_bytes([buf[20], buf[21], buf[22], buf[23]]);
-        let end_serial   = u32::from_be_bytes([buf[24], buf[25], buf[26], buf[27]]);
-        let end_offset   = u32::from_be_bytes([buf[28], buf[29], buf[30], buf[31]]);
-        let index_size   = u32::from_be_bytes([buf[32], buf[33], buf[34], buf[35]]);
-        let source_serial= u32::from_be_bytes([buf[36], buf[37], buf[38], buf[39]]);
-        let flags        = buf[40];
+        let end_serial = u32::from_be_bytes([buf[24], buf[25], buf[26], buf[27]]);
+        let end_offset = u32::from_be_bytes([buf[28], buf[29], buf[30], buf[31]]);
+        let index_size = u32::from_be_bytes([buf[32], buf[33], buf[34], buf[35]]);
+        let source_serial = u32::from_be_bytes([buf[36], buf[37], buf[38], buf[39]]);
+        let flags = buf[40];
 
         println!("{}", is_v92);
         println!("{}", begin_serial);
