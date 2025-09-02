@@ -55,7 +55,6 @@ impl Clone for Box<dyn RecordBase> {
 
 impl dyn RecordBase {
 
-    #[inline]
     pub fn new(rrt: RRTypes, ttl: u32, class: RRClasses) -> Option<Box<dyn RecordBase>> {
         use RRTypes::*;
 
@@ -99,7 +98,6 @@ impl dyn RecordBase {
         })
     }
 
-    #[inline]
     pub fn from_wire(rrt: RRTypes, buf: &[u8], off: usize) -> Option<Box<dyn RecordBase>> {
         use RRTypes::*;
 
