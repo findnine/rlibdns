@@ -191,7 +191,7 @@ impl JournalParser {
                 self.reader.read_exact(&mut buf).unwrap();
 
                 // ----- decode one RR from rrbuf -----
-                (owner, typ, class, ttl, rdata) = decode_rr(rrbuf)
+                //(owner, typ, class, ttl, rdata) = decode_rr(rrbuf)
 
                 //if typ == SOA:
                 //    seen_soa += 1
