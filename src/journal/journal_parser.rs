@@ -177,11 +177,9 @@ impl JournalParser {
             let mut remaining = size;
             let mut seen_soa = 0;         // 0 = none, 1 = first SOA seen, 2 = second SOA seen
 
-            println!("Size {}", size);
-            println!("Serial 0 {}", serial_0);
-            println!("Serial 1 {}", serial_1);
-
-            //INNER LOOP
+            //println!("Size {}", size);
+            //println!("Serial 0 {}", serial_0);
+            //println!("Serial 1 {}", serial_1);
 
             while remaining > 0 {
                 let mut buf = vec![0u8; 4];
@@ -192,46 +190,33 @@ impl JournalParser {
                 buf = vec![0u8; rr_len as usize];
                 self.reader.read_exact(&mut buf).unwrap();
 
-
-
                 let mut off = 0;
 
                 let (query, length) = unpack_domain(&buf, off);
                 off += length;
 
 
-                let record = <dyn RecordBase>::from_wire(RRTypes::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap(), &buf, off+2).unwrap();
+                let _type = RRTypes::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
+                let record = <dyn RecordBase>::from_wire(_type, &buf, off+2).unwrap();
 
+                if _type == RRTypes::Soa {
+                    seen_soa += 1;
 
+                    if seen_soa == 1 || seen_soa == 2 {
+                        continue;
+                    }
 
+                    if seen_soa < 2 {
+                        println!("DEL");
+
+                    } else {
+                        println!("ADD");
+                    }
+                }
 
                 println!("{}: {:?}", query, record);
-
-                // ----- decode one RR from rrbuf -----
-                //(owner, typ, class, ttl, rdata) = decode_rr(rrbuf)
-
-                //if typ == SOA:
-                //    seen_soa += 1
-                //if seen_soa == 1:
-                //// first SOA == "pre" boundary (marks start of deletes)
-                //// optionally: yield ("del", SOA) if you want to emit SOAs
-                //continue
-                //else if seen_soa == 2:
-                //// second SOA == "post" boundary (flip to adds)
-                //// optionally: yield ("add", SOA)
-                //continue
-                //// (a third SOA would be unexpected; treat as error)
-                //end if
-
-                //if seen_soa < 2:
-                //yield ("del", owner, typ, class, ttl, rdata)
-                //else:
-                //yield ("add", owner, typ, class, ttl, rdata)
             }
         }
-
-
-
 
         None
     }
