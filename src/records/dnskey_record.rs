@@ -10,10 +10,10 @@ use crate::records::inter::record_base::RecordBase;
 pub struct DnsKeyRecord {
     class: RRClasses,
     ttl: u32,
-    flags: u16,
-    protocol: u8,
-    algorithm: u8,
-    public_key: Vec<u8>
+    pub(crate) flags: u16,
+    pub(crate) protocol: u8,
+    pub(crate) algorithm: u8,
+    pub(crate) public_key: Vec<u8>
 }
 
 impl Default for DnsKeyRecord {

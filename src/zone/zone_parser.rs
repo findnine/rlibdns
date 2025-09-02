@@ -4,29 +4,31 @@ use std::io::{BufRead, BufReader, Read};
 use std::ops::DerefMut;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
-use crate::records::a_record::ARecord;
-use crate::records::aaaa_record::AaaaRecord;
-use crate::records::cname_record::CNameRecord;
-use crate::records::dnskey_record::DnsKeyRecord;
-use crate::records::hinfo_record::HInfoRecord;
-use crate::records::https_record::HttpsRecord;
+use crate::records::{
+    a_record::ARecord,
+    aaaa_record::AaaaRecord,
+    cname_record::CNameRecord,
+    dnskey_record::DnsKeyRecord,
+    hinfo_record::HInfoRecord,
+    https_record::HttpsRecord,
+    loc_record::LocRecord,
+    mx_record::MxRecord,
+    naptr_record::NaptrRecord,
+    ns_record::NsRecord,
+    nsec_record::NSecRecord,
+    ptr_record::PtrRecord,
+    rrsig_record::RRSigRecord,
+    smimea_record::SmimeaRecord,
+    soa_record::SoaRecord,
+    srv_record::SrvRecord,
+    sshfp_record::SshFpRecord,
+    svcb_record::SvcbRecord,
+    txt_record::TxtRecord,
+    uri_record::UriRecord,
+};
 use crate::records::inter::naptr_flags::NaptrFlags;
 use crate::records::inter::svc_param_keys::SvcParamKeys;
 use crate::records::inter::record_base::RecordBase;
-use crate::records::loc_record::LocRecord;
-use crate::records::mx_record::MxRecord;
-use crate::records::naptr_record::NaptrRecord;
-use crate::records::ns_record::NsRecord;
-use crate::records::nsec_record::NSecRecord;
-use crate::records::ptr_record::PtrRecord;
-use crate::records::rrsig_record::RRSigRecord;
-use crate::records::smimea_record::SmimeaRecord;
-use crate::records::soa_record::SoaRecord;
-use crate::records::srv_record::SrvRecord;
-use crate::records::sshfp_record::SshFpRecord;
-use crate::records::svcb_record::SvcbRecord;
-use crate::records::txt_record::TxtRecord;
-use crate::records::uri_record::UriRecord;
 use crate::utils::{base64, hex};
 use crate::utils::time_utils::TimeUtils;
 
@@ -48,7 +50,7 @@ pub struct ZoneParser {
 
 impl ZoneParser {
 
-    pub fn new(file_path: &str, origin: &str) -> io::Result<Self> {
+    pub fn open(file_path: &str, origin: &str) -> io::Result<Self> {
         let file = File::open(file_path)?;
         let reader = BufReader::new(file);
 
