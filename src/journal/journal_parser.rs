@@ -1,6 +1,6 @@
 use std::fs::File;
 use std::io;
-use std::io::{BufReader, Read};
+use std::io::{BufRead, BufReader, Read, Seek, SeekFrom};
 use crate::records::inter::record_base::RecordBase;
 
 /*
@@ -110,19 +110,21 @@ impl JournalParser {
     pub fn parse_record(&mut self) -> Option<(String, Box<dyn RecordBase>)> {
         let mut state = ParserState::Init;
 
+
+
         let mut buf = vec![0u8; 64];
         //self.reader.read_exact(&mut buf)?;
         self.reader.read_exact(&mut buf).unwrap();
 
         // Magic (first 16 bytes): ";BIND LOG V9\n" or ";BIND LOG V9.2\n"
-        let magic = &buf[0..16];
+        let magic = true;//&buf[0..16];
         let v9 = b";BIND LOG V9\n";
         let v92 = b";BIND LOG V9.2\n";
         //if !(magic.starts_with(v9) || magic.starts_with(v92)) {
         //    //return Err(io::Error::new(io::ErrorKind::InvalidData, "bad .jnl magic"));
         //}
 
-        let is_v92 = magic.starts_with(v92);
+        //let is_v92 = magic.starts_with(v92);
 
         // Parse header fields (big-endian u32s)
         let begin_serial = u32::from_be_bytes([buf[16], buf[17], buf[18], buf[19]]);
@@ -133,14 +135,85 @@ impl JournalParser {
         let source_serial = u32::from_be_bytes([buf[36], buf[37], buf[38], buf[39]]);
         let flags = buf[40];
 
-        println!("{}", is_v92);
-        println!("{}", begin_serial);
-        println!("{}", begin_offset);
-        println!("{}", end_serial);
-        println!("{}", end_offset);
-        println!("{}", index_size);
-        println!("{}", source_serial);
-        println!("{}", flags);
+        //println!("V9 {}", is_v92);
+        println!("Begin Serial {}", begin_serial);
+        println!("Begin Offset {}", begin_offset);
+        println!("End Serial {}", end_serial);
+        println!("End Offset {}", end_offset);
+        println!("Index Size {}", index_size);
+        println!("Source Serial {}", source_serial);
+        println!("Flags {}", flags);
+
+        // ===== 2) OPTIONAL INDEX =====
+        // Each index entry is 8 bytes: [serial(4) | offset(4)]
+        self.reader.seek(SeekFrom::Current((index_size as i64) * 8)).unwrap();
+
+        // ===== 3) POSITION TO FIRST TRANSACTION =====
+        self.reader.seek(SeekFrom::Start(begin_offset as u64)).unwrap();
+
+        while self.reader.stream_position().unwrap() < end_offset as u64 {
+            let (size, rr_count, serial_0, serial_1) = match magic {
+                true => {
+                    buf = vec![0u8; 16];
+                    self.reader.read_exact(&mut buf).unwrap();
+                    let size = u32::from_be_bytes([buf[0], buf[1], buf[2], buf[3]]);
+                    let rr_count = u32::from_be_bytes([buf[4], buf[5], buf[6], buf[7]]);
+                    let serial_0 = u32::from_be_bytes([buf[8], buf[9], buf[10], buf[11]]);
+                    let serial_1 = u32::from_be_bytes([buf[12], buf[13], buf[14], buf[15]]);
+                    (size, Some(rr_count), serial_0, serial_1)
+                }
+                false => {
+                    buf = vec![0u8; 12];
+                    self.reader.read_exact(&mut buf).unwrap();
+                    let size = u32::from_be_bytes([buf[0], buf[1], buf[2], buf[3]]);
+                    let serial_0 = u32::from_be_bytes([buf[4], buf[5], buf[6], buf[7]]);
+                    let serial_1 = u32::from_be_bytes([buf[8], buf[9], buf[10], buf[11]]);
+                    (size, None, serial_0, serial_1)
+                }
+            };
+
+            let mut remaining = size;
+            let seen_soa = 0;         // 0 = none, 1 = first SOA seen, 2 = second SOA seen
+
+            println!("Size {}", size);
+            println!("Serial 0 {}", serial_0);
+            println!("Serial 1 {}", serial_1);
+
+            //INNER LOOP
+
+            while remaining > 0 {
+                let mut buf = vec![0u8; 4];
+                self.reader.read_exact(&mut buf).unwrap();
+                let rr_len = u32::from_be_bytes([buf[0], buf[1], buf[2], buf[3]]);
+                remaining -= 4 + rr_len;
+
+                buf = vec![0u8; rr_len as usize];
+                self.reader.read_exact(&mut buf).unwrap();
+
+                // ----- decode one RR from rrbuf -----
+                (owner, typ, class, ttl, rdata) = decode_rr(rrbuf)
+
+                //if typ == SOA:
+                //    seen_soa += 1
+                //if seen_soa == 1:
+                //// first SOA == "pre" boundary (marks start of deletes)
+                //// optionally: yield ("del", SOA) if you want to emit SOAs
+                //continue
+                //else if seen_soa == 2:
+                //// second SOA == "post" boundary (flip to adds)
+                //// optionally: yield ("add", SOA)
+                //continue
+                //// (a third SOA would be unexpected; treat as error)
+                //end if
+
+                //if seen_soa < 2:
+                //yield ("del", owner, typ, class, ttl, rdata)
+                //else:
+                //yield ("add", owner, typ, class, ttl, rdata)
+            }
+        }
+
+
 
 
         None
