@@ -7,7 +7,7 @@ use crate::messages::inter::response_codes::ResponseCodes;
 use crate::records::inter::record_base::RecordBase;
 use crate::messages::dns_query::DnsQuery;
 use crate::messages::inter::rr_types::RRTypes;
-use crate::utils::record_utils::{records_from_bytes, records_to_bytes};
+use crate::utils::domain_utils::{pack_domain, unpack_domain};
 
 /*
                                1  1  1  1  1  1
@@ -509,4 +509,51 @@ impl<'a> Iterator for WireIter<'a> {
 
         Some(buf)
     }
+}
+
+fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> Vec<(String, Box<dyn RecordBase>)> {
+    let mut records: Vec<(String, Box<dyn RecordBase>)> = Vec::new();
+
+    for _ in 0..count {
+        let (query, length) = unpack_domain(buf, *off);
+        *off += length;
+
+        let record = <dyn RecordBase>::from_wire(RRTypes::from_code(u16::from_be_bytes([buf[*off], buf[*off+1]])).unwrap(), buf, *off+2).unwrap();
+
+        records.push((query, record));
+        *off += 10+u16::from_be_bytes([buf[*off+8], buf[*off+9]]) as usize;
+    }
+
+    records
+}
+
+fn records_to_bytes(off: usize, records: &[(String, Box<dyn RecordBase>)], label_map: &mut HashMap<String, usize>, max_payload_len: usize) -> (Vec<u8>, u16, bool) {
+    let mut truncated = false;
+
+    let mut buf = Vec::new();
+    let mut i = 0;
+    let mut off = off;
+
+    for (query, record) in records.iter() {
+        let q = pack_domain(query, label_map, off, true);
+        off += q.len()+2;
+
+        match record.to_bytes(label_map, off) {
+            Ok(r) => {
+                if off+r.len() > max_payload_len {
+                    truncated = true;
+                    break;
+                }
+
+                buf.extend_from_slice(&q);
+                buf.extend_from_slice(&record.get_type().get_code().to_be_bytes());
+                buf.extend_from_slice(&r);
+                off += r.len();
+                i += 1;
+            }
+            Err(_) => continue
+        }
+    }
+
+    (buf, i, truncated)
 }

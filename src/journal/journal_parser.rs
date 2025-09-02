@@ -1,8 +1,10 @@
+use std::collections::HashMap;
 use std::fs::File;
 use std::io;
-use std::io::{BufRead, BufReader, Read, Seek, SeekFrom};
+use std::io::{BufReader, Read, Seek, SeekFrom};
+use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::RecordBase;
-use crate::utils::record_utils::records_from_bytes;
+use crate::utils::domain_utils::{pack_domain, unpack_domain};
 /*
 - FROM WHAT I UNDERSTAND THIS IS HOW WE DECODE JNL FILES...
 
@@ -173,7 +175,7 @@ impl JournalParser {
             };
 
             let mut remaining = size;
-            let seen_soa = 0;         // 0 = none, 1 = first SOA seen, 2 = second SOA seen
+            let mut seen_soa = 0;         // 0 = none, 1 = first SOA seen, 2 = second SOA seen
 
             println!("Size {}", size);
             println!("Serial 0 {}", serial_0);
@@ -190,9 +192,20 @@ impl JournalParser {
                 buf = vec![0u8; rr_len as usize];
                 self.reader.read_exact(&mut buf).unwrap();
 
-                let records = records_from_bytes(&buf, &mut 0, 1);
 
-                println!("{:?}", records);
+
+                let mut off = 0;
+
+                let (query, length) = unpack_domain(&buf, off);
+                off += length;
+
+
+                let record = <dyn RecordBase>::from_wire(RRTypes::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap(), &buf, off+2).unwrap();
+
+
+
+
+                println!("{}: {:?}", query, record);
 
                 // ----- decode one RR from rrbuf -----
                 //(owner, typ, class, ttl, rdata) = decode_rr(rrbuf)

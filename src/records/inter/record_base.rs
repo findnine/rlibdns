@@ -1,7 +1,33 @@
+use crate::records::{
+    a_record::ARecord,
+    aaaa_record::AaaaRecord,
+    cname_record::CNameRecord,
+    dnskey_record::DnsKeyRecord,
+    hinfo_record::HInfoRecord,
+    https_record::HttpsRecord,
+    loc_record::LocRecord,
+    mx_record::MxRecord,
+    naptr_record::NaptrRecord,
+    ns_record::NsRecord,
+    nsec_record::NSecRecord,
+    ptr_record::PtrRecord,
+    rrsig_record::RRSigRecord,
+    smimea_record::SmimeaRecord,
+    soa_record::SoaRecord,
+    srv_record::SrvRecord,
+    sshfp_record::SshFpRecord,
+    svcb_record::SvcbRecord,
+    txt_record::TxtRecord,
+    opt_record::OptRecord,
+    uri_record::UriRecord,
+};
+
 use std::any::Any;
 use std::collections::HashMap;
 use std::fmt::{Debug, Display};
+use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
+use crate::messages::inter::rr_types::RRTypes::{Opt, Uri};
 
 pub trait RecordBase: Display + Debug + Send + Sync {
 
@@ -26,3 +52,96 @@ impl Clone for Box<dyn RecordBase> {
         self.clone_box()
     }
 }
+
+impl dyn RecordBase {
+
+    #[inline]
+    pub fn new(rrt: RRTypes, ttl: u32, class: RRClasses) -> Option<Box<dyn RecordBase>> {
+        use RRTypes::*;
+
+        Some(match rrt {
+            A      => ARecord::new(ttl, class).upcast(),
+            Aaaa   => AaaaRecord::new(ttl, class).upcast(),
+            Ns     => NsRecord::new(ttl, class).upcast(),
+            CName  => CNameRecord::new(ttl, class).upcast(),
+            Soa    => SoaRecord::new(ttl, class).upcast(),
+            Ptr    => PtrRecord::new(ttl, class).upcast(),
+            HInfo  => HInfoRecord::new(ttl, class).upcast(),
+            Mx     => MxRecord::new(ttl, class).upcast(),
+            Txt    => TxtRecord::new(ttl, class).upcast(),
+            Loc    => LocRecord::new(ttl, class).upcast(),
+            Srv    => SrvRecord::new(ttl, class).upcast(),
+            Naptr  => NaptrRecord::new(ttl, class).upcast(),
+            SshFp  => SshFpRecord::new(ttl, class).upcast(),
+            RRSig  => RRSigRecord::new(ttl, class).upcast(),
+            Nsec   => NSecRecord::new(ttl, class).upcast(),
+            DnsKey => DnsKeyRecord::new(ttl, class).upcast(),
+            Smimea => SmimeaRecord::new(ttl, class).upcast(),
+            Svcb   => SvcbRecord::new(ttl, class).upcast(),
+            Https  => HttpsRecord::new(ttl, class).upcast(),
+            /*
+            Spf => {
+                todo!()
+            }
+            Tsig => {
+                todo!()
+            }*/
+            Uri    => UriRecord::new(ttl, class).upcast(),
+            /*Caa => {
+                todo!()
+            }
+            _ => {
+                todo!()
+            }
+            */
+            // pseudo/unsupported types:
+            _ => return None
+        })
+    }
+
+    #[inline]
+    pub fn from_wire(rrt: RRTypes, buf: &[u8], off: usize) -> Option<Box<dyn RecordBase>> {
+        use RRTypes::*;
+
+        Some(match rrt {
+            A      => ARecord::from_bytes(buf, off).upcast(),
+            Aaaa   => AaaaRecord::from_bytes(buf, off).upcast(),
+            Ns     => NsRecord::from_bytes(buf, off).upcast(),
+            CName  => CNameRecord::from_bytes(buf, off).upcast(),
+            Soa    => SoaRecord::from_bytes(buf, off).upcast(),
+            Ptr    => PtrRecord::from_bytes(buf, off).upcast(),
+            HInfo  => HInfoRecord::from_bytes(buf, off).upcast(),
+            Mx     => MxRecord::from_bytes(buf, off).upcast(),
+            Txt    => TxtRecord::from_bytes(buf, off).upcast(),
+            Loc    => LocRecord::from_bytes(buf, off).upcast(),
+            Srv    => SrvRecord::from_bytes(buf, off).upcast(),
+            Naptr  => NaptrRecord::from_bytes(buf, off).upcast(),
+            SshFp  => SshFpRecord::from_bytes(buf, off).upcast(),
+            RRSig  => RRSigRecord::from_bytes(buf, off).upcast(),
+            Nsec   => NSecRecord::from_bytes(buf, off).upcast(),
+            DnsKey => DnsKeyRecord::from_bytes(buf, off).upcast(),
+            Smimea => SmimeaRecord::from_bytes(buf, off).upcast(),
+            Svcb   => SvcbRecord::from_bytes(buf, off).upcast(),
+            Https  => HttpsRecord::from_bytes(buf, off).upcast(),
+            Uri    => UriRecord::from_bytes(buf, off).upcast(),
+            /*
+            Spf => {
+                todo!()
+            }
+            Tsig => {
+                todo!()
+            }*/
+            Uri => UriRecord::from_bytes(buf, off).upcast(),
+            /*Caa => {
+                todo!()
+            }
+            _ => {
+                todo!()
+            }
+            */
+            Opt => OptRecord::from_bytes(buf, off).upcast(),
+            _ => return None
+        })
+    }
+}
+

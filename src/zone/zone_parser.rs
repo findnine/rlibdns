@@ -136,34 +136,7 @@ impl ZoneParser {
                             _type = t;
                             state = ParserState::Data;
                             data_count = 0;
-
-                            record = Some((self.name.clone(), match _type {
-                                RRTypes::A => ARecord::new(ttl, class).upcast(),
-                                RRTypes::Aaaa => AaaaRecord::new(ttl, class).upcast(),
-                                RRTypes::Ns => NsRecord::new(ttl, class).upcast(),
-                                RRTypes::CName => CNameRecord::new(ttl, class).upcast(),
-                                RRTypes::Soa => SoaRecord::new(ttl, class).upcast(),
-                                RRTypes::Ptr => PtrRecord::new(ttl, class).upcast(),
-                                RRTypes::HInfo => HInfoRecord::new(ttl, class).upcast(),
-                                RRTypes::Mx => MxRecord::new(ttl, class).upcast(),
-                                RRTypes::Txt => TxtRecord::new(ttl, class).upcast(),
-                                RRTypes::Loc => LocRecord::new(ttl, class).upcast(),
-                                RRTypes::Srv => SrvRecord::new(ttl, class).upcast(),
-                                RRTypes::Naptr => NaptrRecord::new(ttl, class).upcast(),
-                                RRTypes::SshFp => SshFpRecord::new(ttl, class).upcast(),
-                                RRTypes::RRSig => RRSigRecord::new(ttl, class).upcast(),
-                                RRTypes::Nsec => NSecRecord::new(ttl, class).upcast(),
-                                RRTypes::DnsKey => DnsKeyRecord::new(ttl, class).upcast(),
-                                RRTypes::Smimea => SmimeaRecord::new(ttl, class).upcast(),
-                                RRTypes::Svcb => SvcbRecord::new(ttl, class).upcast(),
-                                RRTypes::Https => HttpsRecord::new(ttl, class).upcast(),
-                                //RRTypes::Spf => {}
-                                //RRTypes::Tsig => {}
-                                //RRTypes::Any => {}
-                                RRTypes::Uri => UriRecord::new(ttl, class).upcast(),
-                                //RRTypes::Caa => {}
-                                _ => unreachable!()
-                            }));
+                            record = Some((self.name.clone(), <dyn RecordBase>::new(_type, ttl, class).unwrap()));
 
                         } else {
                             ttl = word.parse().unwrap();//.expect(&format!("Parse error on line {} pos {}", self.line_no, pos));

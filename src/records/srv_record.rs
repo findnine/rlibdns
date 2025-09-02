@@ -6,7 +6,6 @@ use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::RecordBase;
 use crate::utils::domain_utils::{pack_domain, unpack_domain};
-use crate::utils::hex;
 
 #[derive(Clone, Debug)]
 pub struct SrvRecord {
