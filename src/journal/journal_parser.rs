@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io;
 use std::io::{BufRead, BufReader, Read, Seek, SeekFrom};
 use crate::records::inter::record_base::RecordBase;
-
+use crate::utils::record_utils::records_from_bytes;
 /*
 - FROM WHAT I UNDERSTAND THIS IS HOW WE DECODE JNL FILES...
 
@@ -189,6 +189,10 @@ impl JournalParser {
 
                 buf = vec![0u8; rr_len as usize];
                 self.reader.read_exact(&mut buf).unwrap();
+
+                let records = records_from_bytes(&buf, &mut 0, 1);
+
+                println!("{:?}", records);
 
                 // ----- decode one RR from rrbuf -----
                 //(owner, typ, class, ttl, rdata) = decode_rr(rrbuf)
