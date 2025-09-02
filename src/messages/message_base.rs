@@ -154,7 +154,6 @@ impl MessageBase {
             for i in 0..3 {
                 let (records, count, t) = records_to_bytes(off, &self.records[i], &mut label_map, max_payload_len);
                 buf.extend_from_slice(&records);
-
                 buf.splice(i*2+6..i*2+8, count.to_be_bytes());
 
                 if t {
