@@ -45,9 +45,6 @@ pub struct MessageBase {
     destination: Option<SocketAddr>,
     queries: Vec<DnsQuery>,
     records: [Vec<(String, Box<dyn RecordBase>)>; 3]
-    //answers: Vec<(String, Box<dyn RecordBase>)>, //WE HAVE TO SWITCH FROM ORDERED_MAP TO VEC FOR RFC 5936
-    //authority_records: Vec<(String, Box<dyn RecordBase>)>,
-    //additional_records: Vec<(String, Box<dyn RecordBase>)>
 }
 
 impl Default for MessageBase {
@@ -68,9 +65,6 @@ impl Default for MessageBase {
             destination: None,
             queries: Vec::new(),
             records: std::array::from_fn(|_| Vec::<(String, Box<dyn RecordBase>)>::new())
-            //answers: Vec::new(),
-            //authority_records: Vec::new(),
-            //additional_records: Vec::new()
         }
     }
 }
