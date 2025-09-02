@@ -123,7 +123,6 @@ impl dyn RecordBase {
             Smimea => SmimeaRecord::from_bytes(buf, off).upcast(),
             Svcb   => SvcbRecord::from_bytes(buf, off).upcast(),
             Https  => HttpsRecord::from_bytes(buf, off).upcast(),
-            Uri    => UriRecord::from_bytes(buf, off).upcast(),
             /*
             Spf => {
                 todo!()
