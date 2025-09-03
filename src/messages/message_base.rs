@@ -497,12 +497,12 @@ fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> Vec<(String, B
     let mut records: Vec<(String, Box<dyn RecordBase>)> = Vec::new();
 
     for _ in 0..count {
-        let (query, length) = unpack_domain(buf, *off);
+        let (name, length) = unpack_domain(buf, *off);
         *off += length;
 
         let record = <dyn RecordBase>::from_wire(RRTypes::from_code(u16::from_be_bytes([buf[*off], buf[*off+1]])).unwrap(), buf, *off+2).unwrap();
 
-        records.push((query, record));
+        records.push((name, record));
         *off += 10+u16::from_be_bytes([buf[*off+8], buf[*off+9]]) as usize;
     }
 
@@ -516,9 +516,9 @@ fn records_to_bytes(off: usize, records: &[(String, Box<dyn RecordBase>)], label
     let mut i = 0;
     let mut off = off;
 
-    for (query, record) in records.iter() {
-        let q = pack_domain(query, label_map, off, true);
-        off += q.len()+2;
+    for (name, record) in records.iter() {
+        let n = pack_domain(name, label_map, off, true);
+        off += n.len()+2;
 
         match record.to_bytes(label_map, off) {
             Ok(r) => {
@@ -527,7 +527,7 @@ fn records_to_bytes(off: usize, records: &[(String, Box<dyn RecordBase>)], label
                     break;
                 }
 
-                buf.extend_from_slice(&q);
+                buf.extend_from_slice(&n);
                 buf.extend_from_slice(&record.get_type().get_code().to_be_bytes());
                 buf.extend_from_slice(&r);
                 off += r.len();
