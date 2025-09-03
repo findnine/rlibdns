@@ -22,8 +22,8 @@ mod tests {
         let mut parser = JournalParser::open("/home/brad/Downloads/db.find9.net.jnl").unwrap();
 
 
-        for (op_code, name, record) in parser.iter() {
-            println!("{} {}: {:?}", op_code, name, record);
+        for txn in parser.iter() {
+            println!("{:?}", txn);
         }
     }
 /*

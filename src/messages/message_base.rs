@@ -64,7 +64,7 @@ impl Default for MessageBase {
             origin: None,
             destination: None,
             queries: Vec::new(),
-            records: std::array::from_fn(|_| Vec::<(String, Box<dyn RecordBase>)>::new())
+            records: Default::default()
         }
     }
 }

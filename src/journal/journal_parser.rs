@@ -2,6 +2,7 @@ use std::fs::File;
 use std::io;
 use std::io::{BufReader, Read, Seek, SeekFrom};
 use crate::journal::inter::ixfr_op_codes::IxfrOpCodes;
+use crate::journal::txn::Txn;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::RecordBase;
 use crate::utils::domain_utils::unpack_domain;
@@ -19,8 +20,7 @@ struct JournalHeader {
 
 pub struct JournalParser {
     reader: BufReader<File>,
-    header: Option<JournalHeader>,
-    op_codes: IxfrOpCodes
+    header: Option<JournalHeader>
 }
 
 impl JournalParser {
@@ -31,8 +31,7 @@ impl JournalParser {
 
         Ok(Self {
             reader,
-            header: None,
-            op_codes: IxfrOpCodes::None
+            header: None
         })
     }
 
@@ -42,10 +41,9 @@ impl JournalParser {
         }
     }
 
-    pub fn parse_record(&mut self) -> Option<(IxfrOpCodes, String, Box<dyn RecordBase>)> {
+    pub fn parse_record(&mut self) -> Option<Txn> {
         if self.header == None {
             let mut buf = vec![0u8; 64];
-            //self.reader.read_exact(&mut buf)?;
             self.reader.read_exact(&mut buf).unwrap();
 
             // Magic (first 16 bytes): ";BIND LOG V9\n" or ";BIND LOG V9.2\n"
@@ -87,66 +85,66 @@ impl JournalParser {
 
         let magic = true;
 
-        while self.reader.stream_position().unwrap() < self.header.as_ref()?.end_offset as u64 {
-            let (size, rr_count, serial_0, serial_1) = match magic {
-                true => {
-                    let mut buf = vec![0u8; 16];
-                    self.reader.read_exact(&mut buf).unwrap();
-                    let size = u32::from_be_bytes([buf[0], buf[1], buf[2], buf[3]]);
-                    let rr_count = u32::from_be_bytes([buf[4], buf[5], buf[6], buf[7]]);
-                    let serial_0 = u32::from_be_bytes([buf[8], buf[9], buf[10], buf[11]]);
-                    let serial_1 = u32::from_be_bytes([buf[12], buf[13], buf[14], buf[15]]);
-                    (size, Some(rr_count), serial_0, serial_1)
-                }
-                false => {
-                    let mut buf = vec![0u8; 12];
-                    self.reader.read_exact(&mut buf).unwrap();
-                    let size = u32::from_be_bytes([buf[0], buf[1], buf[2], buf[3]]);
-                    let serial_0 = u32::from_be_bytes([buf[4], buf[5], buf[6], buf[7]]);
-                    let serial_1 = u32::from_be_bytes([buf[8], buf[9], buf[10], buf[11]]);
-                    (size, None, serial_0, serial_1)
-                }
-            };
-
-            let mut remaining = size;
-            let mut seen_soa = 0;
-
-            while remaining > 0 {
-                let mut buf = vec![0u8; 4];
-                self.reader.read_exact(&mut buf).unwrap();
-                let rr_len = u32::from_be_bytes([buf[0], buf[1], buf[2], buf[3]]);
-                remaining -= 4 + rr_len;
-
-                buf = vec![0u8; rr_len as usize];
-                self.reader.read_exact(&mut buf).unwrap();
-
-                let mut off = 0;
-
-                let (name, length) = unpack_domain(&buf, off);
-                off += length;
-
-
-                let _type = RRTypes::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
-                let record = <dyn RecordBase>::from_wire(_type, &buf, off+2).unwrap();
-
-                if _type == RRTypes::Soa {
-                    seen_soa += 1;
-
-                    //let op_code = match seen_soa {
-                    //    1 => IxfrOpCodes::Delete,
-                    //    2 => IxfrOpCodes::Add,
-                    //    _ => unreachable!()
-                    //};
-
-                    //return Some((IxfrOpCodes::None, name, record));
-                }
-
-                println!("{}: {:?}", name, record);
-                //return Some((IxfrOpCodes::None, name, record));
-            }
+        if self.reader.stream_position().unwrap() >= self.header.as_ref()?.end_offset as u64 {
+            return None;
         }
 
-        None
+        let (size, rr_count, serial_0, serial_1) = match magic {
+            true => {
+                let mut buf = vec![0u8; 16];
+                self.reader.read_exact(&mut buf).unwrap();
+                let size = u32::from_be_bytes([buf[0], buf[1], buf[2], buf[3]]);
+                let rr_count = u32::from_be_bytes([buf[4], buf[5], buf[6], buf[7]]);
+                let serial_0 = u32::from_be_bytes([buf[8], buf[9], buf[10], buf[11]]);
+                let serial_1 = u32::from_be_bytes([buf[12], buf[13], buf[14], buf[15]]);
+                (size, Some(rr_count), serial_0, serial_1)
+            }
+            false => {
+                let mut buf = vec![0u8; 12];
+                self.reader.read_exact(&mut buf).unwrap();
+                let size = u32::from_be_bytes([buf[0], buf[1], buf[2], buf[3]]);
+                let serial_0 = u32::from_be_bytes([buf[4], buf[5], buf[6], buf[7]]);
+                let serial_1 = u32::from_be_bytes([buf[8], buf[9], buf[10], buf[11]]);
+                (size, None, serial_0, serial_1)
+            }
+        };
+
+        let mut remaining = size;
+        let mut txn = Txn::new(serial_0, serial_1);
+        let mut phase = IxfrOpCodes::Delete;
+        let mut seen_soa = 0;
+
+        while remaining > 0 {
+            let mut buf = vec![0u8; 4];
+            self.reader.read_exact(&mut buf).unwrap();
+            let rr_len = u32::from_be_bytes([buf[0], buf[1], buf[2], buf[3]]);
+            remaining -= 4 + rr_len;
+
+            buf = vec![0u8; rr_len as usize];
+            self.reader.read_exact(&mut buf).unwrap();
+
+            let mut off = 0;
+
+            let (name, length) = unpack_domain(&buf, off);
+            off += length;
+
+            let _type = RRTypes::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
+
+            if _type == RRTypes::Soa {
+                seen_soa += 1;
+
+                if seen_soa == 2 {
+                    phase = IxfrOpCodes::Add;
+                }
+
+                continue;
+            }
+
+            let record = <dyn RecordBase>::from_wire(_type, &buf, off+2).unwrap();
+            txn.add_record(phase, (name, record));
+        }
+
+        Some(txn)
     }
 }
 
@@ -156,7 +154,7 @@ pub struct JournalParserIter<'a> {
 
 impl<'a> Iterator for JournalParserIter<'a> {
 
-    type Item = (IxfrOpCodes, String, Box<dyn RecordBase>);
+    type Item = Txn;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.parser.parse_record()

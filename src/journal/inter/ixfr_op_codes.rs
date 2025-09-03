@@ -5,8 +5,7 @@ use std::fmt::Formatter;
 pub enum IxfrOpCodes {
     #[default]
     Delete,
-    Add,
-    None
+    Add
 }
 
 impl fmt::Display for IxfrOpCodes {
@@ -14,8 +13,7 @@ impl fmt::Display for IxfrOpCodes {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{}", match self {
             Self::Delete => "DELETE",
-            Self::Add => "ADD",
-            Self::None => "None"
+            Self::Add => "ADD"
         })
     }
 }
