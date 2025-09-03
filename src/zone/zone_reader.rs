@@ -41,14 +41,14 @@ enum ParserState {
     QString
 }
 
-pub struct ZoneParser {
+pub struct ZoneReader {
     reader: BufReader<File>,
     origin: String,
     name: String,
     default_ttl: u32
 }
 
-impl ZoneParser {
+impl ZoneReader {
 
     pub fn open(file_path: &str, origin: &str) -> io::Result<Self> {
         let file = File::open(file_path)?;
@@ -229,18 +229,18 @@ impl ZoneParser {
         }
     }
 
-    pub fn iter(&mut self) -> ZoneParserIter {
-        ZoneParserIter {
+    pub fn iter(&mut self) -> ZoneReaderIter {
+        ZoneReaderIter {
             parser: self
         }
     }
 }
 
-pub struct ZoneParserIter<'a> {
-    parser: &'a mut ZoneParser
+pub struct ZoneReaderIter<'a> {
+    parser: &'a mut ZoneReader
 }
 
-impl<'a> Iterator for ZoneParserIter<'a> {
+impl<'a> Iterator for ZoneReaderIter<'a> {
 
     type Item = (String, Box<dyn RecordBase>);
 

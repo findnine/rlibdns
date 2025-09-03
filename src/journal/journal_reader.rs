@@ -18,12 +18,12 @@ struct JournalHeader {
     flags: u8
 }
 
-pub struct JournalParser {
+pub struct JournalReader {
     reader: BufReader<File>,
     header: Option<JournalHeader>
 }
 
-impl JournalParser {
+impl JournalReader {
 
     pub fn open(file_path: &str) -> io::Result<Self> {
         let file = File::open(file_path)?;
@@ -35,8 +35,8 @@ impl JournalParser {
         })
     }
 
-    pub fn iter(&mut self) -> JournalParserIter {
-        JournalParserIter {
+    pub fn iter(&mut self) -> JournalReaderIter {
+        JournalReaderIter {
             parser: self
         }
     }
@@ -148,11 +148,11 @@ impl JournalParser {
     }
 }
 
-pub struct JournalParserIter<'a> {
-    parser: &'a mut JournalParser
+pub struct JournalReaderIter<'a> {
+    parser: &'a mut JournalReader
 }
 
-impl<'a> Iterator for JournalParserIter<'a> {
+impl<'a> Iterator for JournalReaderIter<'a> {
 
     type Item = Txn;
 

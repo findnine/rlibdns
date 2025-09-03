@@ -7,11 +7,11 @@ pub mod journal;
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;
-    use crate::journal::journal_parser::JournalParser;
+    use crate::journal::journal_reader::JournalReader;
     use crate::messages::inter::rr_types::RRTypes;
     use crate::messages::message_base::MessageBase;
     use crate::records::inter::record_base::RecordBase;
-    use crate::zone::zone_parser::ZoneParser;
+    use crate::zone::zone_reader::ZoneReader;
 
     type RecordMap = HashMap<String, HashMap<RRTypes, Vec<Box<dyn RecordBase>>>>;
 
@@ -19,14 +19,14 @@ mod tests {
     fn journal() {
         let mut records = RecordMap::new();
 
-        let mut parser = JournalParser::open("/home/brad/Downloads/db.find9.net.jnl").unwrap();
+        let mut parser = JournalReader::open("/home/brad/Downloads/db.find9.net.jnl").unwrap();
 
 
         for txn in parser.iter() {
             println!("{:?}", txn);
         }
     }
-/*
+
     #[test]
     fn encode_and_decode() {
         let x = vec![ 0xa7, 0xa2, 0x81, 0x80, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x06, 0x67, 0x6f, 0x6f,
@@ -60,7 +60,7 @@ mod tests {
     fn parsing() {
         let mut records = RecordMap::new();
 
-        let mut parser = ZoneParser::open("/home/brad/Downloads/find9.net.test.zone", "find9.net").unwrap();
+        let mut parser = ZoneReader::open("/home/brad/Downloads/find9.net.test.zone", "find9.net").unwrap();
         for (name, record) in parser.iter() {
             println!("{}: {}", name, record);
 
@@ -75,5 +75,4 @@ mod tests {
         //println!("{:?}", records);
         println!("{:?}", records["@"][&RRTypes::A]);
     }
-    */
 }
