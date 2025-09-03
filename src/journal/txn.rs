@@ -3,9 +3,9 @@ use crate::records::inter::record_base::RecordBase;
 
 #[derive(Debug, Clone)]
 pub struct Txn {
-    pub serial_0: u32,
-    pub serial_1: u32,
-    pub records: [Vec<(String, Box<dyn RecordBase>)>; 2]
+    serial_0: u32,
+    serial_1: u32,
+    records: [Vec<(String, Box<dyn RecordBase>)>; 2]
 }
 
 impl Txn {
@@ -18,7 +18,27 @@ impl Txn {
         }
     }
 
-    pub fn add_record(&mut self, op_code: TxnOpCodes, rec: (String, Box<dyn RecordBase>)) {
-        self.records[op_code as usize].push(rec)
+    pub fn set_serial_0(&mut self, serial_0: u32) {
+        self.serial_0 = serial_0;
+    }
+
+    pub fn get_serial_0(&self) -> u32 {
+        self.serial_0
+    }
+
+    pub fn set_serial_1(&mut self, serial_1: u32) {
+        self.serial_1 = serial_1;
+    }
+
+    pub fn get_serial_1(&self) -> u32 {
+        self.serial_1
+    }
+
+    pub fn add_record(&mut self, op_code: TxnOpCodes, record: (String, Box<dyn RecordBase>)) {
+        self.records[op_code as usize].push(record)
+    }
+
+    pub fn get_records(&self, op_code: TxnOpCodes) -> &Vec<(String, Box<dyn RecordBase>)> {
+        &self.records[op_code as usize]
     }
 }
