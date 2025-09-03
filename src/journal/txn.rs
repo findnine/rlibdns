@@ -5,7 +5,7 @@ use crate::records::inter::record_base::RecordBase;
 pub struct Txn {
     pub serial_0: u32,
     pub serial_1: u32,
-    pub buckets: [Vec<(String, Box<dyn RecordBase>)>; 2]
+    pub records: [Vec<(String, Box<dyn RecordBase>)>; 2]
 }
 
 impl Txn {
@@ -14,11 +14,11 @@ impl Txn {
         Self {
             serial_0,
             serial_1,
-            buckets: Default::default()
+            records: Default::default()
         }
     }
 
     pub fn add_record(&mut self, op_code: TxnOpCodes, rec: (String, Box<dyn RecordBase>)) {
-        self.buckets[op_code as usize].push(rec)
+        self.records[op_code as usize].push(rec)
     }
 }
