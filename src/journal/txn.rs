@@ -1,4 +1,4 @@
-use crate::journal::inter::ixfr_op_codes::IxfrOpCodes;
+use crate::journal::inter::txn_op_codes::TxnOpCodes;
 use crate::records::inter::record_base::RecordBase;
 
 #[derive(Debug, Clone)]
@@ -18,7 +18,7 @@ impl Txn {
         }
     }
 
-    pub fn add_record(&mut self, op_code: IxfrOpCodes, rec: (String, Box<dyn RecordBase>)) {
+    pub fn add_record(&mut self, op_code: TxnOpCodes, rec: (String, Box<dyn RecordBase>)) {
         self.buckets[op_code as usize].push(rec)
     }
 }

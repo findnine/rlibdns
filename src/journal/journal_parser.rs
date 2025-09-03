@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io;
 use std::io::{BufReader, Read, Seek, SeekFrom};
-use crate::journal::inter::ixfr_op_codes::IxfrOpCodes;
+use crate::journal::inter::txn_op_codes::TxnOpCodes;
 use crate::journal::txn::Txn;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::RecordBase;
@@ -111,7 +111,7 @@ impl JournalParser {
 
         let mut remaining = size;
         let mut txn = Txn::new(serial_0, serial_1);
-        let mut phase = IxfrOpCodes::Delete;
+        let mut phase = TxnOpCodes::Delete;
         let mut seen_soa = 0;
 
         while remaining > 0 {
@@ -134,7 +134,7 @@ impl JournalParser {
                 seen_soa += 1;
 
                 if seen_soa == 2 {
-                    phase = IxfrOpCodes::Add;
+                    phase = TxnOpCodes::Add;
                 }
 
                 continue;
