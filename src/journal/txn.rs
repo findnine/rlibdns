@@ -1,7 +1,7 @@
 use crate::journal::inter::ixfr_op_codes::IxfrOpCodes;
 use crate::records::inter::record_base::RecordBase;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Clone)]
 pub struct Txn {
     pub serial_0: u32,
     pub serial_1: u32,
