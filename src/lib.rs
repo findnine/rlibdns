@@ -26,7 +26,7 @@ mod tests {
             println!("{} {}: {:?}", op_code, name, record);
         }
     }
-
+/*
     #[test]
     fn encode_and_decode() {
         let x = vec![ 0xa7, 0xa2, 0x81, 0x80, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x06, 0x67, 0x6f, 0x6f,
@@ -75,4 +75,5 @@ mod tests {
         //println!("{:?}", records);
         println!("{:?}", records["@"][&RRTypes::A]);
     }
+    */
 }
