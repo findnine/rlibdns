@@ -182,8 +182,12 @@ impl NaptrRecord {
         self.flags.push(flags);
     }
 
-    pub fn get_flags(&self) -> &Vec<NaptrFlags> {
-        self.flags.as_ref()
+    pub fn get_flags(&self) -> impl Iterator<Item = &NaptrFlags> {
+        self.flags.iter()
+    }
+
+    pub fn get_flags_mut(&mut self) -> impl Iterator<Item = &mut NaptrFlags> {
+        self.flags.iter_mut()
     }
 
     pub fn set_service(&mut self, service: &str) {

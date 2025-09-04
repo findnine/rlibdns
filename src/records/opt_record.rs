@@ -162,12 +162,12 @@ impl OptRecord {
         self.options.get_mut(code)
     }
 
-    pub fn get_options(&self) -> &OrderedMap<OptCodes, Vec<u8>> {
-        &self.options
+    pub fn get_options(&self) -> impl Iterator<Item = (&OptCodes, &Vec<u8>)> {
+        self.options.iter()
     }
 
-    pub fn get_options_mut(&mut self) -> &mut OrderedMap<OptCodes, Vec<u8>> {
-        &mut self.options
+    pub fn get_options_mut(&mut self) -> impl Iterator<Item = (&OptCodes, &mut Vec<u8>)> {
+        self.options.iter_mut()
     }
 }
 

@@ -164,12 +164,12 @@ impl SvcbRecord {
         self.params.get_mut(key)
     }
 
-    pub fn get_params(&self) -> &OrderedMap<SvcParamKeys, Vec<u8>> {
-        &self.params
+    pub fn get_params(&self) -> impl Iterator<Item = (&SvcParamKeys, &Vec<u8>)> {
+        self.params.iter()
     }
 
-    pub fn get_params_mut(&mut self) -> &mut OrderedMap<SvcParamKeys, Vec<u8>> {
-        &mut self.params
+    pub fn get_params_mut(&mut self) -> impl Iterator<Item = (&SvcParamKeys, &mut Vec<u8>)> {
+        self.params.iter_mut()
     }
 }
 
