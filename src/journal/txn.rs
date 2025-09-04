@@ -38,7 +38,7 @@ impl Txn {
         self.records[op_code as usize].push(record)
     }
 
-    pub fn get_records(&self, op_code: TxnOpCodes) -> &Vec<(String, Box<dyn RecordBase>)> {
-        &self.records[op_code as usize]
+    pub fn get_records(&self, op_code: TxnOpCodes) -> impl Iterator<Item = (&String, &Box<dyn RecordBase>)> {
+        self.records[op_code as usize].iter().map(|(name, record)| (name, record))
     }
 }
