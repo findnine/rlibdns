@@ -113,13 +113,13 @@ where
         let start_idx = match bounds.start_bound() {
             Bound::Unbounded => 0,
             Bound::Included(k) => *key_to_index.get(k).unwrap_or(&self.keys.len()),
-            Bound::Excluded(k) => key_to_index.get(k).map(|i| i + 1).unwrap_or(self.keys.len()),
+            Bound::Excluded(k) => key_to_index.get(k).map(|i| i + 1).unwrap_or(self.keys.len())
         };
 
         let end_idx = match bounds.end_bound() {
             Bound::Unbounded => self.keys.len(),
             Bound::Included(k) => key_to_index.get(k).map(|i| i + 1).unwrap_or(self.keys.len()),
-            Bound::Excluded(k) => *key_to_index.get(k).unwrap_or(&self.keys.len()),
+            Bound::Excluded(k) => *key_to_index.get(k).unwrap_or(&self.keys.len())
         };
 
         self.keys[start_idx..end_idx]
