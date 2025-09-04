@@ -34,8 +34,8 @@ impl Txn {
         self.serial_1
     }
 
-    pub fn add_record(&mut self, op_code: TxnOpCodes, record: (String, Box<dyn RecordBase>)) {
-        self.records[op_code as usize].push(record)
+    pub fn add_record(&mut self, op_code: TxnOpCodes, query: &str, record: Box<dyn RecordBase>) {
+        self.records[op_code as usize].push((query.to_string(), record))
     }
 
     pub fn get_records(&self, op_code: TxnOpCodes) -> impl Iterator<Item = (&String, &Box<dyn RecordBase>)> {

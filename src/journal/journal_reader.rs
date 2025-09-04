@@ -141,7 +141,7 @@ impl JournalReader {
             }
 
             let record = <dyn RecordBase>::from_wire(_type, &buf, off+2).unwrap();
-            txn.add_record(phase, (name, record));
+            txn.add_record(phase, &name, record);
         }
 
         Some(txn)
