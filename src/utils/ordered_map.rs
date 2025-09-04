@@ -104,33 +104,28 @@ where
         self.map.values()
     }
 
-
-    pub fn range_insertion<R>(&self, bounds: R) -> impl Iterator<Item = (&K, &V)>
+    pub fn range<R>(&self, bounds: R) -> impl Iterator<Item = (&K, &V)>
     where
-        R: RangeBounds<K>,
+        R: RangeBounds<K>
     {
+        let key_to_index: HashMap<_, _> = self.keys.iter().enumerate().map(|(i, k)| (k.clone(), i)).collect();
+
         let start_idx = match bounds.start_bound() {
-            Bound::Unbounded      => 0,
-            Bound::Included(k)    => self.keys.iter().position(|x| x == k).unwrap_or(self.keys.len()),
-            Bound::Excluded(k)    => self.keys.iter().position(|x| x == k).map(|i| i + 1).unwrap_or(self.keys.len()),
+            Bound::Unbounded => 0,
+            Bound::Included(k) => *key_to_index.get(k).unwrap_or(&self.keys.len()),
+            Bound::Excluded(k) => key_to_index.get(k).map(|i| i + 1).unwrap_or(self.keys.len()),
         };
+
         let end_idx = match bounds.end_bound() {
-            Bound::Unbounded      => self.keys.len(),
-            Bound::Included(k)    => self.keys.iter().position(|x| x == k).map(|i| i + 1).unwrap_or(self.keys.len()),
-            Bound::Excluded(k)    => self.keys.iter().position(|x| x == k).unwrap_or(self.keys.len()),
+            Bound::Unbounded => self.keys.len(),
+            Bound::Included(k) => key_to_index.get(k).map(|i| i + 1).unwrap_or(self.keys.len()),
+            Bound::Excluded(k) => *key_to_index.get(k).unwrap_or(&self.keys.len()),
         };
 
-        let (lo, hi) = if start_idx <= end_idx { (start_idx, end_idx) } else { (start_idx, start_idx) };
-
-        self.keys[lo..hi]
+        self.keys[start_idx..end_idx]
             .iter()
-            .filter_map(move |k| self.map.get_key_value(k))
+            .filter_map(move |k| self.map.get(k).map(|v| (k, v)))
     }
-
-    pub fn range_insertion_from(&self, start: &K) -> impl Iterator<Item = (&K, &V)> {
-        self.range_insertion(start.clone()..)
-    }
-
 
     pub fn len(&self) -> usize {
         self.map.len()
