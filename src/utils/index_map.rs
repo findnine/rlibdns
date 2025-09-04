@@ -6,18 +6,18 @@ use std::marker::PhantomData;
 use std::ops::{Bound, RangeBounds};
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct OrderedMap<K: Eq + Hash, V> {
+pub struct IndexMap<K: Eq + Hash, V> {
     map: HashMap<K, V>,
     keys: Vec<K>,
 }
 
-impl<K, V> OrderedMap<K, V>
+impl<K, V> IndexMap<K, V>
 where
     K: Eq + Hash + Clone
 {
 
     pub fn new() -> Self {
-        OrderedMap {
+        IndexMap {
             map: HashMap::new(),
             keys: Vec::new(),
         }
@@ -87,8 +87,8 @@ where
         })
     }
 
-    pub fn iter_mut(&mut self) -> OrderedMapIterMut<'_, K, V> {
-        OrderedMapIterMut {
+    pub fn iter_mut(&mut self) -> IndexMapIterMut<'_, K, V> {
+        IndexMapIterMut {
             map: &mut self.map,
             keys: &self.keys,
             idx: 0,
@@ -99,7 +99,7 @@ where
     pub fn keys(&self) -> impl Iterator<Item = &K> {
         self.keys.iter()
     }
-    
+
     pub fn values(&self) -> impl Iterator<Item = &V> {
         self.map.values()
     }
@@ -142,12 +142,12 @@ where
     }
 }
 
-pub struct OrderedMapIter<'a, K: Eq + Hash, V> {
-    inner: &'a OrderedMap<K, V>,
+pub struct IndexMapIter<'a, K: Eq + Hash, V> {
+    inner: &'a IndexMap<K, V>,
     idx: usize
 }
 
-impl<'a, K: Eq + Hash, V> Iterator for OrderedMapIter<'a, K, V> {
+impl<'a, K: Eq + Hash, V> Iterator for IndexMapIter<'a, K, V> {
 
     type Item = (&'a K, &'a V);
 
@@ -163,24 +163,24 @@ impl<'a, K: Eq + Hash, V> Iterator for OrderedMapIter<'a, K, V> {
     }
 }
 
-impl<'a, K: Eq + Hash + Clone, V> IntoIterator for &'a OrderedMap<K, V> {
+impl<'a, K: Eq + Hash + Clone, V> IntoIterator for &'a IndexMap<K, V> {
 
     type Item = (&'a K, &'a V);
-    type IntoIter = OrderedMapIter<'a, K, V>;
+    type IntoIter = IndexMapIter<'a, K, V>;
 
     fn into_iter(self) -> Self::IntoIter {
-        OrderedMapIter { inner: self, idx: 0 }
+        IndexMapIter { inner: self, idx: 0 }
     }
 }
 
-pub struct OrderedMapIterMut<'a, K: Eq + Hash, V> {
+pub struct IndexMapIterMut<'a, K: Eq + Hash, V> {
     map: &'a mut HashMap<K, V>,
     keys: &'a [K],
     idx: usize,
     _phantom: PhantomData<&'a mut V>,
 }
 
-impl<'a, K: Eq + Hash, V> Iterator for OrderedMapIterMut<'a, K, V> {
+impl<'a, K: Eq + Hash, V> Iterator for IndexMapIterMut<'a, K, V> {
 
     type Item = (&'a K, &'a mut V);
 
@@ -197,22 +197,22 @@ impl<'a, K: Eq + Hash, V> Iterator for OrderedMapIterMut<'a, K, V> {
     }
 }
 
-impl<'a, K: Eq + Hash + Clone, V> IntoIterator for &'a mut OrderedMap<K, V> {
+impl<'a, K: Eq + Hash + Clone, V> IntoIterator for &'a mut IndexMap<K, V> {
 
     type Item = (&'a K, &'a mut V);
-    type IntoIter = OrderedMapIterMut<'a, K, V>;
+    type IntoIter = IndexMapIterMut<'a, K, V>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.iter_mut()
     }
 }
 
-pub struct OrderedMapIntoIter<K: Eq + Hash, V> {
+pub struct IndexMapIntoIter<K: Eq + Hash, V> {
     keys_iter: std::vec::IntoIter<K>,
     map: HashMap<K, V>,
 }
 
-impl<K: Eq + Hash, V> Iterator for OrderedMapIntoIter<K, V> {
+impl<K: Eq + Hash, V> Iterator for IndexMapIntoIter<K, V> {
 
     type Item = (K, V);
 
@@ -226,13 +226,13 @@ impl<K: Eq + Hash, V> Iterator for OrderedMapIntoIter<K, V> {
     }
 }
 
-impl<K: Eq + Hash + Clone, V> IntoIterator for OrderedMap<K, V> {
+impl<K: Eq + Hash + Clone, V> IntoIterator for IndexMap<K, V> {
 
     type Item = (K, V);
-    type IntoIter = OrderedMapIntoIter<K, V>;
+    type IntoIter = IndexMapIntoIter<K, V>;
 
     fn into_iter(self) -> Self::IntoIter {
-        OrderedMapIntoIter {
+        IndexMapIntoIter {
             keys_iter: self.keys.into_iter(),
             map: self.map,
         }

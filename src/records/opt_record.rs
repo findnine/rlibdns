@@ -7,7 +7,7 @@ use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::opt_codes::OptCodes;
 use crate::records::inter::record_base::RecordBase;
 use crate::utils::hex;
-use crate::utils::ordered_map::OrderedMap;
+use crate::utils::index_map::IndexMap;
 
 #[derive(Clone, Debug)]
 pub struct OptRecord {
@@ -15,7 +15,7 @@ pub struct OptRecord {
     ext_rcode: u8,
     version: u8,
     flags: u16,
-    options: OrderedMap<OptCodes, Vec<u8>>
+    options: IndexMap<OptCodes, Vec<u8>>
 }
 
 impl Default for OptRecord {
@@ -26,7 +26,7 @@ impl Default for OptRecord {
             ext_rcode: 0,
             version: 0,
             flags: 0x8000,
-            options: OrderedMap::new()
+            options: IndexMap::new()
         }
     }
 }
@@ -41,7 +41,7 @@ impl RecordBase for OptRecord {
 
         let data_length = off+8+u16::from_be_bytes([buf[off+6], buf[off+7]]) as usize;
         let mut off = off+8;
-        let mut options = OrderedMap::new();
+        let mut options = IndexMap::new();
 
         while off < data_length {
             let opt_code = OptCodes::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
@@ -110,7 +110,7 @@ impl OptRecord {
             ext_rcode,
             version,
             flags,
-            options: OrderedMap::new()
+            options: IndexMap::new()
         }
     }
 

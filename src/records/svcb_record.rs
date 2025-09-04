@@ -8,7 +8,7 @@ use crate::records::inter::svc_param_keys::SvcParamKeys;
 use crate::records::inter::record_base::RecordBase;
 use crate::utils::base64;
 use crate::utils::domain_utils::{pack_domain, unpack_domain};
-use crate::utils::ordered_map::OrderedMap;
+use crate::utils::index_map::IndexMap;
 
 #[derive(Clone, Debug)]
 pub struct SvcbRecord {
@@ -16,7 +16,7 @@ pub struct SvcbRecord {
     ttl: u32,
     pub(crate) priority: u16,
     pub(crate) target: Option<String>,
-    pub(crate) params: OrderedMap<SvcParamKeys, Vec<u8>>
+    pub(crate) params: IndexMap<SvcParamKeys, Vec<u8>>
 }
 
 impl Default for SvcbRecord {
@@ -27,7 +27,7 @@ impl Default for SvcbRecord {
             ttl: 0,
             priority: 0,
             target: None,
-            params: OrderedMap::new()
+            params: IndexMap::new()
         }
     }
 }
@@ -47,7 +47,7 @@ impl RecordBase for SvcbRecord {
         let length = off+8+u16::from_be_bytes([buf[off+6], buf[off+7]]) as usize;
         off += 10+target_length;
 
-        let mut params = OrderedMap::new();
+        let mut params = IndexMap::new();
         while off < length {
             let key = SvcParamKeys::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
             let length = u16::from_be_bytes([buf[off+2], buf[off+3]]) as usize;
