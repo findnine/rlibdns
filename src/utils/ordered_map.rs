@@ -3,6 +3,7 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::marker::PhantomData;
+use std::ops::{Bound, RangeBounds};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct OrderedMap<K: Eq + Hash, V> {
@@ -95,13 +96,41 @@ where
         }
     }
 
-    pub fn keys(&self) -> &Vec<K> {
-        &self.keys
+    pub fn keys(&self) -> impl Iterator<Item = &K> {
+        self.keys.iter()
     }
     
     pub fn values(&self) -> impl Iterator<Item = &V> {
         self.map.values()
     }
+
+
+    pub fn range_insertion<R>(&self, bounds: R) -> impl Iterator<Item = (&K, &V)>
+    where
+        R: RangeBounds<K>,
+    {
+        let start_idx = match bounds.start_bound() {
+            Bound::Unbounded      => 0,
+            Bound::Included(k)    => self.keys.iter().position(|x| x == k).unwrap_or(self.keys.len()),
+            Bound::Excluded(k)    => self.keys.iter().position(|x| x == k).map(|i| i + 1).unwrap_or(self.keys.len()),
+        };
+        let end_idx = match bounds.end_bound() {
+            Bound::Unbounded      => self.keys.len(),
+            Bound::Included(k)    => self.keys.iter().position(|x| x == k).map(|i| i + 1).unwrap_or(self.keys.len()),
+            Bound::Excluded(k)    => self.keys.iter().position(|x| x == k).unwrap_or(self.keys.len()),
+        };
+
+        let (lo, hi) = if start_idx <= end_idx { (start_idx, end_idx) } else { (start_idx, start_idx) };
+
+        self.keys[lo..hi]
+            .iter()
+            .filter_map(move |k| self.map.get_key_value(k))
+    }
+
+    pub fn range_insertion_from(&self, start: &K) -> impl Iterator<Item = (&K, &V)> {
+        self.range_insertion(start.clone()..)
+    }
+
 
     pub fn len(&self) -> usize {
         self.map.len()
@@ -120,7 +149,7 @@ where
 
 pub struct OrderedMapIter<'a, K: Eq + Hash, V> {
     inner: &'a OrderedMap<K, V>,
-    idx: usize,
+    idx: usize
 }
 
 impl<'a, K: Eq + Hash, V> Iterator for OrderedMapIter<'a, K, V> {
