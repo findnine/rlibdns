@@ -6,13 +6,23 @@ pub enum OpCodes {
     #[default]
     Query,
     IQuery,
-    Status
+    Status,
+    Notify,
+    Update,
+    Dso
 }
 
 impl OpCodes {
 
     pub fn from_code(code: u8) -> Option<Self> {
-        for c in [Self::Query, Self::IQuery, Self::Status] {
+        for c in [
+            Self::Query,
+            Self::IQuery,
+            Self::Status,
+            Self::Notify,
+            Self::Update,
+            Self::Dso
+        ] {
             if c.get_code() == code {
                 return Some(c);
             }
@@ -25,7 +35,10 @@ impl OpCodes {
         match self {
             Self::Query => 0,
             Self::IQuery => 1,
-            Self::Status => 2
+            Self::Status => 2,
+            Self::Notify => 4,
+            Self::Update => 5,
+            Self::Dso => 6
         }
     }
 }
@@ -36,7 +49,10 @@ impl fmt::Display for OpCodes {
         write!(f, "{}", match self {
             Self::Query => "QUERY",
             Self::IQuery => "IQUERY",
-            Self::Status => "STATUS"
+            Self::Status => "STATUS",
+            Self::Notify => "NOTIFY",
+            Self::Update => "UPDATE",
+            Self::Dso => "DSO"
         })
     }
 }
