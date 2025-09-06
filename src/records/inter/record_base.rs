@@ -27,7 +27,6 @@ use std::collections::HashMap;
 use std::fmt::{Debug, Display};
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
-use crate::messages::inter::rr_types::RRTypes::{Opt, Uri};
 
 pub trait RecordBase: Display + Debug + Send + Sync {
 
