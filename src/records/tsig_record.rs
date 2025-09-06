@@ -29,6 +29,8 @@ impl RecordBase for TSigRecord {
         let class = RRClasses::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
         let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
 
+
+
         Self {
             class,
             ttl
@@ -40,6 +42,8 @@ impl RecordBase for TSigRecord {
 
         buf.splice(0..2, self.class.get_code().to_be_bytes());
         buf.splice(2..6, self.ttl.to_be_bytes());
+
+
 
         Ok(buf)
     }
