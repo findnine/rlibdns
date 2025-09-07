@@ -14,8 +14,8 @@ pub struct TKeyRecord {
     pub(crate) algorithm_name: Option<String>,
     inception: u32,
     expiration: u32,
-    mode: u8,
-    error: u8,
+    mode: u16, //ENUM PLEASE
+    error: u16,
     key: Vec<u8>,
     data: Vec<u8>
 }
@@ -40,24 +40,32 @@ impl Default for TKeyRecord {
 impl RecordBase for TKeyRecord {
 
     fn from_bytes(buf: &[u8], off: usize) -> Self {
+        let mut off = off;
+
         let class = RRClasses::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
         let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
 
         //let length = u16::from_be_bytes([buf[off+6], buf[off+7]]) as usize;
 
-        let (algorithm_name, _) = unpack_domain(buf, off+8);
+        let (algorithm_name, algorithm_name_length) = unpack_domain(buf, off+8);
+        off += 8+algorithm_name_length;
 
-        println!("{}", algorithm_name);
+
+        let inception = u32::from_be_bytes([buf[off], buf[off+1], buf[off+2], buf[off+3]]);
+        let expiration = u32::from_be_bytes([buf[off+4], buf[off+5], buf[off+6], buf[off+7]]);
+
+        let mode = u16::from_be_bytes([buf[off+8], buf[off+9]]);
+        let error = u16::from_be_bytes([buf[off+10], buf[off+11]]);
 
 
         let z = Self {
             class,
             ttl,
             algorithm_name: Some(algorithm_name),
-            inception: 0,
-            expiration: 0,
-            mode: 0,
-            error: 0,
+            inception,
+            expiration,
+            mode,
+            error,
             key: Vec::new(),
             data: Vec::new()
         };
