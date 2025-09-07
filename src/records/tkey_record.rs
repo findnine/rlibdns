@@ -46,11 +46,8 @@ impl RecordBase for TKeyRecord {
         let class = RRClasses::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
         let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
 
-        //let length = u16::from_be_bytes([buf[off+6], buf[off+7]]) as usize;
-
         let (algorithm_name, algorithm_name_length) = unpack_domain(buf, off+8);
         off += 8+algorithm_name_length;
-
 
         let inception = u32::from_be_bytes([buf[off], buf[off+1], buf[off+2], buf[off+3]]);
         let expiration = u32::from_be_bytes([buf[off+4], buf[off+5], buf[off+6], buf[off+7]]);
@@ -58,9 +55,9 @@ impl RecordBase for TKeyRecord {
         let mode = u16::from_be_bytes([buf[off+8], buf[off+9]]);
         let error = u16::from_be_bytes([buf[off+10], buf[off+11]]);
 
-        let key_length = u16::from_be_bytes([buf[off+12], buf[off+13]]) as usize;
-        let key = buf[off + 14.. off + 14 + key_length].to_vec();
-        off += 14+key_length;
+        let key_length = 14+u16::from_be_bytes([buf[off+12], buf[off+13]]) as usize;
+        let key = buf[off + 14.. off + key_length].to_vec();
+        off += key_length;
 
         let data_length = off+2+u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
         let data = buf[off + 2..data_length].to_vec();
