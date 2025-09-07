@@ -8,36 +8,36 @@ use crate::records::inter::record_base::RecordBase;
 use crate::utils::domain_utils::unpack_domain;
 
 #[derive(Clone, Debug)]
-pub struct TSigRecord {
+pub struct TKeyRecord {
     class: RRClasses,
     ttl: u32,
     pub(crate) algorithm_name: Option<String>,
-    pub(crate) time_signed: u64,
-    pub(crate) fudge: u16,
-    pub(crate) mac: Vec<u8>,
-    pub(crate) original_id: u16,
-    pub(crate) error: u16,
-    pub(crate) data: Vec<u8>
+    inception: u32,
+    expiration: u32,
+    mode: u8,
+    error: u8,
+    key: Vec<u8>,
+    data: Vec<u8>
 }
 
-impl Default for TSigRecord {
+impl Default for TKeyRecord {
 
     fn default() -> Self {
         Self {
             class: RRClasses::default(),
             ttl: 0,
             algorithm_name: None,
-            time_signed: 0,
-            fudge: 0,
-            mac: Vec::new(),
-            original_id: 0,
+            inception: 0,
+            expiration: 0,
+            mode: 0,
             error: 0,
+            key: Vec::new(),
             data: Vec::new()
         }
     }
 }
 
-impl RecordBase for TSigRecord {
+impl RecordBase for TKeyRecord {
 
     fn from_bytes(buf: &[u8], off: usize) -> Self {
         let class = RRClasses::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
@@ -47,20 +47,24 @@ impl RecordBase for TSigRecord {
 
         let (algorithm_name, _) = unpack_domain(buf, off+8);
 
-        //let time_signed = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
+        println!("{}", algorithm_name);
 
 
-        Self {
+        let z = Self {
             class,
             ttl,
             algorithm_name: Some(algorithm_name),
-            time_signed: 0,
-            fudge: 0,
-            mac: Vec::new(),
-            original_id: 0,
+            inception: 0,
+            expiration: 0,
+            mode: 0,
             error: 0,
+            key: Vec::new(),
             data: Vec::new()
-        }
+        };
+
+        println!("{:?}", z);
+
+        z
     }
 
     fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {
@@ -75,7 +79,7 @@ impl RecordBase for TSigRecord {
     }
 
     fn get_type(&self) -> RRTypes {
-        RRTypes::TSig
+        RRTypes::TKey
     }
 
     fn upcast(self) -> Box<dyn RecordBase> {
@@ -95,7 +99,7 @@ impl RecordBase for TSigRecord {
     }
 }
 
-impl TSigRecord {
+impl TKeyRecord {
 
     pub fn new(ttl: u32, class: RRClasses) -> Self {
         Self {
@@ -122,7 +126,7 @@ impl TSigRecord {
     }
 }
 
-impl fmt::Display for TSigRecord {
+impl fmt::Display for TKeyRecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{:<8}{:<8}{:<8}{}", self.ttl,

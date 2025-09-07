@@ -7,13 +7,22 @@ pub enum RRClasses {
     In,
     Cs,
     Ch,
-    Hs
+    Hs,
+    None,
+    Any
 }
 
 impl RRClasses {
 
     pub fn from_code(code: u16) -> Option<Self> {
-        for c in [Self::In, Self::Cs, Self::Ch, Self::Hs] {
+        for c in [
+            Self::In,
+            Self::Cs,
+            Self::Ch,
+            Self::Hs,
+            Self::None,
+            Self::Any
+        ] {
             if c.get_code() == code {
                 return Some(c);
             }
@@ -27,7 +36,9 @@ impl RRClasses {
             Self::In => 1,
             Self::Cs => 2,
             Self::Ch => 3,
-            Self::Hs => 4
+            Self::Hs => 4,
+            Self::None => 254,
+            Self::Any => 255
         }
     }
 
@@ -49,7 +60,9 @@ impl fmt::Display for RRClasses {
             Self::In => "IN",
             Self::Cs => "CS",
             Self::Ch => "CH",
-            Self::Hs => "HS"
+            Self::Hs => "HS",
+            Self::None => "None",
+            Self::Any => "ANY"
         })
     }
 }

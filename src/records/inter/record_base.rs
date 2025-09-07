@@ -15,6 +15,7 @@ use crate::records::{
     smimea_record::SmimeaRecord,
     soa_record::SoaRecord,
     srv_record::SrvRecord,
+    tkey_record::TKeyRecord,
     tsig_record::TSigRecord,
     sshfp_record::SshFpRecord,
     svcb_record::SvcbRecord,
@@ -82,7 +83,8 @@ impl dyn RecordBase {
             Spf => {
                 todo!()
             }*/
-            Tsig => TSigRecord::new(ttl, class).upcast(),
+            TKey => TKeyRecord::new(ttl, class).upcast(),
+            TSig => TSigRecord::new(ttl, class).upcast(),
             Uri    => UriRecord::new(ttl, class).upcast(),
             /*Caa => {
                 todo!()
@@ -123,7 +125,8 @@ impl dyn RecordBase {
             Spf => {
                 todo!()
             }*/
-            Tsig => TSigRecord::from_bytes(buf, off).upcast(),
+            TKey => TKeyRecord::from_bytes(buf, off).upcast(),
+            TSig => TSigRecord::from_bytes(buf, off).upcast(),
             Uri => UriRecord::from_bytes(buf, off).upcast(),
             /*Caa => {
                 todo!()
