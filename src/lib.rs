@@ -47,7 +47,7 @@ mod tests {
 
         println!("{}", message);
 
-        //assert_eq!(x, message.to_bytes(512));
+        assert_eq!(x, message.to_bytes(512));
     }
 
     /*

@@ -1,5 +1,17 @@
 use std::io;
 
+pub fn encode(input: &[u8]) -> String {
+    const HEX_CHARS: &[u8; 16] = b"0123456789abcdef";
+
+    let mut output = String::new();
+    for &byte in input {
+        output.push(HEX_CHARS[(byte >> 4) as usize] as char);
+        output.push(HEX_CHARS[(byte & 0x0F) as usize] as char);
+    }
+
+    output
+}
+
 pub fn decode(input: &str) -> io::Result<Vec<u8>> {
     let mut output = Vec::new();
     let buf = input.as_bytes();
@@ -15,18 +27,6 @@ pub fn decode(input: &str) -> io::Result<Vec<u8>> {
     }
 
     Ok(output)
-}
-
-pub fn encode(input: &[u8]) -> String {
-    const HEX_CHARS: &[u8; 16] = b"0123456789abcdef";
-
-    let mut output = String::new();
-    for &byte in input {
-        output.push(HEX_CHARS[(byte >> 4) as usize] as char);
-        output.push(HEX_CHARS[(byte & 0x0F) as usize] as char);
-    }
-
-    output
 }
 
 fn val(c: u8) -> Option<u8> {

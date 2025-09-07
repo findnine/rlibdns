@@ -5,7 +5,8 @@ use std::fmt::Formatter;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::RecordBase;
-use crate::utils::domain_utils::unpack_domain;
+use crate::utils::base64;
+use crate::utils::domain_utils::{pack_domain, unpack_domain};
 
 #[derive(Clone, Debug)]
 pub struct TKeyRecord {
@@ -57,8 +58,14 @@ impl RecordBase for TKeyRecord {
         let mode = u16::from_be_bytes([buf[off+8], buf[off+9]]);
         let error = u16::from_be_bytes([buf[off+10], buf[off+11]]);
 
+        let key_length = u16::from_be_bytes([buf[off+12], buf[off+13]]) as usize;
+        let key = buf[off + 14.. off + 14 + key_length].to_vec();
+        off += 14+key_length;
 
-        let z = Self {
+        let data_length = off+2+u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
+        let data = buf[off + 2..data_length].to_vec();
+
+        Self {
             class,
             ttl,
             algorithm_name: Some(algorithm_name),
@@ -66,13 +73,9 @@ impl RecordBase for TKeyRecord {
             expiration,
             mode,
             error,
-            key: Vec::new(),
-            data: Vec::new()
-        };
-
-        println!("{:?}", z);
-
-        z
+            key,
+            data
+        }
     }
 
     fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {
@@ -81,7 +84,21 @@ impl RecordBase for TKeyRecord {
         buf.splice(0..2, self.class.get_code().to_be_bytes());
         buf.splice(2..6, self.ttl.to_be_bytes());
 
+        buf.extend_from_slice(&pack_domain(self.algorithm_name.as_ref().unwrap().as_str(), label_map, off+8, true)); //PROBABLY NO COMPRESS
 
+        buf.extend_from_slice(&self.inception.to_be_bytes());
+        buf.extend_from_slice(&self.expiration.to_be_bytes());
+
+        buf.extend_from_slice(&self.mode.to_be_bytes());
+        buf.extend_from_slice(&self.error.to_be_bytes());
+
+        buf.extend_from_slice(&(self.key.len() as u16).to_be_bytes());
+        buf.extend_from_slice(&self.key);
+
+        buf.extend_from_slice(&(self.data.len() as u16).to_be_bytes());
+        buf.extend_from_slice(&self.data);
+
+        buf.splice(6..8, ((buf.len()-8) as u16).to_be_bytes());
 
         Ok(buf)
     }
@@ -137,8 +154,15 @@ impl TKeyRecord {
 impl fmt::Display for TKeyRecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:<8}{:<8}{:<8}{}", self.ttl,
+        write!(f, "{:<8}{:<8}{:<8}{} {} {} {} {} {} {}", self.ttl,
                self.class.to_string(),
-               self.get_type().to_string(), "")
+               self.get_type().to_string(),
+               format!("{}.", self.algorithm_name.as_ref().unwrap()),
+               self.inception,
+               self.expiration,
+               self.mode,
+               self.error,
+               base64::encode(&self.key),
+               base64::encode(&self.data)) //IF EMPTY USE -
     }
 }
