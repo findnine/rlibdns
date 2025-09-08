@@ -275,8 +275,8 @@ impl MessageBase {
         self.queries.push(query);
     }
 
-    pub fn get_queries(&self) -> &Vec<DnsQuery> {
-        &self.queries
+    pub fn get_queries(&self) -> impl Iterator<Item = &DnsQuery> {
+        self.queries.iter()
     }
 
     pub fn get_queries_mut(&mut self) -> &mut Vec<DnsQuery> {
