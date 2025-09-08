@@ -13,12 +13,12 @@ pub struct TKeyRecord {
     class: RRClasses,
     ttl: u32,
     pub(crate) algorithm_name: Option<String>,
-    inception: u32,
-    expiration: u32,
-    mode: u16, //ENUM PLEASE
-    error: u16,
-    key: Vec<u8>,
-    data: Vec<u8>
+    pub(crate) inception: u32,
+    pub(crate) expiration: u32,
+    pub(crate) mode: u16, //ENUM PLEASE
+    pub(crate) error: u16,
+    pub(crate) key: Vec<u8>,
+    pub(crate) data: Vec<u8>
 }
 
 impl Default for TKeyRecord {
