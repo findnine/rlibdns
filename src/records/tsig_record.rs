@@ -51,12 +51,12 @@ impl RecordBase for TSigRecord {
         let (algorithm_name, algorithm_name_length) = unpack_domain(buf, off+8);
         off += 8+algorithm_name_length;
 
-        let time_signed = ((buf[0] as u64) << 40)
-                | ((buf[1] as u64) << 32)
-                | ((buf[2] as u64) << 24)
-                | ((buf[3] as u64) << 16)
-                | ((buf[4] as u64) << 8)
-                |  (buf[5] as u64);
+        let time_signed = ((buf[off] as u64) << 40)
+                | ((buf[off+1] as u64) << 32)
+                | ((buf[off+2] as u64) << 24)
+                | ((buf[off+3] as u64) << 16)
+                | ((buf[off+4] as u64) << 8)
+                |  (buf[off+5] as u64);
         let fudge = u16::from_be_bytes([buf[off+6], buf[off+7]]);
 
         let mac_length = 10+u16::from_be_bytes([buf[off+8], buf[off+9]]) as usize;
