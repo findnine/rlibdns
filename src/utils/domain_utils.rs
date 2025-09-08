@@ -4,6 +4,7 @@ pub fn pack_domain(domain: &str, labels_map: &mut HashMap<String, usize>, off: u
     if domain.is_empty() {
         return vec![0x00];
     }
+    let compress = false;
 
     let mut buf = Vec::new();
     let mut off = off;

@@ -420,7 +420,7 @@ impl<'a> Iterator for WireIter<'a> {
     type Item = Vec<u8>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.position >= self.message.records[0].len() + self.message.records[1].len() + self.message.records[2].len() {
+        if self.position >= self.message.records.iter().map(|r| r.len()).sum() {
             return None;
         }
 
@@ -458,35 +458,23 @@ impl<'a> Iterator for WireIter<'a> {
             off += q.len();
         }
 
-        let total = self.message.records[0].len();
-        if !truncated && self.position < total {
-            let (records, i, t) = records_to_bytes(off, &self.message.records[0][self.position..], &mut label_map, self.max_payload_len);
-            buf.extend_from_slice(&records);
-            truncated = t;
-            self.position += i as usize;
+        if !truncated {
+            let mut total = 0;
+            for (i, records) in self.message.records.iter().enumerate() {
+                let before = total;
+                total += self.message.records[i].len();
 
-            buf.splice(6..8, i.to_be_bytes());
-        }
+                if self.position < total {
+                    let (records, count, t) = records_to_bytes(off, &records[self.position - before..], &mut label_map, self.max_payload_len);
+                    buf.extend_from_slice(&records);
+                    buf.splice(i*2+6..i*2+8, count.to_be_bytes());
+                    self.position += count as usize;
 
-        let mut x = total;
-        let total = self.message.records[1].len();
-        if !truncated && self.position < x + total {
-            let (records, i, t) = records_to_bytes(off, &self.message.records[1][self.position - x..], &mut label_map, self.max_payload_len);
-            buf.extend_from_slice(&records);
-            truncated = t;
-            self.position += i as usize;
-
-            buf.splice(8..10, i.to_be_bytes());
-        }
-
-        x += total;
-        let total = self.message.records[2].len();
-        if !truncated && self.position < x + total {
-            let (records, i, _) = records_to_bytes(off, &self.message.records[2][self.position - x..], &mut label_map, self.max_payload_len);
-            buf.extend_from_slice(&records);
-            self.position += i as usize;
-
-            buf.splice(10..12, i.to_be_bytes());
+                    if t {
+                        break;
+                    }
+                }
+            }
         }
 
         Some(buf)
