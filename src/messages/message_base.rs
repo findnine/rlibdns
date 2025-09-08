@@ -482,7 +482,7 @@ impl<'a> Iterator for WireIter<'a> {
         x += total;
         let total = self.message.records[2].len();
         if !truncated && self.position < x + total {
-            let (records, i, t) = records_to_bytes(off, &self.message.records[2][self.position - x..], &mut label_map, self.max_payload_len);
+            let (records, i, _) = records_to_bytes(off, &self.message.records[2][self.position - x..], &mut label_map, self.max_payload_len);
             buf.extend_from_slice(&records);
             self.position += i as usize;
 
