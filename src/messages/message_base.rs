@@ -279,8 +279,8 @@ impl MessageBase {
         self.queries.iter()
     }
 
-    pub fn get_queries_mut(&mut self) -> &mut Vec<DnsQuery> {
-        &mut self.queries
+    pub fn get_queries_mut(&mut self) -> impl Iterator<Item = &mut DnsQuery> {
+        self.queries.iter_mut()
     }
 
     pub fn has_answers(&self) -> bool {
