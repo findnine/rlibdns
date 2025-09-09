@@ -140,6 +140,14 @@ where
             .drain(..)
             .filter_map(|key| self.map.remove(&key).map(|v| (key, v)))
     }
+
+    pub fn as_ref(&self) -> &Self {
+        self
+    }
+
+    pub fn as_mut(&mut self) -> &mut Self {
+        self
+    }
 }
 
 pub struct IndexMapIter<'a, K: Eq + Hash, V> {

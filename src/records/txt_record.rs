@@ -128,12 +128,12 @@ impl TxtRecord {
         self.data.push(data.to_string());
     }
 
-    pub fn get_data(&self) -> impl Iterator<Item = &String> {
-        self.data.iter()
+    pub fn get_data(&self) -> &Vec<String> {
+        self.data.as_ref()
     }
 
-    pub fn get_data_mut(&mut self) -> impl Iterator<Item = &mut String> {
-        self.data.iter_mut()
+    pub fn get_data_mut(&mut self) -> &mut Vec<String> {
+        self.data.as_mut()
     }
 }
 

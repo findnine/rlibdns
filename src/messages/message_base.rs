@@ -275,12 +275,12 @@ impl MessageBase {
         self.queries.push(query);
     }
 
-    pub fn get_queries(&self) -> impl Iterator<Item = &DnsQuery> {
-        self.queries.iter()
+    pub fn get_queries(&self) -> &Vec<DnsQuery> {
+        self.queries.as_ref()
     }
 
-    pub fn get_queries_mut(&mut self) -> impl Iterator<Item = &mut DnsQuery> {
-        self.queries.iter_mut()
+    pub fn get_queries_mut(&mut self) -> &mut Vec<DnsQuery> {
+        self.queries.as_mut()
     }
 
     pub fn has_answers(&self) -> bool {
@@ -291,12 +291,12 @@ impl MessageBase {
         self.records[0].push((query.to_string(), record));
     }
 
-    pub fn get_answers(&self) -> impl Iterator<Item = (&String, &Box<dyn RecordBase>)> {
-        self.records[0].iter().map(|(query, record)| (query, record))
+    pub fn get_answers(&self) -> &Vec<(String, Box<dyn RecordBase>)> {
+        self.records[0].as_ref()
     }
 
-    pub fn get_answers_mut(&mut self) -> impl Iterator<Item = (&mut String, &mut Box<dyn RecordBase>)> {
-        self.records[0].iter_mut().map(|(query, record)| (query, record))
+    pub fn get_answers_mut(&mut self) -> &mut Vec<(String, Box<dyn RecordBase>)>  {
+        self.records[0].as_mut()
     }
 
     pub fn total_answers(&self) -> usize {
@@ -311,12 +311,12 @@ impl MessageBase {
         self.records[1].push((query.to_string(), record));
     }
 
-    pub fn get_authority_records(&self) -> impl Iterator<Item = (&String, &Box<dyn RecordBase>)> {
-        self.records[1].iter().map(|(query, record)| (query, record))
+    pub fn get_authority_records(&self) -> &Vec<(String, Box<dyn RecordBase>)> {
+        self.records[1].as_ref()
     }
 
-    pub fn get_authority_records_mut(&mut self) -> impl Iterator<Item = (&mut String, &mut Box<dyn RecordBase>)> {
-        self.records[1].iter_mut().map(|(query, record)| (query, record))
+    pub fn get_authority_records_mut(&mut self) -> &mut Vec<(String, Box<dyn RecordBase>)>  {
+        self.records[1].as_mut()
     }
 
     pub fn total_authority_records(&self) -> usize {
@@ -331,12 +331,12 @@ impl MessageBase {
         self.records[2].push((query.to_string(), record));
     }
 
-    pub fn get_additional_records(&self) -> impl Iterator<Item = (&String, &Box<dyn RecordBase>)> {
-        self.records[2].iter().map(|(query, record)| (query, record))
+    pub fn get_additional_records(&self) -> &Vec<(String, Box<dyn RecordBase>)> {
+        self.records[2].as_ref()
     }
 
-    pub fn get_additional_records_mut(&mut self) -> impl Iterator<Item = (&mut String, &mut Box<dyn RecordBase>)> {
-        self.records[2].iter_mut().map(|(query, record)| (query, record))
+    pub fn get_additional_records_mut(&mut self) -> &mut Vec<(String, Box<dyn RecordBase>)>  {
+        self.records[2].as_mut()
     }
 
     pub fn total_additional_records(&self) -> usize {

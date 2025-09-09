@@ -180,14 +180,14 @@ impl Zone {
         self.records.get(_type)
     }
 
-    pub fn get_all_records(&self) -> impl Iterator<Item = (&RRTypes, &Vec<Box<dyn RecordBase>>)> {
-        self.records.iter()
+    pub fn get_all_records(&self) -> &IndexMap<RRTypes, Vec<Box<dyn RecordBase>>> {
+        &self.records
     }
 
-    pub fn get_all_records_recursive(&self) -> impl Iterator<Item = (String, Vec<&Box<dyn RecordBase>>)> + '_ {
+    pub fn get_all_records_recursive(&self) -> IndexMap<String, Vec<&Box<dyn RecordBase>>> {
         let mut res = IndexMap::new();
         self.collect_records(String::new(), &mut res);
-        res.into_iter()
+        res
     }
 
     fn collect_records<'a>(&'a self, fqdn: String, map: &mut IndexMap<String, Vec<&'a Box<dyn RecordBase>>>) {
