@@ -58,10 +58,7 @@ mod tests {
 
     #[test]
     fn journal() {
-        let mut records = RecordMap::new();
-
         let mut parser = JournalReader::open("/home/brad/Downloads/db.find9.net.jnl").unwrap();
-
 
         for txn in parser.iter() {
             println!("{:?}", txn);
