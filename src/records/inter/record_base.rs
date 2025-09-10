@@ -21,7 +21,7 @@ use crate::records::{
     svcb_record::SvcbRecord,
     txt_record::TxtRecord,
     opt_record::OptRecord,
-    uri_record::UriRecord,
+    uri_record::UriRecord
 };
 
 use std::any::Any;

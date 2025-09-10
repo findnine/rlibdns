@@ -6,14 +6,11 @@ pub mod journal;
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
     use crate::journal::journal_reader::JournalReader;
-    use crate::messages::inter::rr_types::RRTypes;
     use crate::messages::message_base::MessageBase;
     use crate::records::inter::record_base::RecordBase;
-    use crate::zone::zone_reader::ZoneReader;
-
-    type RecordMap = HashMap<String, HashMap<RRTypes, Vec<Box<dyn RecordBase>>>>;
+    use crate::zone::inter::zone_types::ZoneTypes;
+    use crate::zone::zone::Zone;
 
     #[test]
     fn encode_and_decode() {
@@ -47,25 +44,16 @@ mod tests {
         assert_eq!(x, message.to_bytes(512));
     }
 
-    /*
     #[test]
     fn parsing() {
-        let mut records = RecordMap::new();
+        let mut zone = Zone::new(ZoneTypes::Hint);
+        zone.open("/home/brad/Downloads/find9.net.test.zone", "find9.net").unwrap();
 
-        let mut parser = ZoneReader::open("/home/brad/Downloads/find9.net.test.zone", "find9.net").unwrap();
-        for (name, record) in parser.iter() {
-            println!("{}: {}", name, record);
-
-            records
-                .entry(name)
-                .or_insert_with(HashMap::new)
-                .entry(record.get_type())
-                .or_insert_with(Vec::new)
-                .push(record);
+        for (_type, records) in zone.get_deepest_zone("find9.net").unwrap().get_all_records_recursive() {
+            for record in records {
+                println!("{}", record);
+            }
         }
-
-        //println!("{:?}", records);
-        println!("{:?}", records["@"][&RRTypes::A]);
     }
 
     #[test]
@@ -79,5 +67,4 @@ mod tests {
             println!("{:?}", txn);
         }
     }
-    */
 }
