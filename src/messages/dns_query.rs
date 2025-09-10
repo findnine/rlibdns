@@ -69,6 +69,14 @@ impl DnsQuery {
     pub fn get_class(&self) -> RRClasses {
         self.class
     }
+
+    pub fn as_ref(&self) -> &Self {
+        self
+    }
+
+    pub fn as_mut(&mut self) -> &mut Self {
+        self
+    }
 }
 
 impl fmt::Display for DnsQuery {

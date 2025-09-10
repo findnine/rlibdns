@@ -342,6 +342,14 @@ impl MessageBase {
     pub fn total_additional_records(&self) -> usize {
         self.records[2].len()
     }
+
+    pub fn as_ref(&self) -> &Self {
+        self
+    }
+
+    pub fn as_mut(&mut self) -> &mut Self {
+        self
+    }
 }
 
 impl fmt::Display for MessageBase {
