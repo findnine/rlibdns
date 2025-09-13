@@ -39,8 +39,6 @@ impl Zone {
             }
         }
 
-        //let mut journal = IndexMap::new();
-
         match JournalReader::open(&format!("{}.jnl", file_path)) {
             Ok(mut jnl_reader) => {
                 for txn in jnl_reader.iter() {
