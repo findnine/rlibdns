@@ -1,4 +1,5 @@
 use std::io;
+use crate::journal::journal_reader::JournalReader;
 use crate::journal::txn::Txn;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::RecordBase;
@@ -34,9 +35,21 @@ impl Zone {
             match name.as_str() {
                 "." => self.add_record(record), //BE CAREFUL WITH THIS ONE - DONT ALLOW MOST OF THE TIME
                 "@" => zone.add_record(record),
-                //_ => zone.add_record_to(&name, record, ZoneTypes::Master)
                 _ => zone.add_record_to(&name, record, ZoneTypes::Master)
             }
+        }
+
+        let mut journal = IndexMap::new();
+
+        match JournalReader::open(&format!("{}.jnl", file_path)) {
+            Ok(mut jnl_reader) => {
+                for txn in jnl_reader.iter() {
+                    journal.insert(txn.get_serial_0(), txn);
+                }
+
+                zone.journal = journal;
+            }
+            Err(_) => {}
         }
 
         self.add_zone_to(&reader.get_origin(), zone, ZoneTypes::Hint);
@@ -213,13 +226,15 @@ impl Zone {
         }
     }
 
-    /*
-    pub fn add_txn(&mut self, txn: Txn) {
-        self.journal.insert(txn.get_serial_0(), txn);
+    pub fn get_txn(&self, index: u32) -> Option<&Txn> {
+        self.journal.get(&index)
     }
 
-    pub fn get_txn_from(&self, serial_start: u32) -> impl Iterator<Item = (&u32, &Txn)> {
-        self.journal.range(serial_start..)
+    pub fn get_txns(&self) -> &IndexMap<u32, Txn> {
+        self.journal.as_ref()
     }
-    */
+
+    pub fn get_txns_from(&self, start: u32) -> impl Iterator<Item = (&u32, &Txn)> {
+        self.journal.range(start..)
+    }
 }
