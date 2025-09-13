@@ -39,15 +39,13 @@ impl Zone {
             }
         }
 
-        let mut journal = IndexMap::new();
+        //let mut journal = IndexMap::new();
 
         match JournalReader::open(&format!("{}.jnl", file_path)) {
             Ok(mut jnl_reader) => {
                 for txn in jnl_reader.iter() {
-                    journal.insert(txn.get_serial_0(), txn);
+                    zone.journal.insert(txn.get_serial_0(), txn);
                 }
-
-                zone.journal = journal;
             }
             Err(_) => {}
         }
