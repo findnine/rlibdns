@@ -104,6 +104,11 @@ impl<V> QpTrie<V> {
         get_exact_at(&self.root, key, 0, key_len)
     }
 
+    pub fn get_raw_mut(&mut self, key: &[u8]) -> Option<&mut V> {
+        let key_len = nibbles_len(key);
+        get_exact_at_mut(&mut self.root, key, 0, key_len)
+    }
+
     pub fn get_longest_prefix_raw(&self, key: &[u8]) -> Option<&V> {
         let key_len = nibbles_len(key);
         get_longest_at(&self.root, key, 0, key_len, None)
@@ -117,8 +122,23 @@ impl<V> QpTrie<V> {
         self.get_raw(&encode_fqdn(name))
     }
 
+    pub fn get_fqdn_mut(&mut self, name: &str) -> Option<&mut V> {
+        self.get_raw_mut(&encode_fqdn(name))
+    }
+
     pub fn get_deepest_suffix(&self, qname: &str) -> Option<&V> {
         self.get_longest_prefix_raw(&encode_fqdn(qname))
+    }
+
+    pub fn get_deepest_suffix_with_name(&self, qname: &str) -> Option<(String, &V)> {
+        let raw = encode_fqdn(qname);
+        let key_len = nibbles_len(&raw);
+        let best = get_longest_at2(&self.root, &raw, 0, key_len, None)?;
+        let (_v, matched_nibbles) = best;
+
+        let (matched_raw, _len) = slice_nibbles(&raw, 0, matched_nibbles);
+        let apex = decode_fqdn(&matched_raw);
+        Some((apex, best.0))
     }
 }
 
@@ -139,10 +159,10 @@ impl<V> Node<V> {
 
     fn child_index(&self, nib: u8) -> Option<usize> {
         if bit_is_set(self.bitmap, nib) {
-            Some(rank(self.bitmap, nib))
-        } else {
-            None
+            return Some(rank(self.bitmap, nib));
         }
+        
+        None
     }
 
     fn attach_child(&mut self, nib: u8, child: Box<Node<V>>) {
@@ -192,20 +212,19 @@ fn insert_at<V>(
 
     let nib = get_nibble(key, off);
     if let Some(idx) = node.child_index(nib) {
-        insert_at(&mut node.children[idx], key, off + 1, key_len, val)
-
-    } else {
-        let (leaf_pref_bytes, leaf_pref_len) = slice_nibbles(key, off + 1, key_len);
-        let leaf = Box::new(Node {
-            prefix: leaf_pref_bytes,
-            prefix_len: leaf_pref_len,
-            value: Some(val),
-            bitmap: 0,
-            children: Vec::new(),
-        });
-        node.attach_child(nib, leaf);
-        None
+        return insert_at(&mut node.children[idx], key, off + 1, key_len, val);
     }
+
+    let (leaf_pref_bytes, leaf_pref_len) = slice_nibbles(key, off + 1, key_len);
+    let leaf = Box::new(Node {
+        prefix: leaf_pref_bytes,
+        prefix_len: leaf_pref_len,
+        value: Some(val),
+        bitmap: 0,
+        children: Vec::new(),
+    });
+    node.attach_child(nib, leaf);
+    None
 }
 
 fn get_exact_at<'a, V>(
@@ -223,12 +242,54 @@ fn get_exact_at<'a, V>(
     if off == key_len {
         return node.value.as_ref();
     }
+
     let nib = get_nibble(key, off);
     if let Some(idx) = node.child_index(nib) {
-        get_exact_at(&node.children[idx], key, off + 1, key_len)
-    } else {
-        None
+        return get_exact_at(&node.children[idx], key, off + 1, key_len);
     }
+
+    None
+}
+
+fn get_exact_at_mut<'a, V>(
+    node: &'a mut Node<V>,
+    key: &[u8],
+    mut off: usize,
+    key_len: usize
+) -> Option<&'a mut V> {
+    let lcp = common_prefix_len(&node.prefix, node.prefix_len, key, off, key_len);
+    if lcp < node.prefix_len {
+        return None;
+    }
+    off += lcp;
+
+    if off == key_len {
+        return node.value.as_mut();
+    }
+    let nib = get_nibble(key, off);
+    if let Some(idx) = node.child_index(nib) {
+        return get_exact_at_mut(&mut node.children[idx], key, off + 1, key_len);
+    }
+
+    None
+}
+
+fn decode_fqdn(raw: &[u8]) -> String {
+    if raw == [0x00] {
+        return String::new();
+    }
+    let mut labels: Vec<&str> = Vec::new();
+    let mut start = 0usize;
+    for i in 0..raw.len() {
+        if raw[i] == 0 {
+            if i > start {
+                labels.push(std::str::from_utf8(&raw[start..i]).unwrap());
+            }
+            start = i + 1;
+        }
+    }
+    labels.reverse();
+    labels.join(".")
 }
 
 fn get_longest_at<'a, V>(
@@ -242,17 +303,50 @@ fn get_longest_at<'a, V>(
     if lcp < node.prefix_len {
         return best;
     }
+
     off += lcp;
     if let Some(v) = node.value.as_ref() {
         best = Some(v);
     }
+
     if off == key_len {
         return best;
     }
+
     let nib = get_nibble(key, off);
     if let Some(idx) = node.child_index(nib) {
-        get_longest_at(&node.children[idx], key, off + 1, key_len, best)
-    } else {
-        best
+        return get_longest_at(&node.children[idx], key, off + 1, key_len, best);
     }
+
+    best
+}
+
+fn get_longest_at2<'a, V>(
+    node: &'a Node<V>,
+    key: &[u8],
+    mut off: usize,
+    key_len: usize,
+    best: Option<(&'a V, usize)>,
+) -> Option<(&'a V, usize)> {
+    let lcp = common_prefix_len(&node.prefix, node.prefix_len, key, off, key_len);
+    if lcp < node.prefix_len {
+        return best;
+    }
+    off += lcp;
+
+    let mut best = best;
+    if let Some(v) = node.value.as_ref() {
+        best = Some((v, off));
+    }
+
+    if off == key_len {
+        return best;
+    }
+
+    let nib = get_nibble(key, off);
+    if let Some(idx) = node.child_index(nib) {
+        return get_longest_at2(&node.children[idx], key, off + 1, key_len, best);
+    }
+
+    best
 }

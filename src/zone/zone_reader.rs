@@ -136,7 +136,7 @@ impl ZoneReader {
                             _type = t;
                             state = ParserState::Data;
                             data_count = 0;
-                            record = Some((self.name.clone(), <dyn RecordBase>::new(_type, ttl, class).unwrap()));
+                            record = Some((self.absolute_name(&self.name.clone()), <dyn RecordBase>::new(_type, ttl, class).unwrap()));
 
                         } else {
                             ttl = word.parse().unwrap();//.expect(&format!("Parse error on line {} pos {}", self.line_no, pos));
@@ -214,12 +214,11 @@ impl ZoneReader {
         &self.origin
     }
 
-    /*
     pub fn absolute_name(&self, name: &str) -> String {
         assert!(name != "");
 
         if name == "@" {
-            return self.origin.clone();
+            return name.to_string();//self.origin.clone();
         }
 
         if name.ends_with('.') {
@@ -229,7 +228,6 @@ impl ZoneReader {
             format!("{}.{}", name, self.origin)
         }
     }
-    */
 
     pub fn iter(&mut self) -> ZoneReaderIter {
         ZoneReaderIter {
