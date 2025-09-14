@@ -210,10 +210,11 @@ impl ZoneReader {
         record
     }
 
-    pub fn get_origin(&self) -> String {
-        self.origin.clone()
+    pub fn get_origin(&self) -> &str {
+        &self.origin
     }
 
+    /*
     pub fn absolute_name(&self, name: &str) -> String {
         assert!(name != "");
 
@@ -228,6 +229,7 @@ impl ZoneReader {
             format!("{}.{}", name, self.origin)
         }
     }
+    */
 
     pub fn iter(&mut self) -> ZoneReaderIter {
         ZoneReaderIter {

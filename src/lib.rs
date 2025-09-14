@@ -11,7 +11,8 @@ mod tests {
     use crate::records::inter::record_base::RecordBase;
     use crate::zone::inter::zone_types::ZoneTypes;
     use crate::zone::zone::Zone;
-
+    use crate::zone::zone_store::ZoneStore;
+/*
     #[test]
     fn encode_and_decode() {
         //let x = vec![ 0xa7, 0xa2, 0x81, 0x80, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x06, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x03, 0x63, 0x6f, 0x6d, 0x00, 0x00, 0x01, 0x00, 0x01, 0xc0, 0x0c, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x01, 0x23, 0x00, 0x04, 0x8e, 0xfa, 0x45, 0xee, 0x00, 0x00, 0x29, 0x04, 0xd0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 ];
@@ -39,20 +40,15 @@ mod tests {
         println!("{}", message);
 
         assert_eq!(x, message.to_bytes(512));
-    }
+    }*/
 
     #[test]
     fn parsing() {
-        let mut zone = Zone::new(ZoneTypes::Hint);
-        zone.open("/home/brad/Downloads/find9.net.test.zone", "find9.net").unwrap();
-
-        for (_type, records) in zone.get_deepest_zone("find9.net").unwrap().get_all_records_recursive() {
-            for record in records {
-                println!("{}", record);
-            }
-        }
+        let mut store = ZoneStore::new();
+        store.open("/home/brad/Downloads/find9.net.test.zone", "find9.net").unwrap();
+        println!("{:?}", store.get_deepest_zone("find9.net").unwrap());
     }
-
+/*
     #[test]
     fn journal() {
         let mut parser = JournalReader::open("/home/brad/Downloads/db.find9.net.jnl").unwrap();
@@ -60,5 +56,5 @@ mod tests {
         for txn in parser.iter() {
             println!("{:?}", txn);
         }
-    }
+    }*/
 }
