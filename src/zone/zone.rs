@@ -1,6 +1,5 @@
 use std::io;
-use crate::journal::journal_reader::JournalReader;
-use crate::journal::txn::Txn;
+use crate::journal::journal::Journal;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::RecordBase;
 use crate::utils::index_map::IndexMap;
@@ -12,7 +11,19 @@ pub struct Zone {
     _type: ZoneTypes,
     records: IndexMap<RRTypes, Vec<Box<dyn RecordBase>>>,
     children: IndexMap<String, Self>,
-    journal: IndexMap<u32, Txn>
+    journal: Option<Journal>
+}
+
+impl Default for Zone {
+
+    fn default() -> Self {
+        Self {
+            _type: Default::default(),
+            records: IndexMap::new(),
+            children: IndexMap::new(),
+            journal: None
+        }
+    }
 }
 
 impl Zone {
@@ -20,15 +31,13 @@ impl Zone {
     pub fn new(_type: ZoneTypes) -> Self {
         Self {
             _type,
-            records: IndexMap::new(),
-            children: IndexMap::new(),
-            journal: IndexMap::new()
+            ..Default::default()
         }
     }
 
     ///Open a file at the root zone otherwise it will be a sub of this
     pub fn open(&mut self, file_path: &str, domain: &str) -> io::Result<()> {
-        let mut zone = Zone::new(ZoneTypes::Master);
+        let mut zone = Self::new(ZoneTypes::Master);
 
         let mut reader = ZoneReader::open(file_path, domain)?;
         for (name, record) in reader.iter() {
@@ -37,15 +46,6 @@ impl Zone {
                 "@" => zone.add_record(record),
                 _ => zone.add_record_to(&name, record, ZoneTypes::Master)
             }
-        }
-
-        match JournalReader::open(&format!("{}.jnl", file_path)) {
-            Ok(mut jnl_reader) => {
-                for txn in jnl_reader.iter() {
-                    zone.journal.insert(txn.get_serial_0(), txn);
-                }
-            }
-            Err(_) => {}
         }
 
         self.add_zone_to(&reader.get_origin(), zone, ZoneTypes::Hint);
@@ -222,15 +222,37 @@ impl Zone {
         }
     }
 
-    pub fn get_txn(&self, index: u32) -> Option<&Txn> {
-        self.journal.get(&index)
+    pub fn set_journal(&mut self, journal: Journal) {
+        self.journal = Some(journal);
     }
 
-    pub fn get_txns(&self) -> &IndexMap<u32, Txn> {
+    pub fn set_journal_for(&mut self, name: &str, journal: Journal) -> io::Result<()> {
+        let labels: Vec<&str> = name.trim_end_matches('.').split('.').rev().collect();
+
+        let mut current = self;
+
+        for label in labels {
+            current = current.children.get_mut(label).ok_or(io::ErrorKind::NotFound)?;
+        }
+
+        current.journal = Some(journal);
+
+        Ok(())
+    }
+
+    pub fn get_journal(&self) -> Option<&Journal> {
         self.journal.as_ref()
     }
 
-    pub fn get_txns_from(&self, start: u32) -> impl Iterator<Item = (&u32, &Txn)> {
-        self.journal.range(start..)
+    pub fn get_journal_mut(&mut self) -> Option<&mut Journal> {
+        self.journal.as_mut()
+    }
+
+    pub fn as_ref(&self) -> &Self {
+        self
+    }
+
+    pub fn as_mut(&mut self) -> &mut Self {
+        self
     }
 }
