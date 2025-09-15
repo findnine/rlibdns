@@ -40,8 +40,10 @@ fn nibbles_len(bytes: &[u8]) -> usize {
 
 fn get_nibble(bytes: &[u8], i: usize) -> u8 {
     let b = bytes[i >> 1];
+
     if (i & 1) == 0 {
         b >> 4
+
     } else {
         b & 0x0F
     }
@@ -51,14 +53,18 @@ fn slice_nibbles(src: &[u8], start: usize, end: usize) -> (Vec<u8>, usize) {
     debug_assert!(end >= start);
     let mut out = Vec::with_capacity(((end - start) + 1) / 2);
     let mut out_len = 0;
+
     for i in start..end {
         let nib = get_nibble(src, i);
+
         if (out_len & 1) == 0 {
             out.push(nib << 4);
+
         } else {
             let last = out.last_mut().unwrap();
             *last |= nib;
         }
+
         out_len += 1;
     }
     (out, out_len)
