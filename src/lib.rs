@@ -46,7 +46,7 @@ mod tests {
     fn parsing() {
         let mut store = ZoneStore::new();
         store.open("/home/brad/Downloads/find9.net.test.zone", "find9.net").unwrap();
-        println!("{:?}", store.get_deepest_zone("find9.net").unwrap());
+        println!("{:?}", store.get_deepest_zone_with_name("x1.find9.net"));
     }
 /*
     #[test]

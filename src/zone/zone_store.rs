@@ -1,4 +1,5 @@
 use std::io;
+use crate::utils::fqdn_utils::{encode_fqdn, decode_fqdn};
 use crate::utils::qp_trie::QpTrie;
 use crate::zone::inter::zone_types::ZoneTypes;
 use crate::zone::zone::Zone;
@@ -39,24 +40,24 @@ impl ZoneStore {
             }
         }
 
-        self.trie.insert_fqdn(reader.get_origin(), zone);
+        self.trie.insert(encode_fqdn(reader.get_origin()), zone);
 
         Ok(())
     }
 
     pub fn add_zone(&mut self, fqdn: &str, zone: Zone) {
-        self.trie.insert_fqdn(fqdn, zone);
+        self.trie.insert(encode_fqdn(fqdn), zone);
     }
 
     pub fn get_zone_exact(&self, apex: &str) -> Option<&Zone> {
-        self.trie.get_fqdn(apex)
+        self.trie.get(&encode_fqdn(apex))
     }
 
-    pub fn get_deepest_zone(&self, qname: &str) -> Option<&Zone> {
-        self.trie.get_deepest_suffix(qname)
+    pub fn get_deepest_zone(&self, name: &str) -> Option<&Zone> {
+        self.trie.get_longest_prefix(&encode_fqdn(name))
     }
 
-    pub fn get_deepest_zone_with_name(&self, qname: &str) -> Option<(String, &Zone)> {
-        self.trie.get_deepest_suffix_with_name(qname)
+    pub fn get_deepest_zone_with_name(&self, name: &str) -> Option<(String, &Zone)> {
+        self.trie.get_longest_prefix_with_key(&encode_fqdn(name)).map(|(key, record)| (decode_fqdn(&key), record))
     }
 }
