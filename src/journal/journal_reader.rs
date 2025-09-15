@@ -5,7 +5,7 @@ use crate::journal::inter::txn_op_codes::TxnOpCodes;
 use crate::journal::txn::Txn;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::RecordBase;
-use crate::utils::domain_utils::unpack_domain;
+use crate::utils::fqdn_utils::unpack_fqdn;
 
 #[derive(Debug, PartialEq, Eq)]
 struct JournalHeader {
@@ -125,7 +125,7 @@ impl JournalReader {
 
             let mut off = 0;
 
-            let (name, length) = unpack_domain(&buf, off);
+            let (name, length) = unpack_fqdn(&buf, off);
             off += length;
 
             let _type = RRTypes::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();

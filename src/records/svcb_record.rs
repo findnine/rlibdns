@@ -7,7 +7,7 @@ use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::svc_param_keys::SvcParamKeys;
 use crate::records::inter::record_base::RecordBase;
 use crate::utils::base64;
-use crate::utils::domain_utils::{pack_domain, unpack_domain};
+use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 use crate::utils::index_map::IndexMap;
 
 #[derive(Clone, Debug)]
@@ -42,7 +42,7 @@ impl RecordBase for SvcbRecord {
 
         let priority = u16::from_be_bytes([buf[off+8], buf[off+9]]);
 
-        let (target, target_length) = unpack_domain(&buf, off+10);
+        let (target, target_length) = unpack_fqdn(&buf, off+10);
 
         let length = off+8+u16::from_be_bytes([buf[off+6], buf[off+7]]) as usize;
         off += 10+target_length;
@@ -72,7 +72,7 @@ impl RecordBase for SvcbRecord {
 
         buf.splice(8..10, self.priority.to_be_bytes());
 
-        buf.extend_from_slice(&pack_domain(self.target.as_ref().unwrap().as_str(), label_map, off+10, true));
+        buf.extend_from_slice(&pack_fqdn(self.target.as_ref().unwrap().as_str(), label_map, off+10, true));
 
         for (key, value) in self.params.iter() {
             buf.extend_from_slice(&key.get_code().to_be_bytes());

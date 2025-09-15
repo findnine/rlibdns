@@ -5,13 +5,13 @@ use std::fmt::Formatter;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::RecordBase;
-use crate::utils::domain_utils::{pack_domain, unpack_domain};
+use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 
 #[derive(Clone, Debug)]
 pub struct SoaRecord {
     class: RRClasses,
     ttl: u32,
-    pub(crate) domain: Option<String>,
+    pub(crate) fqdn: Option<String>,
     pub(crate) mailbox: Option<String>,
     pub(crate) serial: u32,
     pub(crate) refresh: u32,
@@ -26,7 +26,7 @@ impl Default for SoaRecord {
         Self {
             class: RRClasses::default(),
             ttl: 0,
-            domain: None,
+            fqdn: None,
             mailbox: None,
             serial: 0,
             refresh: 0,
@@ -47,10 +47,10 @@ impl RecordBase for SoaRecord {
 
         //let z = u16::from_be_bytes([buf[off+6], buf[off+7]]);
 
-        let (domain, length) = unpack_domain(buf, off+8);
+        let (fqdn, length) = unpack_fqdn(buf, off+8);
         off += length+8;
 
-        let (mailbox, length) = unpack_domain(buf, off);
+        let (mailbox, length) = unpack_fqdn(buf, off);
         off += length;
 
         let serial = u32::from_be_bytes([buf[off], buf[off+1], buf[off+2], buf[off+3]]);
@@ -62,7 +62,7 @@ impl RecordBase for SoaRecord {
         Self {
             class,
             ttl,
-            domain: Some(domain),
+            fqdn: Some(fqdn),
             mailbox: Some(mailbox),
             serial,
             refresh,
@@ -80,12 +80,12 @@ impl RecordBase for SoaRecord {
         buf.splice(0..2, self.class.get_code().to_be_bytes());
         buf.splice(2..6, self.ttl.to_be_bytes());
 
-        let domain = pack_domain(self.domain.as_ref().unwrap().as_str(), label_map, off+8, true);
-        buf.extend_from_slice(&domain);
+        let fqdn = pack_fqdn(self.fqdn.as_ref().unwrap().as_str(), label_map, off+8, true);
+        buf.extend_from_slice(&fqdn);
 
-        off += domain.len()+8;
+        off += fqdn.len()+8;
 
-        let mailbox = pack_domain(self.mailbox.as_ref().unwrap().as_str(), label_map, off, true);
+        let mailbox = pack_fqdn(self.mailbox.as_ref().unwrap().as_str(), label_map, off, true);
         buf.extend_from_slice(&mailbox);
 
         buf.extend_from_slice(&self.serial.to_be_bytes());
@@ -146,12 +146,12 @@ impl SoaRecord {
         self.ttl
     }
 
-    pub fn set_domain(&mut self, domain: &str) {
-        self.domain = Some(domain.to_string());
+    pub fn set_fqdn(&mut self, fqdn: &str) {
+        self.fqdn = Some(fqdn.to_string());
     }
 
-    pub fn get_domain(&self) -> Option<String> {
-        self.domain.clone()
+    pub fn get_fqdn(&self) -> Option<String> {
+        self.fqdn.clone()
     }
 
     pub fn set_mailbox(&mut self, mailbox: &str) {
@@ -209,7 +209,7 @@ impl fmt::Display for SoaRecord {
         write!(f, "{:<8}{:<8}{:<8}{} {} {} {} {} {} {}", self.ttl,
                self.class.to_string(),
                self.get_type().to_string(),
-               format!("{}.", self.domain.as_ref().unwrap()),
+               format!("{}.", self.fqdn.as_ref().unwrap()),
                format!("{}.", self.mailbox.as_ref().unwrap()),
                self.serial,
                self.refresh,

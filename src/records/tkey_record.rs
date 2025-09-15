@@ -6,7 +6,7 @@ use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::RecordBase;
 use crate::utils::base64;
-use crate::utils::domain_utils::{pack_domain, unpack_domain};
+use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 
 #[derive(Clone, Debug)]
 pub struct TKeyRecord {
@@ -46,7 +46,7 @@ impl RecordBase for TKeyRecord {
         let class = RRClasses::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
         let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
 
-        let (algorithm_name, algorithm_name_length) = unpack_domain(buf, off+8);
+        let (algorithm_name, algorithm_name_length) = unpack_fqdn(buf, off+8);
         off += 8+algorithm_name_length;
 
         let inception = u32::from_be_bytes([buf[off], buf[off+1], buf[off+2], buf[off+3]]);
@@ -81,7 +81,7 @@ impl RecordBase for TKeyRecord {
         buf.splice(0..2, self.class.get_code().to_be_bytes());
         buf.splice(2..6, self.ttl.to_be_bytes());
 
-        buf.extend_from_slice(&pack_domain(self.algorithm_name.as_ref().unwrap().as_str(), label_map, off+8, true)); //PROBABLY NO COMPRESS
+        buf.extend_from_slice(&pack_fqdn(self.algorithm_name.as_ref().unwrap().as_str(), label_map, off+8, true)); //PROBABLY NO COMPRESS
 
         buf.extend_from_slice(&self.inception.to_be_bytes());
         buf.extend_from_slice(&self.expiration.to_be_bytes());

@@ -9,7 +9,7 @@ use crate::zone::zone_reader::ZoneReader;
 #[derive(Debug, Clone)]
 pub struct Zone {
     _type: ZoneTypes,
-    records: IndexMap<RRTypes, Vec<Box<dyn RecordBase>>>,
+    records: IndexMap<String, IndexMap<RRTypes, Vec<Box<dyn RecordBase>>>>,
     journal: Option<Journal>
 }
 
@@ -65,19 +65,21 @@ impl Zone {
         self._type.eq(&ZoneTypes::Master) || self._type.eq(&ZoneTypes::Slave)
     }
 
-    pub fn add_record(&mut self, record: Box<dyn RecordBase>) {
-        self.records.entry(record.get_type()).or_insert(Vec::new()).push(record);
+    pub fn add_record(&mut self, name: &str, record: Box<dyn RecordBase>) {
+        self.records
+            .entry(name.to_string()).or_insert_with(IndexMap::new)
+            .entry(record.get_type()).or_insert(Vec::new()).push(record);
 
         //UPDATE SOA
         //ADD TO JOURNAL
     }
 
-    pub fn get_records(&self, _type: &RRTypes) -> Option<&Vec<Box<dyn RecordBase>>> {
-        self.records.get(_type)
+    pub fn get_records(&self, name: &str, _type: &RRTypes) -> Option<&Vec<Box<dyn RecordBase>>> {
+        self.records.get(name)?.get(_type)
     }
 
-    pub fn get_all_records(&self) -> &IndexMap<RRTypes, Vec<Box<dyn RecordBase>>> {
-        &self.records
+    pub fn get_all_records(&self, name: &str) -> Option<&IndexMap<RRTypes, Vec<Box<dyn RecordBase>>>> {
+        self.records.get(name)
     }
 
     /*

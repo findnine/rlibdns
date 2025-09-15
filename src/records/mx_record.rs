@@ -5,7 +5,7 @@ use std::fmt::Formatter;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::RecordBase;
-use crate::utils::domain_utils::{pack_domain, unpack_domain};
+use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 
 #[derive(Clone, Debug)]
 pub struct MxRecord {
@@ -37,7 +37,7 @@ impl RecordBase for MxRecord {
 
         let priority = u16::from_be_bytes([buf[off+8], buf[off+9]]);
 
-        let (server, _) = unpack_domain(buf, off+10);
+        let (server, _) = unpack_fqdn(buf, off+10);
 
         Self {
             class,
@@ -55,7 +55,7 @@ impl RecordBase for MxRecord {
 
         buf.splice(8..10, self.priority.to_be_bytes());
 
-        buf.extend_from_slice(&pack_domain(self.server.as_ref().unwrap().as_str(), label_map, off+10, true));
+        buf.extend_from_slice(&pack_fqdn(self.server.as_ref().unwrap().as_str(), label_map, off+10, true));
 
         buf.splice(6..8, ((buf.len()-8) as u16).to_be_bytes());
 

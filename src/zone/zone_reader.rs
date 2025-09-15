@@ -136,7 +136,7 @@ impl ZoneReader {
                             _type = t;
                             state = ParserState::Data;
                             data_count = 0;
-                            record = Some((self.absolute_name(&self.name.clone()), <dyn RecordBase>::new(_type, ttl, class).unwrap()));
+                            record = Some((self.name.to_string(), <dyn RecordBase>::new(_type, ttl, class).unwrap()));
 
                         } else {
                             ttl = word.parse().unwrap();//.expect(&format!("Parse error on line {} pos {}", self.line_no, pos));
@@ -214,6 +214,7 @@ impl ZoneReader {
         &self.origin
     }
 
+    /*
     pub fn absolute_name(&self, name: &str) -> String {
         assert!(name != "");
 
@@ -228,6 +229,7 @@ impl ZoneReader {
             format!("{}.{}", name, self.origin)
         }
     }
+    */
 
     pub fn iter(&mut self) -> ZoneReaderIter {
         ZoneReaderIter {
@@ -264,7 +266,7 @@ fn set_data(record: &mut dyn RecordBase, pos: usize, value: &str) {
         RRTypes::Soa => {
             let record = record.as_any_mut().downcast_mut::<SoaRecord>().unwrap();
             match pos {
-                0 => record.domain = Some(match value.strip_suffix('.') {
+                0 => record.fqdn = Some(match value.strip_suffix('.') {
                     Some(base) => base.to_string(),
                     None => panic!("Domain is not fully qualified (missing trailing dot)")
                 }),
@@ -280,7 +282,7 @@ fn set_data(record: &mut dyn RecordBase, pos: usize, value: &str) {
                 _ => unimplemented!()
             }
         }
-        RRTypes::Ptr => record.as_any_mut().downcast_mut::<PtrRecord>().unwrap().domain = Some(match value.strip_suffix('.') {
+        RRTypes::Ptr => record.as_any_mut().downcast_mut::<PtrRecord>().unwrap().fqdn = Some(match value.strip_suffix('.') {
             Some(base) => base.to_string(),
             None => panic!("Domain is not fully qualified (missing trailing dot)")
         }),

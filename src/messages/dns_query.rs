@@ -3,27 +3,27 @@ use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
-use crate::utils::domain_utils::{pack_domain, unpack_domain};
+use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 
 #[derive(Debug, Clone)]
 pub struct DnsQuery {
-    name: String,
+    fqdn: String,
     _type: RRTypes,
     class: RRClasses
 }
 
 impl DnsQuery {
 
-    pub fn new(name: &str, _type: RRTypes, class: RRClasses) -> Self {
+    pub fn new(fqdn: &str, _type: RRTypes, class: RRClasses) -> Self {
         Self {
-            name: name.to_string(),
+            fqdn: fqdn.to_string(),
             _type,
             class
         }
     }
 
     pub fn from_bytes(buf: &[u8], off: &mut usize) -> Self {
-        let (name, len) = unpack_domain(buf, *off);
+        let (fqdn, len) = unpack_fqdn(buf, *off);
         *off += len;
 
         let _type = RRTypes::from_code(u16::from_be_bytes([buf[*off], buf[*off+1]])).unwrap();
@@ -31,14 +31,14 @@ impl DnsQuery {
         *off += 4;
 
         Self {
-            name,
+            fqdn,
             _type,
             class
         }
     }
 
     pub fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Vec<u8> {
-        let mut buf = pack_domain(&self.name, label_map, off, true);
+        let mut buf = pack_fqdn(&self.fqdn, label_map, off, true);
 
         buf.extend_from_slice(&self._type.get_code().to_be_bytes());
         buf.extend_from_slice(&self.class.get_code().to_be_bytes());
@@ -46,12 +46,12 @@ impl DnsQuery {
         buf
     }
 
-    pub fn set_name(&mut self, name: &str) {
-        self.name = name.to_string();
+    pub fn set_fqdn(&mut self, fqdn: &str) {
+        self.fqdn = fqdn.to_string();
     }
 
-    pub fn get_name(&self) -> &str {
-        &self.name
+    pub fn get_fqdn(&self) -> &str {
+        &self.fqdn
     }
 
     pub fn set_type(&mut self, _type: RRTypes) {
@@ -82,6 +82,6 @@ impl DnsQuery {
 impl fmt::Display for DnsQuery {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:<31}{:<8}{}", format!("{}.", self.name), self.class.to_string(), self._type)
+        write!(f, "{:<31}{:<8}{}", format!("{}.", self.fqdn), self.class.to_string(), self._type)
     }
 }

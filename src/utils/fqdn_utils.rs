@@ -1,14 +1,14 @@
 use std::collections::HashMap;
 
-pub fn pack_domain(domain: &str, labels_map: &mut HashMap<String, usize>, off: usize, compress: bool) -> Vec<u8> {
-    if domain.is_empty() {
+pub fn pack_fqdn(fqdn: &str, labels_map: &mut HashMap<String, usize>, off: usize, compress: bool) -> Vec<u8> {
+    if fqdn.is_empty() {
         return vec![0x00];
     }
 
     let mut buf = Vec::new();
     let mut off = off;
 
-    let parts: Vec<&str> = domain.split('.').collect();
+    let parts: Vec<&str> = fqdn.split('.').collect();
 
     for i in 0..parts.len() {
         let suffix = parts[i..].join(".");
@@ -36,7 +36,7 @@ pub fn pack_domain(domain: &str, labels_map: &mut HashMap<String, usize>, off: u
     buf
 }
 
-pub fn unpack_domain(buf: &[u8], off: usize) -> (String, usize) {
+pub fn unpack_fqdn(buf: &[u8], off: usize) -> (String, usize) {
     let mut builder = String::new();
     let mut pos = off;
     let mut jumped = false;
@@ -78,6 +78,25 @@ pub fn unpack_domain(buf: &[u8], off: usize) -> (String, usize) {
         }
     }
 
-    let final_pos = if jumped { original_pos } else { pos };
+    let final_pos = if jumped {
+        original_pos
+
+    } else {
+        pos
+    };
+
     (builder.to_lowercase(), final_pos - off)
+}
+
+pub fn fqdn_to_relative(apex: &str, child: &str) -> Option<String> {
+    if apex == child {
+        return Some(String::new());
+    }
+
+    if let Some(stripped) = child.strip_suffix(apex) {
+        let rel = stripped.trim_end_matches('.');
+        return Some(rel.to_string());
+    }
+
+    None
 }

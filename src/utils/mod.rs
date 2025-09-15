@@ -1,4 +1,4 @@
-pub mod domain_utils;
+pub mod fqdn_utils;
 pub mod index_map;
 pub mod qp_trie;
 pub mod random;

@@ -5,14 +5,14 @@ use std::fmt::Formatter;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::RecordBase;
-use crate::utils::domain_utils::{pack_domain, unpack_domain};
+use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 
 #[derive(Clone, Debug)]
 pub struct PtrRecord {
     class: RRClasses,
     cache_flush: bool,
     ttl: u32,
-    pub(crate) domain: Option<String>
+    pub(crate) fqdn: Option<String>
 }
 
 impl Default for PtrRecord {
@@ -22,7 +22,7 @@ impl Default for PtrRecord {
             class: RRClasses::default(),
             cache_flush: false,
             ttl: 0,
-            domain: None
+            fqdn: None
         }
     }
 }
@@ -37,13 +37,13 @@ impl RecordBase for PtrRecord {
 
         //let z = u16::from_be_bytes([buf[off+6], buf[off+7]]);
 
-        let (domain, _) = unpack_domain(buf, off+8);
+        let (fqdn, _) = unpack_fqdn(buf, off+8);
 
         Self {
             class,
             cache_flush,
             ttl,
-            domain: Some(domain)
+            fqdn: Some(fqdn)
         }
     }
 
@@ -58,7 +58,7 @@ impl RecordBase for PtrRecord {
         buf.splice(0..2, class.to_be_bytes());
         buf.splice(2..6, self.ttl.to_be_bytes());
 
-        buf.extend_from_slice(&pack_domain(self.domain.as_ref().unwrap().as_str(), label_map, off+8, true));
+        buf.extend_from_slice(&pack_fqdn(self.fqdn.as_ref().unwrap().as_str(), label_map, off+8, true));
 
         buf.splice(6..8, ((buf.len()-8) as u16).to_be_bytes());
 
@@ -112,12 +112,12 @@ impl PtrRecord {
         self.ttl
     }
 
-    pub fn set_domain(&mut self, domain: &str) {
-        self.domain = Some(domain.to_string());
+    pub fn set_fqdn(&mut self, fqdn: &str) {
+        self.fqdn = Some(fqdn.to_string());
     }
 
-    pub fn get_domain(&self) -> Option<String> {
-        self.domain.clone()
+    pub fn get_fqdn(&self) -> Option<String> {
+        self.fqdn.clone()
     }
 }
 
@@ -127,6 +127,6 @@ impl fmt::Display for PtrRecord {
         write!(f, "{:<8}{:<8}{:<8}{}", self.ttl,
                self.class.to_string(),
                self.get_type().to_string(),
-               format!("{}.", self.domain.as_ref().unwrap()))
+               format!("{}.", self.fqdn.as_ref().unwrap()))
     }
 }

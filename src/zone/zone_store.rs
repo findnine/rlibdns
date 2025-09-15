@@ -24,10 +24,8 @@ impl ZoneStore {
         for (name, record) in reader.iter() {
             match name.as_str() {
                 //"." => self.add_record(record), //BE CAREFUL WITH THIS ONE - DONT ALLOW MOST OF THE TIME
-                "@" => {
-                    zone.add_record(record)
-                },
-                _ => {
+                "@" => zone.add_record("", record),
+                _ => zone.add_record(&name, record)/*{
                     match self.trie.get_fqdn_mut(&name) {
                         Some(zone) => zone.add_record(record),
                         None => {
@@ -36,7 +34,7 @@ impl ZoneStore {
                             self.trie.insert_fqdn(&name, zone);
                         }
                     }
-                }
+                }*/
                 //_ => zone.add_record_to(&name, record, ZoneTypes::Master)
             }
         }

@@ -5,14 +5,14 @@ use std::fmt::Formatter;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::RecordBase;
-use crate::utils::domain_utils::{pack_domain, unpack_domain};
+use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 
 #[derive(Clone, Debug)]
 pub struct NSecRecord {
     class: RRClasses,
     cache_flush: bool,
     ttl: u32,
-    domain: Option<String>,
+    fqdn: Option<String>,
     rr_types: Vec<u16>
 }
 
@@ -23,7 +23,7 @@ impl Default for NSecRecord {
             class: RRClasses::default(),
             cache_flush: false,
             ttl: 0,
-            domain: None,
+            fqdn: None,
             rr_types: Vec::new()
         }
     }
@@ -39,7 +39,7 @@ impl RecordBase for NSecRecord {
         let class = RRClasses::from_code(class & 0x7FFF).unwrap();
         let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
 
-        let (domain, length) = unpack_domain(buf, off+8);
+        let (fqdn, length) = unpack_fqdn(buf, off+8);
 
         let data_length = off+8+u16::from_be_bytes([buf[off+6], buf[off+7]]) as usize;
         off += length+8;
@@ -71,7 +71,7 @@ impl RecordBase for NSecRecord {
             class,
             cache_flush,
             ttl,
-            domain: Some(domain),
+            fqdn: Some(fqdn),
             rr_types
         }
     }
@@ -87,7 +87,7 @@ impl RecordBase for NSecRecord {
         buf.splice(0..2, class.to_be_bytes());
         buf.splice(2..6, self.ttl.to_be_bytes());
 
-        buf.extend_from_slice(&pack_domain(self.domain.as_ref().unwrap().as_str(), label_map, off+10, true));
+        buf.extend_from_slice(&pack_fqdn(self.fqdn.as_ref().unwrap().as_str(), label_map, off+10, true));
 
         let mut windows: BTreeMap<u8, Vec<u8>> = BTreeMap::new();
 
@@ -162,18 +162,18 @@ impl NSecRecord {
         self.ttl
     }
 
-    pub fn set_domain(&mut self, domain: &str) {
-        self.domain = Some(domain.to_string());
+    pub fn set_fqdn(&mut self, fqdn: &str) {
+        self.fqdn = Some(fqdn.to_string());
     }
 
-    pub fn get_domain(&self) -> Option<String> {
-        self.domain.clone()
+    pub fn get_fqdn(&self) -> Option<String> {
+        self.fqdn.clone()
     }
 }
 
 impl fmt::Display for NSecRecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "type {:?}, class {:?}, domain {}", self.get_type(), self.class, self.domain.as_ref().unwrap())
+        write!(f, "type {:?}, class {:?}, domain {}", self.get_type(), self.class, self.fqdn.as_ref().unwrap())
     }
 }

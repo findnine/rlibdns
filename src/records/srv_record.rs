@@ -5,7 +5,7 @@ use std::fmt::Formatter;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::RecordBase;
-use crate::utils::domain_utils::{pack_domain, unpack_domain};
+use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 
 #[derive(Clone, Debug)]
 pub struct SrvRecord {
@@ -47,7 +47,7 @@ impl RecordBase for SrvRecord {
         let weight = u16::from_be_bytes([buf[off+10], buf[off+11]]);
         let port = u16::from_be_bytes([buf[off+12], buf[off+13]]);
 
-        let (target, _) = unpack_domain(buf, off+14);
+        let (target, _) = unpack_fqdn(buf, off+14);
 
         Self {
             class,
@@ -75,7 +75,7 @@ impl RecordBase for SrvRecord {
         buf.splice(10..12, self.weight.to_be_bytes());
         buf.splice(12..14, self.port.to_be_bytes());
 
-        buf.extend_from_slice(&pack_domain(self.target.as_ref().unwrap().as_str(), label_map, off+14, true));
+        buf.extend_from_slice(&pack_fqdn(self.target.as_ref().unwrap().as_str(), label_map, off+14, true));
 
         buf.splice(6..8, ((buf.len()-8) as u16).to_be_bytes());
 

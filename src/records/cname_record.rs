@@ -5,7 +5,7 @@ use std::fmt::Formatter;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::RecordBase;
-use crate::utils::domain_utils::{pack_domain, unpack_domain};
+use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 
 #[derive(Clone, Debug)]
 pub struct CNameRecord {
@@ -33,7 +33,7 @@ impl RecordBase for CNameRecord {
 
         //let z = u16::from_be_bytes([buf[off+6], buf[off+7]]);
 
-        let (target, _) = unpack_domain(buf, off+8);
+        let (target, _) = unpack_fqdn(buf, off+8);
 
         Self {
             class,
@@ -48,7 +48,7 @@ impl RecordBase for CNameRecord {
         buf.splice(0..2, self.class.get_code().to_be_bytes());
         buf.splice(2..6, self.ttl.to_be_bytes());
 
-        buf.extend_from_slice(&pack_domain(self.target.as_ref().unwrap().as_str(), label_map, off+8, true));
+        buf.extend_from_slice(&pack_fqdn(self.target.as_ref().unwrap().as_str(), label_map, off+8, true));
 
         buf.splice(6..8, ((buf.len()-8) as u16).to_be_bytes());
 

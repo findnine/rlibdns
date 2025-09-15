@@ -1,17 +1,37 @@
 use std::mem;
 
 fn encode_fqdn(name: &str) -> Vec<u8> {
-    let n = name.trim().trim_end_matches('.');
-    if n.is_empty() {
-        return vec![0x00]; // root
+    if name.is_empty() {
+        return vec![0x00];
     }
-    let mut out = Vec::with_capacity(n.len() + 1);
-    for label in n.split('.').rev() {
+
+    let mut out = Vec::with_capacity(name.len() + 1);
+    for label in name.split('.').rev() {
         let lower = label.to_ascii_lowercase();
         out.extend_from_slice(lower.as_bytes());
         out.push(0x00);
     }
     out
+}
+
+fn decode_fqdn(raw: &[u8]) -> String {
+    if raw == [0x00] {
+        return String::new();
+    }
+
+    let mut labels: Vec<&str> = Vec::new();
+    let mut start = 0;
+
+    for i in 0..raw.len() {
+        if raw[i] == 0 {
+            if i > start {
+                labels.push(std::str::from_utf8(&raw[start..i]).unwrap());
+            }
+            start = i + 1;
+        }
+    }
+    labels.reverse();
+    labels.join(".")
 }
 
 fn nibbles_len(bytes: &[u8]) -> usize {
@@ -44,10 +64,7 @@ fn slice_nibbles(src: &[u8], start: usize, end: usize) -> (Vec<u8>, usize) {
     (out, out_len)
 }
 
-fn common_prefix_len(
-    node_pref: &[u8], node_pref_len: usize,
-    key: &[u8], key_off: usize, key_len: usize
-) -> usize {
+fn common_prefix_len(node_pref: &[u8], node_pref_len: usize, key: &[u8], key_off: usize, key_len: usize) -> usize {
     let max = node_pref_len.min(key_len - key_off);
     let mut i = 0usize;
     while i < max {
@@ -172,13 +189,7 @@ impl<V> Node<V> {
     }
 }
 
-fn insert_at<V>(
-    node: &mut Node<V>,
-    key: &[u8],
-    mut off: usize,      // in nibbles
-    key_len: usize,      // in nibbles
-    mut val: V
-) -> Option<V> {
+fn insert_at<V>(node: &mut Node<V>, key: &[u8], mut off: usize, key_len: usize, mut val: V) -> Option<V> {
     let lcp = common_prefix_len(&node.prefix, node.prefix_len, key, off, key_len);
     if lcp < node.prefix_len {
         let branch_nib_old = get_nibble(&node.prefix, lcp);
@@ -251,12 +262,7 @@ fn get_exact_at<'a, V>(
     None
 }
 
-fn get_exact_at_mut<'a, V>(
-    node: &'a mut Node<V>,
-    key: &[u8],
-    mut off: usize,
-    key_len: usize
-) -> Option<&'a mut V> {
+fn get_exact_at_mut<'a, V>(node: &'a mut Node<V>, key: &[u8], mut off: usize, key_len: usize) -> Option<&'a mut V> {
     let lcp = common_prefix_len(&node.prefix, node.prefix_len, key, off, key_len);
     if lcp < node.prefix_len {
         return None;
@@ -274,31 +280,7 @@ fn get_exact_at_mut<'a, V>(
     None
 }
 
-fn decode_fqdn(raw: &[u8]) -> String {
-    if raw == [0x00] {
-        return String::new();
-    }
-    let mut labels: Vec<&str> = Vec::new();
-    let mut start = 0usize;
-    for i in 0..raw.len() {
-        if raw[i] == 0 {
-            if i > start {
-                labels.push(std::str::from_utf8(&raw[start..i]).unwrap());
-            }
-            start = i + 1;
-        }
-    }
-    labels.reverse();
-    labels.join(".")
-}
-
-fn get_longest_at<'a, V>(
-    node: &'a Node<V>,
-    key: &[u8],
-    mut off: usize,
-    key_len: usize,
-    mut best: Option<&'a V>
-) -> Option<&'a V> {
+fn get_longest_at<'a, V>(node: &'a Node<V>, key: &[u8], mut off: usize, key_len: usize, mut best: Option<&'a V>) -> Option<&'a V> {
     let lcp = common_prefix_len(&node.prefix, node.prefix_len, key, off, key_len);
     if lcp < node.prefix_len {
         return best;
@@ -321,13 +303,7 @@ fn get_longest_at<'a, V>(
     best
 }
 
-fn get_longest_at2<'a, V>(
-    node: &'a Node<V>,
-    key: &[u8],
-    mut off: usize,
-    key_len: usize,
-    best: Option<(&'a V, usize)>,
-) -> Option<(&'a V, usize)> {
+fn get_longest_at2<'a, V>(node: &'a Node<V>, key: &[u8], mut off: usize, key_len: usize, best: Option<(&'a V, usize)>) -> Option<(&'a V, usize)> {
     let lcp = common_prefix_len(&node.prefix, node.prefix_len, key, off, key_len);
     if lcp < node.prefix_len {
         return best;

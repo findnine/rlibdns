@@ -5,7 +5,7 @@ use std::fmt::Formatter;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::RecordBase;
-use crate::utils::domain_utils::{pack_domain, unpack_domain};
+use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 use crate::utils::base64;
 use crate::utils::time_utils::TimeUtils;
 
@@ -61,7 +61,7 @@ impl RecordBase for RRSigRecord {
         let inception = u32::from_be_bytes([buf[off+20], buf[off+21], buf[off+22], buf[off+23]]);
         let key_tag = u16::from_be_bytes([buf[off+24], buf[off+25]]);
 
-        let (signer_name, length) = unpack_domain(buf, off+26);
+        let (signer_name, length) = unpack_fqdn(buf, off+26);
 
         let data_length = off+8+u16::from_be_bytes([buf[off+6], buf[off+7]]) as usize;
         off += length+26;
@@ -99,7 +99,7 @@ impl RecordBase for RRSigRecord {
         buf.splice(20..24, self.inception.to_be_bytes());
         buf.splice(24..26, self.key_tag.to_be_bytes());
 
-        buf.extend_from_slice(&pack_domain(self.signer_name.as_ref().unwrap(), label_map, off+26, true));
+        buf.extend_from_slice(&pack_fqdn(self.signer_name.as_ref().unwrap(), label_map, off+26, true));
 
         buf.extend_from_slice(&self.signature);
 

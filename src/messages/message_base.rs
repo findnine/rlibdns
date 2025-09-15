@@ -7,7 +7,7 @@ use crate::messages::inter::response_codes::ResponseCodes;
 use crate::records::inter::record_base::RecordBase;
 use crate::messages::dns_query::DnsQuery;
 use crate::messages::inter::rr_types::RRTypes;
-use crate::utils::domain_utils::{pack_domain, unpack_domain};
+use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 
 /*
                                1  1  1  1  1  1
@@ -493,7 +493,7 @@ fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> Vec<(String, B
     let mut records: Vec<(String, Box<dyn RecordBase>)> = Vec::new();
 
     for _ in 0..count {
-        let (name, length) = unpack_domain(buf, *off);
+        let (name, length) = unpack_fqdn(buf, *off);
         *off += length;
 
         let record = <dyn RecordBase>::from_wire(RRTypes::from_code(u16::from_be_bytes([buf[*off], buf[*off+1]])).unwrap(), buf, *off+2).unwrap();
@@ -513,7 +513,7 @@ fn records_to_bytes(off: usize, records: &[(String, Box<dyn RecordBase>)], label
     let mut off = off;
 
     for (name, record) in records.iter() {
-        let n = pack_domain(name, label_map, off, true);
+        let n = pack_fqdn(name, label_map, off, true);
         off += n.len()+2;
 
         match record.to_bytes(label_map, off) {
