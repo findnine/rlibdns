@@ -72,7 +72,7 @@ fn slice_nibbles(src: &[u8], start: usize, end: usize) -> (Vec<u8>, usize) {
 
 fn common_prefix_len(node_pref: &[u8], node_pref_len: usize, key: &[u8], key_off: usize, key_len: usize) -> usize {
     let max = node_pref_len.min(key_len - key_off);
-    let mut i = 0usize;
+    let mut i = 0;
     while i < max {
         if get_nibble(node_pref, i) != get_nibble(key, key_off + i) {
             break;
