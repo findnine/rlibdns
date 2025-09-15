@@ -1,5 +1,5 @@
 use std::mem;
-
+/*
 fn encode_fqdn(name: &str) -> Vec<u8> {
     if name.is_empty() {
         return vec![0x00];
@@ -33,54 +33,7 @@ fn decode_fqdn(raw: &[u8]) -> String {
     labels.reverse();
     labels.join(".")
 }
-
-fn nibbles_len(bytes: &[u8]) -> usize {
-    bytes.len() * 2
-}
-
-fn get_nibble(bytes: &[u8], i: usize) -> u8 {
-    let b = bytes[i >> 1];
-
-    if (i & 1) == 0 {
-        b >> 4
-
-    } else {
-        b & 0x0F
-    }
-}
-
-fn slice_nibbles(src: &[u8], start: usize, end: usize) -> (Vec<u8>, usize) {
-    debug_assert!(end >= start);
-    let mut out = Vec::with_capacity(((end - start) + 1) / 2);
-    let mut out_len = 0;
-
-    for i in start..end {
-        let nib = get_nibble(src, i);
-
-        if (out_len & 1) == 0 {
-            out.push(nib << 4);
-
-        } else {
-            let last = out.last_mut().unwrap();
-            *last |= nib;
-        }
-
-        out_len += 1;
-    }
-    (out, out_len)
-}
-
-fn common_prefix_len(node_pref: &[u8], node_pref_len: usize, key: &[u8], key_off: usize, key_len: usize) -> usize {
-    let max = node_pref_len.min(key_len - key_off);
-    let mut i = 0;
-    while i < max {
-        if get_nibble(node_pref, i) != get_nibble(key, key_off + i) {
-            break;
-        }
-        i += 1;
-    }
-    i
-}
+*/
 
 #[derive(Debug, Clone)]
 pub struct QpTrie<V> {
@@ -137,6 +90,7 @@ impl<V> QpTrie<V> {
         get_longest_at(&self.root, key, 0, key_len, None)
     }
 
+    /*
     pub fn insert_fqdn(&mut self, name: &str, val: V) -> Option<V> {
         self.insert_raw(encode_fqdn(name), val)
     }
@@ -163,6 +117,55 @@ impl<V> QpTrie<V> {
         let apex = decode_fqdn(&matched_raw);
         Some((apex, best.0))
     }
+    */
+}
+
+fn nibbles_len(bytes: &[u8]) -> usize {
+    bytes.len() * 2
+}
+
+fn get_nibble(bytes: &[u8], i: usize) -> u8 {
+    let b = bytes[i >> 1];
+
+    if (i & 1) == 0 {
+        b >> 4
+
+    } else {
+        b & 0x0F
+    }
+}
+
+fn slice_nibbles(src: &[u8], start: usize, end: usize) -> (Vec<u8>, usize) {
+    debug_assert!(end >= start);
+    let mut out = Vec::with_capacity(((end - start) + 1) / 2);
+    let mut out_len = 0;
+
+    for i in start..end {
+        let nib = get_nibble(src, i);
+
+        if (out_len & 1) == 0 {
+            out.push(nib << 4);
+
+        } else {
+            let last = out.last_mut().unwrap();
+            *last |= nib;
+        }
+
+        out_len += 1;
+    }
+    (out, out_len)
+}
+
+fn common_prefix_len(node_pref: &[u8], node_pref_len: usize, key: &[u8], key_off: usize, key_len: usize) -> usize {
+    let max = node_pref_len.min(key_len - key_off);
+    let mut i = 0;
+    while i < max {
+        if get_nibble(node_pref, i) != get_nibble(key, key_off + i) {
+            break;
+        }
+        i += 1;
+    }
+    i
 }
 
 fn bit_is_set(bm: u16, nib: u8) -> bool {
