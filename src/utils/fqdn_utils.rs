@@ -125,8 +125,7 @@ pub fn fqdn_to_relative(apex: &str, child: &str) -> Option<String> {
     }
 
     if let Some(stripped) = child.strip_suffix(apex) {
-        let rel = stripped.trim_end_matches('.');
-        return Some(rel.to_string());
+        return Some(stripped.trim_end_matches('.').to_string());
     }
 
     None
