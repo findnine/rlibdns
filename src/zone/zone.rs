@@ -82,6 +82,11 @@ impl Zone {
         self.records.get(name)
     }
 
+    pub fn is_delegation_point(&self, rel_owner: &str) -> bool {
+        self.records.get(rel_owner)
+            .map_or(false, |by_type| by_type.contains_key(&RRTypes::Ns) && !rel_owner.is_empty())
+    }
+
     /*
     pub fn get_all_records_recursive(&self) -> IndexMap<String, Vec<&Box<dyn RecordBase>>> {
         let mut res = IndexMap::new();
