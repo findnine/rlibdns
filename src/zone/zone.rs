@@ -56,9 +56,9 @@ impl Zone {
                 records.entry(record.get_type()).or_insert(Vec::new()).push(record);
             }
             None => {
-                let mut map = BTreeMap::new();
-                map.insert(record.get_type(), vec![record]);
-                self.records.insert(key, map);
+                let mut rrmap = BTreeMap::new();
+                rrmap.insert(record.get_type(), vec![record]);
+                self.records.insert(key, rrmap);
             }
         }
 
@@ -80,14 +80,16 @@ impl Zone {
         //self.records.get(name)
     }
 
-    pub fn is_delegation_point(&self, name: &str) -> bool {
-        let key = encode_fqdn(name);
+    pub fn get_delegation_point(&self, name: &str) -> Option<(String, &BTreeMap<RRTypes, Vec<Box<dyn RecordBase>>>)> {
+        match self.records.get_shallowest(&encode_fqdn(name)) {
+            Some((name, rrmap)) => {
+                if rrmap.contains_key(&RRTypes::Ns) {
+                    return Some((decode_fqdn(name), rrmap));
+                }
 
-        match self.records.get_shallowest(&key) {
-            Some((_deepest_key, rrmap)) => {
-                rrmap.contains_key(&RRTypes::Ns)
+                None
             }
-            None => false
+            None => None
         }
     }
 
