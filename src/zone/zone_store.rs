@@ -1,20 +1,20 @@
 use std::io;
 use crate::utils::fqdn_utils::{encode_fqdn, decode_fqdn};
-use crate::utils::qp_trie::QpTrie;
+use crate::utils::trie::trie::Trie;
 use crate::zone::inter::zone_types::ZoneTypes;
 use crate::zone::zone::Zone;
 use crate::zone::zone_reader::ZoneReader;
 
 #[derive(Debug, Clone)]
 pub struct ZoneStore {
-    trie: QpTrie<Zone>
+    trie: Trie<Zone>
 }
 
 impl ZoneStore {
 
     pub fn new() -> Self {
         Self {
-            trie: QpTrie::new()
+            trie: Trie::new()
         }
     }
 
@@ -54,10 +54,10 @@ impl ZoneStore {
     }
 
     pub fn get_deepest_zone(&self, name: &str) -> Option<&Zone> {
-        self.trie.get_longest_prefix(&encode_fqdn(name))
+        self.trie.get_deepest(&encode_fqdn(name)).map(|(_, zone)| zone)
     }
 
     pub fn get_deepest_zone_with_name(&self, name: &str) -> Option<(String, &Zone)> {
-        self.trie.get_longest_prefix_with_key(&encode_fqdn(name)).map(|(key, record)| (decode_fqdn(&key), record))
+        self.trie.get_deepest(&encode_fqdn(name)).map(|(key, zone)| (decode_fqdn(&key), zone))
     }
 }

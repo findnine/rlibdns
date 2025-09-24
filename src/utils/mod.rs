@@ -1,6 +1,6 @@
 pub mod fqdn_utils;
 pub mod index_map;
-pub mod qp_trie;
+pub mod trie;
 pub mod random;
 pub mod base64;
 pub mod hex;

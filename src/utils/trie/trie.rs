@@ -1,4 +1,4 @@
-use crate::node::{Branch, Leaf, Node};
+use crate::utils::trie::node::{Branch, Leaf, Node};
 
 #[derive(Clone, Debug)]
 pub struct Trie<V> {
@@ -32,7 +32,7 @@ impl<V> Trie<V> {
     }
 
     fn first_diff_nibble(a: &[u8], b: &[u8]) -> usize {
-        let max_nibbles = 2 * a.len().max(b.len()) + 1; // +1 for COMPLETE
+        let max_nibbles = 2 * a.len().max(b.len()) + 1;
         for i in 0..max_nibbles {
             if Self::nibble(a, i) != Self::nibble(b, i) {
                 return i;
@@ -91,8 +91,6 @@ impl<V> Trie<V> {
         loop {
             match node {
                 Node::Branch(br) => {
-                    // If there is a COMPLETE child (nibble 0), that child is a key that ends
-                    // before or at this offset; it’s a prefix of any path that reaches here.
                     if br.has_child(0) {
                         if let Some(Node::Leaf(leaf)) = br.get_child(0) {
                             if is_prefix(leaf.key.as_slice(), query) {
@@ -101,19 +99,48 @@ impl<V> Trie<V> {
                         }
                     }
 
-                    // Descend along the nibble of the query at this offset.
                     let n = Self::nibble(query, br.offset);
                     match br.get_child(n) {
                         Some(child) => node = child,
-                        None => return best, // can't go further; return last prefix seen
+                        None => return best
                     }
                 }
                 Node::Leaf(leaf) => {
-                    // If we land on a leaf, it’s either an exact match or not a prefix.
                     if is_prefix(leaf.key.as_slice(), query) {
                         return Some((leaf.key.as_slice(), &leaf.val));
                     }
                     return best;
+                }
+            }
+        }
+    }
+
+    pub fn get_shallowest(&self, query: &[u8]) -> Option<(&[u8], &V)> {
+        let mut node = self.root.as_ref()?;
+
+        loop {
+            match node {
+                Node::Branch(br) => {
+                    if br.has_child(0) {
+                        if let Some(Node::Leaf(leaf)) = br.get_child(0) {
+                            if is_prefix(leaf.key.as_slice(), query) {
+                                return Some((leaf.key.as_slice(), &leaf.val));
+                            }
+                        }
+                    }
+
+                    let n = Self::nibble(query, br.offset);
+                    match br.get_child(n) {
+                        Some(child) => node = child,
+                        None => return None,
+                    }
+                }
+                Node::Leaf(leaf) => {
+                    return if is_prefix(leaf.key.as_slice(), query) {
+                        Some((leaf.key.as_slice(), &leaf.val))
+                    } else {
+                        None
+                    };
                 }
             }
         }
@@ -133,25 +160,20 @@ impl<V> Trie<V> {
                 match node {
                     Node::Leaf(leaf) => {
                         if leaf.key.as_slice() == key.as_slice() {
-                            // Exact key: replace value.
                             return Some(std::mem::replace(&mut leaf.val, val));
                         }
 
-                        // Split at first differing nibble.
                         let split = Self::first_diff_nibble(&leaf.key, &key);
 
-                        // Take existing leaf out, replace with a new branch at `split`.
                         let old_leaf = match std::mem::replace(node, Node::Branch(Branch::new(split))) {
                             Node::Leaf(l) => l,
                             _ => unreachable!(),
                         };
 
                         if let Node::Branch(br) = node {
-                            // Old leaf under its nibble.
                             let old_n = Self::nibble(&old_leaf.key, split);
                             br.insert_child(old_n, Node::Leaf(old_leaf));
 
-                            // New leaf under its nibble.
                             let new_n = Self::nibble(&key, split);
                             br.insert_child(new_n, Node::Leaf(Leaf::new(key, val)));
                             None
@@ -162,13 +184,11 @@ impl<V> Trie<V> {
                     Node::Branch(br) => {
                         let n = Self::nibble(&key, br.offset);
                         if let Some(child) = br.get_child_mut(n) {
-                            // Recurse by temporarily taking ownership.
                             let mut tmp = Some(std::mem::replace(child, Node::Branch(Branch::default())));
                             let ret = Self::insert_at(&mut tmp, key, val);
                             *child = tmp.unwrap();
                             ret
                         } else {
-                            // Create a new leaf at nibble `n`.
                             br.insert_child(n, Node::Leaf(Leaf::new(key, val)));
                             None
                         }

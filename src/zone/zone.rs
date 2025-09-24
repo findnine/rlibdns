@@ -3,16 +3,16 @@ use std::io;
 use crate::journal::journal::Journal;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::RecordBase;
-use crate::utils::fqdn_utils::encode_fqdn;
+use crate::utils::fqdn_utils::{decode_fqdn, encode_fqdn};
 use crate::utils::index_map::IndexMap;
-use crate::utils::qp_trie::QpTrie;
+use crate::utils::trie::trie::Trie;
 use crate::zone::inter::zone_types::ZoneTypes;
 use crate::zone::zone_reader::ZoneReader;
 
 #[derive(Debug, Clone)]
 pub struct Zone {
     _type: ZoneTypes,
-    records: QpTrie<BTreeMap<RRTypes, Vec<Box<dyn RecordBase>>>>,
+    records: Trie<BTreeMap<RRTypes, Vec<Box<dyn RecordBase>>>>,
     //records: IndexMap<String, IndexMap<RRTypes, Vec<Box<dyn RecordBase>>>>,
     journal: Option<Journal>
 }
@@ -22,7 +22,7 @@ impl Default for Zone {
     fn default() -> Self {
         Self {
             _type: Default::default(),
-            records: QpTrie::new(),
+            records: Trie::new(),
             journal: None
         }
     }
@@ -50,10 +50,21 @@ impl Zone {
     }
 
     pub fn add_record(&mut self, name: &str, record: Box<dyn RecordBase>) {
+        let key = encode_fqdn(name);
+        match self.records.get_mut(&key) {
+            Some(records) => {
+                records.entry(record.get_type()).or_insert(Vec::new()).push(record);
+            }
+            None => {
+                let mut map = BTreeMap::new();
+                map.insert(record.get_type(), vec![record]);
+                self.records.insert(key, map);
+            }
+        }
+
         //self.records
         //    .entry(name.to_string()).or_insert_with(IndexMap::new)
         //    .entry(record.get_type()).or_insert(Vec::new()).push(record);
-        todo!()
 
         //UPDATE SOA
         //ADD TO JOURNAL
@@ -69,10 +80,15 @@ impl Zone {
         //self.records.get(name)
     }
 
-    pub fn is_delegation_point(&self, rel_owner: &str) -> bool {
-        //self.records.get(rel_owner)
-        //    .map_or(false, |by_type| by_type.contains_key(&RRTypes::Ns) && !rel_owner.is_empty())
-        todo!()
+    pub fn is_delegation_point(&self, name: &str) -> bool {
+        let key = encode_fqdn(name);
+
+        match self.records.get_shallowest(&key) {
+            Some((_deepest_key, rrmap)) => {
+                rrmap.contains_key(&RRTypes::Ns)
+            }
+            None => false
+        }
     }
 
     /*
