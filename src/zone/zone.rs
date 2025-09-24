@@ -72,17 +72,16 @@ impl Zone {
 
     pub fn get_records(&self, name: &str, _type: &RRTypes) -> Option<&Vec<Box<dyn RecordBase>>> {
         self.records.get(&encode_fqdn(name))?.get(_type)
-        //self.records.get(name)?.get(_type)
     }
 
     pub fn get_all_records(&self, name: &str) -> Option<&BTreeMap<RRTypes, Vec<Box<dyn RecordBase>>>> {
         self.records.get(&encode_fqdn(name))
-        //self.records.get(name)
     }
 
     pub fn get_delegation_point(&self, name: &str) -> Option<(String, &BTreeMap<RRTypes, Vec<Box<dyn RecordBase>>>)> {
         match self.records.get_shallowest(&encode_fqdn(name)) {
             Some((name, rrmap)) => {
+                println!("DELEGATION");
                 if rrmap.contains_key(&RRTypes::Ns) {
                     return Some((decode_fqdn(name), rrmap));
                 }

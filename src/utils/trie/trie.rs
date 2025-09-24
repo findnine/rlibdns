@@ -123,7 +123,7 @@ impl<V> Trie<V> {
                 Node::Branch(br) => {
                     if br.has_child(0) {
                         if let Some(Node::Leaf(leaf)) = br.get_child(0) {
-                            if is_prefix(leaf.key.as_slice(), query) {
+                            if is_prefix(leaf.key.as_slice(), query) && !is_apex_key(&leaf.key) {
                                 return Some((leaf.key.as_slice(), &leaf.val));
                             }
                         }
@@ -136,11 +136,10 @@ impl<V> Trie<V> {
                     }
                 }
                 Node::Leaf(leaf) => {
-                    return if is_prefix(leaf.key.as_slice(), query) {
-                        Some((leaf.key.as_slice(), &leaf.val))
-                    } else {
-                        None
-                    };
+                    if is_prefix(leaf.key.as_slice(), query) && !is_apex_key(&leaf.key) {
+                        return Some((leaf.key.as_slice(), &leaf.val));
+                    }
+                    return None;
                 }
             }
         }
@@ -197,6 +196,10 @@ impl<V> Trie<V> {
             }
         }
     }
+}
+
+fn is_apex_key(k: &[u8]) -> bool {
+    k.is_empty() || (k.len() == 1 && k[0] == 0)
 }
 
 fn is_prefix(a: &[u8], b: &[u8]) -> bool {
