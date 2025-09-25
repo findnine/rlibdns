@@ -1,3 +1,3 @@
 pub mod inter;
-pub mod message_base;
+pub mod message;
 pub mod dns_query;

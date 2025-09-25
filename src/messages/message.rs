@@ -30,7 +30,7 @@ use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 pub const DNS_HEADER_LEN: usize = 12;
 
 #[derive(Debug, Clone)]
-pub struct MessageBase {
+pub struct Message {
     id: u16,
     op_code: OpCodes,
     response_code: ResponseCodes,
@@ -47,7 +47,7 @@ pub struct MessageBase {
     records: [Vec<(String, Box<dyn RecordBase>)>; 3]
 }
 
-impl Default for MessageBase {
+impl Default for Message {
 
     fn default() -> Self {
         Self {
@@ -69,7 +69,7 @@ impl Default for MessageBase {
     }
 }
 
-impl MessageBase {
+impl Message {
 
     pub fn new(id: u16) -> Self {
         Self {
@@ -352,7 +352,7 @@ impl MessageBase {
     }
 }
 
-impl fmt::Display for MessageBase {
+impl fmt::Display for Message {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         writeln!(f, ";; ->>HEADER<<- opcode: {}, status: {}, id: {}", self.op_code, self.response_code, self.id)?;
@@ -418,7 +418,7 @@ impl fmt::Display for MessageBase {
 }
 
 pub struct WireIter<'a> {
-    message: &'a MessageBase,
+    message: &'a Message,
     position: usize,
     max_payload_len: usize
 }

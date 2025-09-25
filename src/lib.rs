@@ -7,7 +7,7 @@ pub mod journal;
 #[cfg(test)]
 mod tests {
     use crate::journal::journal_reader::JournalReader;
-    use crate::messages::message_base::MessageBase;
+    use crate::messages::message::Message;
     use crate::records::inter::record_base::RecordBase;
     use crate::zone::inter::zone_types::ZoneTypes;
     use crate::zone::zone::Zone;
