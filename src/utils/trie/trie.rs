@@ -132,7 +132,7 @@ impl<V> Trie<V> {
                     let n = Self::nibble(query, br.offset);
                     match br.get_child(n) {
                         Some(child) => node = child,
-                        None => return None,
+                        None => return None
                     }
                 }
                 Node::Leaf(leaf) => {
