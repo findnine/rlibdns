@@ -154,7 +154,9 @@ impl<V> Trie<V> {
         if let Some(root) = self.root.as_ref() {
             Entries::push_node(&mut stack, root);
         }
-        Entries { stack }
+        Entries {
+            stack
+        }
     }
 
     fn insert_at(slot: &mut Option<Node<Vec<u8>, V>>, key: Vec<u8>, val: V) -> Option<V> {
