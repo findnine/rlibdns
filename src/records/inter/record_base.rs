@@ -60,8 +60,8 @@ impl dyn RecordBase {
         use RRTypes::*;
 
         Some(match rrt {
-            A      => ARecord::new(ttl, class).upcast(),
-            Aaaa   => AaaaRecord::new(ttl, class).upcast(),
+            A      => ARecord::new().upcast(),
+            Aaaa   => AaaaRecord::new().upcast(),
             Ns     => NsRecord::new(ttl, class).upcast(),
             CName  => CNameRecord::new(ttl, class).upcast(),
             Soa    => SoaRecord::new(ttl, class).upcast(),

@@ -47,7 +47,8 @@ pub struct Message {
     origin: Option<SocketAddr>,
     destination: Option<SocketAddr>,
     queries: Vec<RRQuery>,
-    sections: [Vec<RRName>; 3]
+    sections: [Vec<RRName>; 3],
+    option: Option<OpCodes>
 }
 
 impl Default for Message {
@@ -67,7 +68,8 @@ impl Default for Message {
             origin: None,
             destination: None,
             queries: Vec::new(),
-            sections: Default::default()
+            sections: Default::default(),
+            option: None
         }
     }
 }
@@ -126,7 +128,8 @@ impl Message {
             origin: None,
             destination: None,
             queries,
-            sections
+            sections,
+            option: None
         })
     }
 
@@ -521,33 +524,47 @@ fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> Vec<RRName> {
 
         let _type = RRTypes::from_code(u16::from_be_bytes([buf[*off], buf[*off+1]])).unwrap();
 
-        let record = <dyn RecordBase>::from_wire(_type, buf, *off+2).unwrap();
-
-        let index = match section.iter().position(|n: &RRName| name.eq(n.get_fqdn())) {
-            Some(i) => i,
-            None => {
-                section.push(RRName::new(&name));
-                section.len() - 1
+        match _type {
+            RRTypes::TKey => {}
+            RRTypes::TSig => {}
+            RRTypes::Opt => {
+                let record = <dyn RecordBase>::from_wire(_type, buf, *off+2).unwrap();
+                println!("{:x?}", &buf[*off..]);
             }
-        };
+            RRTypes::Any => {}
+            _ => {
+                let class = u16::from_be_bytes([buf[*off+2], buf[*off+3]]);
+                //let cache_flush = (class & 0x8000) != 0;
+                //let class = RRClasses::from_code(class & 0x7FFF).unwrap();
+                let class = RRClasses::from_code(class).unwrap();
+                let ttl = u32::from_be_bytes([buf[*off+4], buf[*off+5], buf[*off+6], buf[*off+7]]);
 
-        let class = RRClasses::In;
-        let ttl = 300;
+                let record = <dyn RecordBase>::from_wire(_type, buf, *off+8).unwrap();
 
-        match section[index]
-                .get_sets_mut() //I DONT LIKE HAVING TO MUT SEARCH BUT WHATEVER...
-                .iter_mut()
-                .find(|s| s.get_class().eq(&class) && s.get_type().eq(&_type)) {
-            Some(set) => {
-                if set.get_ttl() != ttl {
-                    set.set_ttl(set.get_ttl().min(ttl));
+                let index = match section.iter().position(|n: &RRName| name.eq(n.get_fqdn())) {
+                    Some(i) => i,
+                    None => {
+                        section.push(RRName::new(&name));
+                        section.len() - 1
+                    }
+                };
+
+                match section[index]
+                        .get_sets_mut() //I DONT LIKE HAVING TO MUT SEARCH BUT WHATEVER...
+                        .iter_mut()
+                        .find(|s| s.get_class().eq(&class) && s.get_type().eq(&_type)) {
+                    Some(set) => {
+                        if set.get_ttl() != ttl {
+                            set.set_ttl(set.get_ttl().min(ttl));
+                        }
+                        set.add_record(record);
+                    }
+                    None => {
+                        let mut set = RRSet::new(_type, class, ttl);
+                        set.add_record(record);
+                        section[index].add_set(set);
+                    }
                 }
-                set.add_record(record);
-            }
-            None => {
-                let mut set = RRSet::new(_type, class, ttl);
-                set.add_record(record);
-                section[index].add_set(set);
             }
         }
 
@@ -586,8 +603,11 @@ fn records_to_bytes(off: usize, section: &[RRName], label_map: &mut HashMap<Stri
         let fqdn = pack_fqdn(name.get_fqdn(), label_map, off, true);
 
         for set in name.get_sets() {
+            let class = set.get_class().get_code().to_be_bytes();
+            let ttl = set.get_ttl().to_be_bytes();
+
             for record in set.get_records() {
-                off += fqdn.len()+2;
+                off += fqdn.len()+8;
 
                 match record.to_bytes(label_map, off) {
                     Ok(r) => {
@@ -598,6 +618,10 @@ fn records_to_bytes(off: usize, section: &[RRName], label_map: &mut HashMap<Stri
 
                         buf.extend_from_slice(&fqdn);
                         buf.extend_from_slice(&record.get_type().get_code().to_be_bytes());
+
+                        buf.extend_from_slice(&class);
+                        buf.extend_from_slice(&ttl);
+
                         buf.extend_from_slice(&r);
                         off += r.len();
                         i += 1;
