@@ -4,11 +4,14 @@ use std::fmt::Formatter;
 use std::net::SocketAddr;
 use crate::messages::inter::op_codes::OpCodes;
 use crate::messages::inter::response_codes::ResponseCodes;
+use crate::messages::inter::rr_classes::RRClasses;
 use crate::records::inter::record_base::RecordBase;
 use crate::messages::rr_query::RRQuery;
 use crate::messages::inter::rr_types::RRTypes;
+use crate::messages::rr_name::RRName;
+use crate::messages::rr_set::RRSet;
 use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
-
+use crate::utils::index_map::IndexMap;
 /*
                                1  1  1  1  1  1
  0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
@@ -44,7 +47,7 @@ pub struct Message {
     origin: Option<SocketAddr>,
     destination: Option<SocketAddr>,
     queries: Vec<RRQuery>,
-    sections: [Vec<(String, Box<dyn RecordBase>)>; 3]
+    sections: [Vec<RRName>; 3]
 }
 
 impl Default for Message {
@@ -152,7 +155,7 @@ impl Message {
 
         if !truncated {
             for (i, section) in self.sections.iter().enumerate() {
-                let (records, count, t) = records_to_bytes(off, &section, &mut label_map, max_payload_len);
+                let (records, count, t) = records_to_bytes(off, section, &mut label_map, max_payload_len);
                 buf.extend_from_slice(&records);
                 buf.splice(i*2+6..i*2+8, count.to_be_bytes());
 
@@ -287,8 +290,23 @@ impl Message {
         !self.sections[0].is_empty()
     }
 
-    pub fn add_answer(&mut self, query: &str, record: Box<dyn RecordBase>) {
-        self.sections[0].push((query.to_string(), record));
+    /*
+    pub fn add_answer(&mut self, query: RRQuery, record: Box<dyn RecordBase>) {
+        let section: &mut [RRName] = self.sections[0].as_mut();
+        for name in section.iter_mut() {
+            if !query.get_fqdn().eq(name.get_fqdn()) {
+                continue;
+            }
+
+            for set in name.get_sets_mut() {
+                if !query.get_class().eq(&set.get_class()) || !query.get_type().eq(&set.get_type())  {
+                    continue;
+                }
+
+                set.add_record(record);
+                return;
+            }
+        }
     }
 
     pub fn get_answers(&self) -> &Vec<(String, Box<dyn RecordBase>)> {
@@ -342,6 +360,7 @@ impl Message {
     pub fn total_additional_records(&self) -> usize {
         self.sections[2].len()
     }
+    */
 
     pub fn as_ref(&self) -> &Self {
         self
@@ -385,6 +404,9 @@ impl fmt::Display for Message {
         }
         */
 
+
+
+        /*
         writeln!(f, "\r\n;; QUESTION SECTION:")?;
         for q in &self.queries {
             writeln!(f, ";{}", q)?;
@@ -412,6 +434,7 @@ impl fmt::Display for Message {
                 }
             }
         }
+        */
 
         Ok(())
     }
@@ -489,7 +512,53 @@ impl<'a> Iterator for WireIter<'a> {
     }
 }
 
-fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> Vec<(String, Box<dyn RecordBase>)> {
+fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> Vec<RRName> {
+    let mut section = Vec::new();
+
+    for _ in 0..count {
+        let (name, length) = unpack_fqdn(buf, *off);
+        *off += length;
+
+        let _type = RRTypes::from_code(u16::from_be_bytes([buf[*off], buf[*off+1]])).unwrap();
+
+        let record = <dyn RecordBase>::from_wire(_type, buf, *off+2).unwrap();
+
+        let index = match section.iter().position(|n: &RRName| name.eq(n.get_fqdn())) {
+            Some(i) => i,
+            None => {
+                section.push(RRName::new(&name));
+                section.len() - 1
+            }
+        };
+
+        let class = RRClasses::In;
+        let ttl = 300;
+
+        match section[index]
+                .get_sets_mut() //I DONT LIKE HAVING TO MUT SEARCH BUT WHATEVER...
+                .iter_mut()
+                .find(|s| s.get_class().eq(&class) && s.get_type().eq(&_type)) {
+            Some(set) => {
+                if set.get_ttl() != ttl {
+                    set.set_ttl(set.get_ttl().min(ttl));
+                }
+                set.add_record(record);
+            }
+            None => {
+                let mut set = RRSet::new(_type, class, ttl);
+                set.add_record(record);
+                section[index].add_set(set);
+            }
+        }
+
+        *off += 10+u16::from_be_bytes([buf[*off+8], buf[*off+9]]) as usize;
+    }
+
+
+    section
+    //Vec::new()
+
+    /*
     let mut records: Vec<(String, Box<dyn RecordBase>)> = Vec::new();
 
     for _ in 0..count {
@@ -503,9 +572,45 @@ fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> Vec<(String, B
     }
 
     records
+    */
 }
 
-fn records_to_bytes(off: usize, records: &[(String, Box<dyn RecordBase>)], label_map: &mut HashMap<String, usize>, max_payload_len: usize) -> (Vec<u8>, u16, bool) {
+fn records_to_bytes(off: usize, section: &[RRName], label_map: &mut HashMap<String, usize>, max_payload_len: usize) -> (Vec<u8>, u16, bool) {
+    let mut truncated = false;
+
+    let mut buf = Vec::new();
+    let mut i = 0;
+    let mut off = off;
+
+    for name in section.iter() {
+        let fqdn = pack_fqdn(name.get_fqdn(), label_map, off, true);
+
+        for set in name.get_sets() {
+            for record in set.get_records() {
+                off += fqdn.len()+2;
+
+                match record.to_bytes(label_map, off) {
+                    Ok(r) => {
+                        if off+r.len() > max_payload_len {
+                            truncated = true;
+                            break;
+                        }
+
+                        buf.extend_from_slice(&fqdn);
+                        buf.extend_from_slice(&record.get_type().get_code().to_be_bytes());
+                        buf.extend_from_slice(&r);
+                        off += r.len();
+                        i += 1;
+                    }
+                    Err(_) => continue
+                }
+            }
+        }
+    }
+
+    (buf, i, truncated)
+
+    /*
     let mut truncated = false;
 
     let mut buf = Vec::new();
@@ -534,4 +639,5 @@ fn records_to_bytes(off: usize, records: &[(String, Box<dyn RecordBase>)], label
     }
 
     (buf, i, truncated)
+    */
 }
