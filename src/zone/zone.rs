@@ -117,19 +117,13 @@ impl Zone {
     }
 
 
-    pub fn set_journal<P: Into<PathBuf>>(&mut self, journal_path: P) {
+    pub fn set_journal_path<P: Into<PathBuf>>(&mut self, journal_path: P) {
         self.journal_path = Some(journal_path.into());
     }
 
-    /*
-    pub fn get_journal(&self) -> Option<&Journal> {
-        self.journal.as_ref()
+    pub fn get_journal_path(&self) -> Option<&PathBuf> {
+        self.journal_path.as_ref()
     }
-
-    pub fn get_journal_mut(&mut self) -> Option<&mut Journal> {
-        self.journal.as_mut()
-    }
-    */
 
     pub fn as_ref(&self) -> &Self {
         self
