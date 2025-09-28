@@ -1,4 +1,5 @@
 use std::io;
+use std::path::PathBuf;
 use crate::utils::fqdn_utils::{encode_fqdn, decode_fqdn};
 use crate::utils::trie::trie::Trie;
 use crate::zone::inter::zone_types::ZoneTypes;
@@ -18,7 +19,7 @@ impl ZoneStore {
         }
     }
 
-    pub fn open(&mut self, file_path: &str, fqdn: &str) -> io::Result<()> {
+    pub fn open<P: Into<PathBuf>>(&mut self, file_path: P, fqdn: &str) -> io::Result<()> {
         let mut zone = Zone::new(ZoneTypes::Master);
 
         let mut reader = ZoneReader::open(file_path, fqdn)?;
@@ -45,7 +46,7 @@ impl ZoneStore {
         Ok(())
     }
 
-    pub fn open_with_jnl(&mut self, file_path: &str, fqdn: &str, journal_path: &str) -> io::Result<()> {
+    pub fn open_with_jnl<P: Into<PathBuf>>(&mut self, file_path: P, fqdn: &str, journal_path: P) -> io::Result<()> {
         let mut zone = Zone::new_with_jnl(ZoneTypes::Master, journal_path);
 
         let mut reader = ZoneReader::open(file_path, fqdn)?;

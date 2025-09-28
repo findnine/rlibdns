@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 use std::io;
-use crate::journal::journal::Journal;
+use std::path::PathBuf;
 use crate::journal::journal_reader::JournalReader;
 use crate::journal::txn::Txn;
 use crate::messages::inter::rr_types::RRTypes;
@@ -13,7 +13,7 @@ use crate::zone::inter::zone_types::ZoneTypes;
 pub struct Zone {
     _type: ZoneTypes,
     records: Trie<BTreeMap<RRTypes, Vec<Box<dyn RecordBase>>>>,
-    journal_path: Option<String>
+    journal_path: Option<PathBuf>
 }
 
 impl Default for Zone {
@@ -36,10 +36,10 @@ impl Zone {
         }
     }
 
-    pub fn new_with_jnl(_type: ZoneTypes, journal_path: &str) -> Self {
+    pub fn new_with_jnl<P: Into<PathBuf>>(_type: ZoneTypes, journal_path: P) -> Self {
         Self {
             _type,
-            journal_path: Some(journal_path.to_string()),
+            journal_path: Some(journal_path.into()),
             ..Default::default()
         }
     }
@@ -117,8 +117,8 @@ impl Zone {
     }
 
 
-    pub fn set_journal(&mut self, journal_path: &str) {
-        self.journal_path = Some(journal_path.to_string());
+    pub fn set_journal<P: Into<PathBuf>>(&mut self, journal_path: P) {
+        self.journal_path = Some(journal_path.into());
     }
 
     /*

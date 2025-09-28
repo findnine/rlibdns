@@ -2,6 +2,7 @@ use std::fs::File;
 use std::io;
 use std::io::{BufRead, BufReader, Read};
 use std::ops::DerefMut;
+use std::path::PathBuf;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::{
@@ -50,8 +51,8 @@ pub struct ZoneReader {
 
 impl ZoneReader {
 
-    pub fn open(file_path: &str, origin: &str) -> io::Result<Self> {
-        let file = File::open(file_path)?;
+    pub fn open<P: Into<PathBuf>>(file_path: P, origin: &str) -> io::Result<Self> {
+        let file = File::open(file_path.into())?;
         let reader = BufReader::new(file);
 
         Ok(Self {

@@ -1,6 +1,7 @@
 use std::fs::File;
 use std::io;
 use std::io::{BufReader, Read, Seek, SeekFrom};
+use std::path::PathBuf;
 use crate::journal::inter::txn_op_codes::TxnOpCodes;
 use crate::journal::txn::Txn;
 use crate::messages::inter::rr_types::RRTypes;
@@ -25,8 +26,8 @@ pub struct JournalReader {
 
 impl JournalReader {
 
-    pub fn open(file_path: &str) -> io::Result<Self> {
-        let file = File::open(file_path)?;
+    pub fn open<P: Into<PathBuf>>(file_path: P) -> io::Result<Self> {
+        let file = File::open(file_path.into())?;
         let reader = BufReader::new(file);
 
         Ok(Self {
