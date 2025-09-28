@@ -1,19 +1,15 @@
-use std::collections::{BTreeMap, BTreeSet};
-use std::io;
+use std::collections::BTreeMap;
 use crate::journal::journal::Journal;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::RecordBase;
 use crate::utils::fqdn_utils::{decode_fqdn, encode_fqdn};
-use crate::utils::index_map::IndexMap;
 use crate::utils::trie::trie::Trie;
 use crate::zone::inter::zone_types::ZoneTypes;
-use crate::zone::zone_reader::ZoneReader;
 
 #[derive(Debug, Clone)]
 pub struct Zone {
     _type: ZoneTypes,
     records: Trie<BTreeMap<RRTypes, Vec<Box<dyn RecordBase>>>>,
-    //records: IndexMap<String, IndexMap<RRTypes, Vec<Box<dyn RecordBase>>>>,
     journal: Option<Journal>
 }
 
@@ -95,54 +91,8 @@ impl Zone {
         }
     }
 
-    /*
-    pub fn get_all_records_recursive(&self) -> IndexMap<String, Vec<&Box<dyn RecordBase>>> {
-        let mut res = IndexMap::new();
-        self.collect_records(String::new(), &mut res);
-        res
-    }
-
-    fn collect_records<'a>(&'a self, fqdn: String, map: &mut IndexMap<String, Vec<&'a Box<dyn RecordBase>>>) {
-        let recs: Vec<&Box<dyn RecordBase>> = self
-            .records
-            .iter()
-            .filter(|(ty, _)| **ty != RRTypes::Soa)
-            .flat_map(|(_, v)| v.iter())
-            .collect();
-
-        if !recs.is_empty() {
-            map.insert(fqdn.to_string(), recs);
-        }
-
-        for (label, child) in &self.children {
-            let is_delegated = child.records.get(&RRTypes::Soa).map_or(false, |recs| !recs.is_empty());
-
-            if is_delegated {
-                continue;
-            }
-
-            child.collect_records(format!("{}.{}", label, fqdn), map);
-        }
-    }
-    */
-
-    /*
     pub fn set_journal(&mut self, journal: Journal) {
         self.journal = Some(journal);
-    }
-
-    pub fn set_journal_for(&mut self, name: &str, journal: Journal) -> io::Result<()> {
-        let labels: Vec<&str> = name.trim_end_matches('.').split('.').rev().collect();
-
-        let mut current = self;
-
-        for label in labels {
-            current = current.children.get_mut(label).ok_or(io::ErrorKind::NotFound)?;
-        }
-
-        current.journal = Some(journal);
-
-        Ok(())
     }
 
     pub fn get_journal(&self) -> Option<&Journal> {
@@ -151,7 +101,7 @@ impl Zone {
 
     pub fn get_journal_mut(&mut self) -> Option<&mut Journal> {
         self.journal.as_mut()
-    }*/
+    }
 
     pub fn as_ref(&self) -> &Self {
         self
