@@ -293,30 +293,15 @@ impl Message {
         !self.sections[0].is_empty()
     }
 
-    /*
-    pub fn add_answer(&mut self, query: RRQuery, record: Box<dyn RecordBase>) {
-        let section: &mut [RRName] = self.sections[0].as_mut();
-        for name in section.iter_mut() {
-            if !query.get_fqdn().eq(name.get_fqdn()) {
-                continue;
-            }
-
-            for set in name.get_sets_mut() {
-                if !query.get_class().eq(&set.get_class()) || !query.get_type().eq(&set.get_type())  {
-                    continue;
-                }
-
-                set.add_record(record);
-                return;
-            }
-        }
+    pub fn add_answer(&mut self, query: RRQuery, ttl: u32, record: Box<dyn RecordBase>) {
+        self.add_record(0, query, ttl, record);
     }
 
-    pub fn get_answers(&self) -> &Vec<(String, Box<dyn RecordBase>)> {
+    pub fn get_answers(&self) -> &Vec<RRName> {
         self.sections[0].as_ref()
     }
 
-    pub fn get_answers_mut(&mut self) -> &mut Vec<(String, Box<dyn RecordBase>)>  {
+    pub fn get_answers_mut(&mut self) -> &mut Vec<RRName> {
         self.sections[0].as_mut()
     }
 
@@ -328,15 +313,15 @@ impl Message {
         !self.sections[1].is_empty()
     }
 
-    pub fn add_authority_record(&mut self, query: &str, record: Box<dyn RecordBase>) {
-        self.sections[1].push((query.to_string(), record));
+    pub fn add_authority_record(&mut self, query: RRQuery, ttl: u32, record: Box<dyn RecordBase>) {
+        self.add_record(1, query, ttl, record);
     }
 
-    pub fn get_authority_records(&self) -> &Vec<(String, Box<dyn RecordBase>)> {
+    pub fn get_authority_records(&self) -> &Vec<RRName> {
         self.sections[1].as_ref()
     }
 
-    pub fn get_authority_records_mut(&mut self) -> &mut Vec<(String, Box<dyn RecordBase>)>  {
+    pub fn get_authority_records_mut(&mut self) -> &mut Vec<RRName> {
         self.sections[1].as_mut()
     }
 
@@ -348,22 +333,53 @@ impl Message {
         !self.sections[2].is_empty()
     }
 
-    pub fn add_additional_record(&mut self, query: &str, record: Box<dyn RecordBase>) {
-        self.sections[2].push((query.to_string(), record));
+    pub fn add_additional_record(&mut self, query: RRQuery, ttl: u32, record: Box<dyn RecordBase>) {
+        self.add_record(2, query, ttl, record);
     }
 
-    pub fn get_additional_records(&self) -> &Vec<(String, Box<dyn RecordBase>)> {
+    pub fn get_additional_records(&self) -> &Vec<RRName> {
         self.sections[2].as_ref()
     }
 
-    pub fn get_additional_records_mut(&mut self) -> &mut Vec<(String, Box<dyn RecordBase>)>  {
+    pub fn get_additional_records_mut(&mut self) -> &mut Vec<RRName> {
         self.sections[2].as_mut()
     }
 
     pub fn total_additional_records(&self) -> usize {
         self.sections[2].len()
     }
-    */
+
+    fn add_record(&mut self, section_index: usize, query: RRQuery, ttl: u32, record: Box<dyn RecordBase>) {
+        let fqdn = query.get_fqdn();
+
+        let index = match self.sections[section_index].iter().position(|name: &RRName| fqdn.eq(name.get_fqdn())) {
+            Some(i) => i,
+            None => {
+                self.sections[section_index].push(RRName::new(&fqdn));
+                self.sections[section_index].len() - 1
+            }
+        };
+
+        let _type = query.get_type();
+        let class = query.get_class();
+
+        match self.sections[section_index][index]
+            .get_sets_mut() //I DONT LIKE HAVING TO MUT SEARCH BUT WHATEVER...
+            .iter_mut()
+            .find(|s| s.get_type().eq(&query.get_type()) && s.get_class().eq(&query.get_class())) {
+            Some(set) => {
+                if set.get_ttl() != ttl {
+                    set.set_ttl(set.get_ttl().min(ttl));
+                }
+                set.add_record(record);
+            }
+            None => {
+                let mut set = RRSet::new(_type, class, ttl);
+                set.add_record(record);
+                self.sections[section_index][index].add_set(set);
+            }
+        }
+    }
 
     pub fn as_ref(&self) -> &Self {
         self
@@ -519,7 +535,7 @@ fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> Vec<RRName> {
     let mut section = Vec::new();
 
     for _ in 0..count {
-        let (name, length) = unpack_fqdn(buf, *off);
+        let (fqdn, length) = unpack_fqdn(buf, *off);
         *off += length;
 
         let _type = RRTypes::from_code(u16::from_be_bytes([buf[*off], buf[*off+1]])).unwrap();
@@ -534,17 +550,16 @@ fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> Vec<RRName> {
             RRTypes::Any => {}
             _ => {
                 let class = u16::from_be_bytes([buf[*off+2], buf[*off+3]]);
-                //let cache_flush = (class & 0x8000) != 0;
-                //let class = RRClasses::from_code(class & 0x7FFF).unwrap();
-                let class = RRClasses::from_code(class).unwrap();
+                let cache_flush = (class & 0x8000) != 0;
+                let class = RRClasses::from_code(class & 0x7FFF).unwrap();
                 let ttl = u32::from_be_bytes([buf[*off+4], buf[*off+5], buf[*off+6], buf[*off+7]]);
 
                 let record = <dyn RecordBase>::from_wire(_type, buf, *off+8).unwrap();
 
-                let index = match section.iter().position(|n: &RRName| name.eq(n.get_fqdn())) {
+                let index = match section.iter().position(|name: &RRName| fqdn.eq(name.get_fqdn())) {
                     Some(i) => i,
                     None => {
-                        section.push(RRName::new(&name));
+                        section.push(RRName::new(&fqdn));
                         section.len() - 1
                     }
                 };
@@ -552,7 +567,7 @@ fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> Vec<RRName> {
                 match section[index]
                         .get_sets_mut() //I DONT LIKE HAVING TO MUT SEARCH BUT WHATEVER...
                         .iter_mut()
-                        .find(|s| s.get_class().eq(&class) && s.get_type().eq(&_type)) {
+                        .find(|s| s.get_type().eq(&_type) && s.get_class().eq(&class)) {
                     Some(set) => {
                         if set.get_ttl() != ttl {
                             set.set_ttl(set.get_ttl().min(ttl));
@@ -571,25 +586,7 @@ fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> Vec<RRName> {
         *off += 10+u16::from_be_bytes([buf[*off+8], buf[*off+9]]) as usize;
     }
 
-
     section
-    //Vec::new()
-
-    /*
-    let mut records: Vec<(String, Box<dyn RecordBase>)> = Vec::new();
-
-    for _ in 0..count {
-        let (name, length) = unpack_fqdn(buf, *off);
-        *off += length;
-
-        let record = <dyn RecordBase>::from_wire(RRTypes::from_code(u16::from_be_bytes([buf[*off], buf[*off+1]])).unwrap(), buf, *off+2).unwrap();
-
-        records.push((name, record));
-        *off += 10+u16::from_be_bytes([buf[*off+8], buf[*off+9]]) as usize;
-    }
-
-    records
-    */
 }
 
 fn records_to_bytes(off: usize, section: &[RRName], label_map: &mut HashMap<String, usize>, max_payload_len: usize) -> (Vec<u8>, u16, bool) {
@@ -633,35 +630,4 @@ fn records_to_bytes(off: usize, section: &[RRName], label_map: &mut HashMap<Stri
     }
 
     (buf, i, truncated)
-
-    /*
-    let mut truncated = false;
-
-    let mut buf = Vec::new();
-    let mut i = 0;
-    let mut off = off;
-
-    for (name, record) in records.iter() {
-        let n = pack_fqdn(name, label_map, off, true);
-        off += n.len()+2;
-
-        match record.to_bytes(label_map, off) {
-            Ok(r) => {
-                if off+r.len() > max_payload_len {
-                    truncated = true;
-                    break;
-                }
-
-                buf.extend_from_slice(&n);
-                buf.extend_from_slice(&record.get_type().get_code().to_be_bytes());
-                buf.extend_from_slice(&r);
-                off += r.len();
-                i += 1;
-            }
-            Err(_) => continue
-        }
-    }
-
-    (buf, i, truncated)
-    */
 }
