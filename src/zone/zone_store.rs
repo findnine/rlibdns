@@ -45,6 +45,33 @@ impl ZoneStore {
         Ok(())
     }
 
+    pub fn open_with_jnl(&mut self, file_path: &str, fqdn: &str, journal_path: &str) -> io::Result<()> {
+        let mut zone = Zone::new_with_jnl(ZoneTypes::Master, journal_path);
+
+        let mut reader = ZoneReader::open(file_path, fqdn)?;
+        for (name, record) in reader.iter() {
+            match name.as_str() {
+                //"." => self.add_record(record), //BE CAREFUL WITH THIS ONE - DONT ALLOW MOST OF THE TIME
+                "@" => zone.add_record("", record),
+                _ => zone.add_record(&name, record)/*{
+                    match self.trie.get_fqdn_mut(&name) {
+                        Some(zone) => zone.add_record(record),
+                        None => {
+                            let mut zone = Zone::new(ZoneTypes::Master);
+                            zone.add_record(record);
+                            self.trie.insert_fqdn(&name, zone);
+                        }
+                    }
+                }*/
+                //_ => zone.add_record_to(&name, record, ZoneTypes::Master)
+            }
+        }
+
+        self.trie.insert(encode_fqdn(reader.get_origin()), zone);
+
+        Ok(())
+    }
+
     pub fn add_zone(&mut self, fqdn: &str, zone: Zone) {
         self.trie.insert(encode_fqdn(fqdn), zone);
     }

@@ -1,5 +1,8 @@
 use std::collections::BTreeMap;
+use std::io;
 use crate::journal::journal::Journal;
+use crate::journal::journal_reader::JournalReader;
+use crate::journal::txn::Txn;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::RecordBase;
 use crate::utils::fqdn_utils::{decode_fqdn, encode_fqdn};
@@ -10,7 +13,7 @@ use crate::zone::inter::zone_types::ZoneTypes;
 pub struct Zone {
     _type: ZoneTypes,
     records: Trie<BTreeMap<RRTypes, Vec<Box<dyn RecordBase>>>>,
-    journal: Option<Journal>
+    journal_path: Option<String>
 }
 
 impl Default for Zone {
@@ -19,7 +22,7 @@ impl Default for Zone {
         Self {
             _type: Default::default(),
             records: Trie::new(),
-            journal: None
+            journal_path: None
         }
     }
 }
@@ -29,6 +32,14 @@ impl Zone {
     pub fn new(_type: ZoneTypes) -> Self {
         Self {
             _type,
+            ..Default::default()
+        }
+    }
+
+    pub fn new_with_jnl(_type: ZoneTypes, journal_path: &str) -> Self {
+        Self {
+            _type,
+            journal_path: Some(journal_path.to_string()),
             ..Default::default()
         }
     }
@@ -91,10 +102,26 @@ impl Zone {
         }
     }
 
-    pub fn set_journal(&mut self, journal: Journal) {
-        self.journal = Some(journal);
+    pub fn get_txns_from(&self, serial: u32) -> io::Result<Vec<Txn>> {
+        let mut txns = Vec::new();
+        let mut reader = JournalReader::open(self.journal_path.as_ref().unwrap())?;
+
+        for txn in reader.iter() {
+            if txn.get_serial_0() < serial {
+                continue;
+            }
+            txns.push(txn);
+        }
+
+        Ok(txns)
     }
 
+
+    pub fn set_journal(&mut self, journal_path: &str) {
+        self.journal_path = Some(journal_path.to_string());
+    }
+
+    /*
     pub fn get_journal(&self) -> Option<&Journal> {
         self.journal.as_ref()
     }
@@ -102,6 +129,7 @@ impl Zone {
     pub fn get_journal_mut(&mut self) -> Option<&mut Journal> {
         self.journal.as_mut()
     }
+    */
 
     pub fn as_ref(&self) -> &Self {
         self
