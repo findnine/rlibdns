@@ -1,12 +1,12 @@
 use crate::records::inter::record_base::RecordBase;
 
 #[derive(Debug, Clone)]
-pub struct RRSets {
+pub struct RRSet {
     ttl: u32,
     records: Vec<Box<dyn RecordBase>>
 }
 
-impl RRSets {
+impl RRSet {
 
     pub fn new(ttl: u32) -> Self {
         Self {
