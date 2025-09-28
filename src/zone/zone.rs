@@ -74,8 +74,12 @@ impl Zone {
         self.records.get(&encode_fqdn(name))?.get(_type)
     }
 
-    pub fn get_all_records_with_name(&self, name: &str) -> Option<&BTreeMap<RRTypes, Vec<Box<dyn RecordBase>>>> {
+    pub fn get_all_records(&self, name: &str) -> Option<&BTreeMap<RRTypes, Vec<Box<dyn RecordBase>>>> {
         self.records.get(&encode_fqdn(name))
+    }
+
+    pub fn get_all_records_recursive(&self) {
+        
     }
 
     pub fn get_delegation_point(&self, name: &str) -> Option<(String, &BTreeMap<RRTypes, Vec<Box<dyn RecordBase>>>)> {
