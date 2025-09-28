@@ -8,8 +8,8 @@ use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::RecordBase;
 use crate::utils::fqdn_utils::unpack_fqdn;
 
-#[derive(Debug, PartialEq, Eq)]
-struct JournalHeader {
+pub struct JournalReader {
+    reader: BufReader<File>,
     begin_serial: u32,
     begin_offset: u32,
     end_serial: u32,
@@ -19,20 +19,51 @@ struct JournalHeader {
     flags: u8
 }
 
-pub struct JournalReader {
-    reader: BufReader<File>,
-    header: Option<JournalHeader>
-}
-
 impl JournalReader {
 
     pub fn open<P: Into<PathBuf>>(file_path: P) -> io::Result<Self> {
         let file = File::open(file_path.into())?;
-        let reader = BufReader::new(file);
+        let mut reader = BufReader::new(file);
+
+
+
+        let mut buf = vec![0u8; 64];
+        reader.read_exact(&mut buf).unwrap();
+
+        // Magic (first 16 bytes): ";BIND LOG V9\n" or ";BIND LOG V9.2\n"
+        let magic = true;//&buf[0..16];
+        let v9 = b";BIND LOG V9\n";
+        let v92 = b";BIND LOG V9.2\n";
+        //if !(magic.starts_with(v9) || magic.starts_with(v92)) {
+        //    //return Err(io::Error::new(io::ErrorKind::InvalidData, "bad .jnl magic"));
+        //}
+
+        //let is_v92 = magic.starts_with(v92);
+
+        let begin_serial = u32::from_be_bytes([buf[16], buf[17], buf[18], buf[19]]);
+        let begin_offset = u32::from_be_bytes([buf[20], buf[21], buf[22], buf[23]]);
+        let end_serial = u32::from_be_bytes([buf[24], buf[25], buf[26], buf[27]]);
+        let end_offset = u32::from_be_bytes([buf[28], buf[29], buf[30], buf[31]]);
+        let index_size = u32::from_be_bytes([buf[32], buf[33], buf[34], buf[35]]);
+        let source_serial = u32::from_be_bytes([buf[36], buf[37], buf[38], buf[39]]);
+        let flags = buf[40];
+
+        // ===== 2) OPTIONAL INDEX =====
+        // Each index entry is 8 bytes: [serial(4) | offset(4)]
+        reader.seek(SeekFrom::Current((index_size as i64) * 8)).unwrap();
+
+        // ===== 3) POSITION TO FIRST TRANSACTION =====
+        reader.seek(SeekFrom::Start(begin_offset as u64)).unwrap();
 
         Ok(Self {
             reader,
-            header: None
+            begin_serial,
+            begin_offset,
+            end_serial,
+            end_offset,
+            index_size,
+            source_serial,
+            flags
         })
     }
 
@@ -42,7 +73,36 @@ impl JournalReader {
         }
     }
 
-    pub fn parse_record(&mut self) -> Option<Txn> {
+    pub fn get_begin_serial(&self) -> u32 {
+        self.begin_serial
+    }
+
+    pub fn get_begin_offset(&self) -> u32 {
+        self.begin_offset
+    }
+
+    pub fn get_end_serial(&self) -> u32 {
+        self.end_serial
+    }
+
+    pub fn get_end_offset(&self) -> u32 {
+        self.end_offset
+    }
+
+    pub fn get_index_size(&self) -> u32 {
+        self.index_size
+    }
+
+    pub fn get_source_serial(&self) -> u32 {
+        self.source_serial
+    }
+
+    pub fn get_flags(&self) -> u8 {
+        self.flags
+    }
+
+    fn parse_record(&mut self) -> Option<Txn> {
+        /*
         if self.header == None {
             let mut buf = vec![0u8; 64];
             self.reader.read_exact(&mut buf).unwrap();
@@ -83,10 +143,11 @@ impl JournalReader {
             // ===== 3) POSITION TO FIRST TRANSACTION =====
             self.reader.seek(SeekFrom::Start(self.header.as_ref()?.begin_offset as u64)).unwrap();
         }
+        */
 
         let magic = true;
 
-        if self.reader.stream_position().unwrap() >= self.header.as_ref()?.end_offset as u64 {
+        if self.reader.stream_position().unwrap() >= self.end_offset as u64 {
             return None;
         }
 

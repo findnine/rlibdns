@@ -2,7 +2,6 @@ use std::collections::BTreeMap;
 use std::io;
 use std::path::PathBuf;
 use crate::journal::journal_reader::JournalReader;
-use crate::journal::txn::Txn;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::RecordBase;
 use crate::utils::fqdn_utils::{decode_fqdn, encode_fqdn};
@@ -102,20 +101,9 @@ impl Zone {
         }
     }
 
-    pub fn get_txns_from(&self, serial: u32) -> io::Result<Vec<Txn>> {
-        let mut txns = Vec::new();
-        let mut reader = JournalReader::open(self.journal_path.as_ref().unwrap())?;
-
-        for txn in reader.iter() {
-            if txn.get_serial_0() < serial {
-                continue;
-            }
-            txns.push(txn);
-        }
-
-        Ok(txns)
+    pub fn get_journal_reader(&self) -> io::Result<JournalReader> {
+        JournalReader::open(self.journal_path.as_ref().unwrap())
     }
-
 
     pub fn set_journal_path<P: Into<PathBuf>>(&mut self, journal_path: P) {
         self.journal_path = Some(journal_path.into());

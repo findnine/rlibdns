@@ -63,7 +63,7 @@ impl ZoneReader {
         })
     }
 
-    pub fn parse_record(&mut self) -> Option<(String, Box<dyn RecordBase>)> {
+    fn parse_record(&mut self) -> Option<(String, Box<dyn RecordBase>)> {
         let mut state = ParserState::Init;
         let mut paren_count = 0;
 
