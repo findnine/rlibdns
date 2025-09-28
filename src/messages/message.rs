@@ -44,7 +44,7 @@ pub struct Message {
     origin: Option<SocketAddr>,
     destination: Option<SocketAddr>,
     queries: Vec<RRQuery>,
-    records: [Vec<(String, Box<dyn RecordBase>)>; 3]
+    sections: [Vec<(String, Box<dyn RecordBase>)>; 3]
 }
 
 impl Default for Message {
@@ -64,7 +64,7 @@ impl Default for Message {
             origin: None,
             destination: None,
             queries: Vec::new(),
-            records: Default::default()
+            sections: Default::default()
         }
     }
 }
@@ -103,7 +103,7 @@ impl Message {
             queries.push(RRQuery::from_bytes(buf, &mut off));
         }
 
-        let records = [
+        let sections = [
             records_from_bytes(buf, &mut off, u16::from_be_bytes([buf[6], buf[7]])),
             records_from_bytes(buf, &mut off, u16::from_be_bytes([buf[8], buf[9]])),
             records_from_bytes(buf, &mut off, u16::from_be_bytes([buf[10], buf[11]]))
@@ -123,7 +123,7 @@ impl Message {
             origin: None,
             destination: None,
             queries,
-            records
+            sections
         })
     }
 
@@ -151,8 +151,8 @@ impl Message {
         }
 
         if !truncated {
-            for (i, records) in self.records.iter().enumerate() {
-                let (records, count, t) = records_to_bytes(off, &records, &mut label_map, max_payload_len);
+            for (i, section) in self.sections.iter().enumerate() {
+                let (records, count, t) = records_to_bytes(off, &section, &mut label_map, max_payload_len);
                 buf.extend_from_slice(&records);
                 buf.splice(i*2+6..i*2+8, count.to_be_bytes());
 
@@ -284,63 +284,63 @@ impl Message {
     }
 
     pub fn has_answers(&self) -> bool {
-        !self.records[0].is_empty()
+        !self.sections[0].is_empty()
     }
 
     pub fn add_answer(&mut self, query: &str, record: Box<dyn RecordBase>) {
-        self.records[0].push((query.to_string(), record));
+        self.sections[0].push((query.to_string(), record));
     }
 
     pub fn get_answers(&self) -> &Vec<(String, Box<dyn RecordBase>)> {
-        self.records[0].as_ref()
+        self.sections[0].as_ref()
     }
 
     pub fn get_answers_mut(&mut self) -> &mut Vec<(String, Box<dyn RecordBase>)>  {
-        self.records[0].as_mut()
+        self.sections[0].as_mut()
     }
 
     pub fn total_answers(&self) -> usize {
-        self.records[0].len()
+        self.sections[0].len()
     }
 
     pub fn has_authority_records(&self) -> bool {
-        !self.records[1].is_empty()
+        !self.sections[1].is_empty()
     }
 
     pub fn add_authority_record(&mut self, query: &str, record: Box<dyn RecordBase>) {
-        self.records[1].push((query.to_string(), record));
+        self.sections[1].push((query.to_string(), record));
     }
 
     pub fn get_authority_records(&self) -> &Vec<(String, Box<dyn RecordBase>)> {
-        self.records[1].as_ref()
+        self.sections[1].as_ref()
     }
 
     pub fn get_authority_records_mut(&mut self) -> &mut Vec<(String, Box<dyn RecordBase>)>  {
-        self.records[1].as_mut()
+        self.sections[1].as_mut()
     }
 
     pub fn total_authority_records(&self) -> usize {
-        self.records[1].len()
+        self.sections[1].len()
     }
 
     pub fn has_additional_records(&self) -> bool {
-        !self.records[2].is_empty()
+        !self.sections[2].is_empty()
     }
 
     pub fn add_additional_record(&mut self, query: &str, record: Box<dyn RecordBase>) {
-        self.records[2].push((query.to_string(), record));
+        self.sections[2].push((query.to_string(), record));
     }
 
     pub fn get_additional_records(&self) -> &Vec<(String, Box<dyn RecordBase>)> {
-        self.records[2].as_ref()
+        self.sections[2].as_ref()
     }
 
     pub fn get_additional_records_mut(&mut self) -> &mut Vec<(String, Box<dyn RecordBase>)>  {
-        self.records[2].as_mut()
+        self.sections[2].as_mut()
     }
 
     pub fn total_additional_records(&self) -> usize {
-        self.records[2].len()
+        self.sections[2].len()
     }
 
     pub fn as_ref(&self) -> &Self {
@@ -370,9 +370,9 @@ impl fmt::Display for Message {
         writeln!(f, ";; flags: {}; QUERY: {}, ANSWER: {}, AUTHORITY: {}, ADDITIONAL: {}",
                 flags.join(" "),
                 self.queries.len(),
-                self.records[0].len(),
-                self.records[1].len(),
-                self.records[2].len())?;
+                self.sections[0].len(),
+                self.sections[1].len(),
+                self.sections[2].len())?;
 
         /*
         if let Some(r) = self.additional_records.get(&String::new()) {
@@ -390,23 +390,23 @@ impl fmt::Display for Message {
             writeln!(f, ";{}", q)?;
         }
 
-        if !self.records[0].is_empty() {
+        if !self.sections[0].is_empty() {
             writeln!(f, "\r\n;; ANSWER SECTION:")?;
-            for (q, r) in self.records[0].iter() {
+            for (q, r) in self.sections[0].iter() {
                 writeln!(f, "{:<24}{}", format!("{}.", q), r)?;
             }
         }
 
-        if !self.records[1].is_empty() {
+        if !self.sections[1].is_empty() {
             writeln!(f, "\r\n;; AUTHORITATIVE SECTION:")?;
-            for (q, r) in self.records[1].iter() {
+            for (q, r) in self.sections[1].iter() {
                 writeln!(f, "{:<24}{}", format!("{}.", q), r)?;
             }
         }
 
-        if !self.records[2].is_empty() {
+        if !self.sections[2].is_empty() {
             writeln!(f, "\r\n;; ADDITIONAL SECTION:")?;
-            for (q, r) in self.records[2].iter() {
+            for (q, r) in self.sections[2].iter() {
                 if !q.eq("") && !r.get_type().eq(&RRTypes::Opt) {
                     writeln!(f, "{:<24}{}", format!("{}.", q), r)?;
                 }
@@ -428,7 +428,7 @@ impl<'a> Iterator for WireIter<'a> {
     type Item = Vec<u8>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.position >= self.message.records.iter().map(|r| r.len()).sum() {
+        if self.position >= self.message.sections.iter().map(|r| r.len()).sum() {
             return None;
         }
 
@@ -468,9 +468,9 @@ impl<'a> Iterator for WireIter<'a> {
 
         if !truncated {
             let mut total = 0;
-            for (i, records) in self.message.records.iter().enumerate() {
+            for (i, records) in self.message.sections.iter().enumerate() {
                 let before = total;
-                total += self.message.records[i].len();
+                total += self.message.sections[i].len();
 
                 if self.position < total {
                     let (records, count, t) = records_to_bytes(off, &records[self.position - before..], &mut label_map, self.max_payload_len);
