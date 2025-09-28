@@ -5,7 +5,7 @@ use std::net::SocketAddr;
 use crate::messages::inter::op_codes::OpCodes;
 use crate::messages::inter::response_codes::ResponseCodes;
 use crate::records::inter::record_base::RecordBase;
-use crate::messages::dns_query::DnsQuery;
+use crate::messages::rr_query::RRQuery;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 
@@ -43,7 +43,7 @@ pub struct Message {
     checking_disabled: bool,
     origin: Option<SocketAddr>,
     destination: Option<SocketAddr>,
-    queries: Vec<DnsQuery>,
+    queries: Vec<RRQuery>,
     records: [Vec<(String, Box<dyn RecordBase>)>; 3]
 }
 
@@ -100,7 +100,7 @@ impl Message {
         let mut off = DNS_HEADER_LEN;
 
         for _ in 0..qd_count {
-            queries.push(DnsQuery::from_bytes(buf, &mut off));
+            queries.push(RRQuery::from_bytes(buf, &mut off));
         }
 
         let records = [
@@ -271,15 +271,15 @@ impl Message {
         !self.queries.is_empty()
     }
 
-    pub fn add_query(&mut self, query: DnsQuery) {
+    pub fn add_query(&mut self, query: RRQuery) {
         self.queries.push(query);
     }
 
-    pub fn get_queries(&self) -> &Vec<DnsQuery> {
+    pub fn get_queries(&self) -> &Vec<RRQuery> {
         self.queries.as_ref()
     }
 
-    pub fn get_queries_mut(&mut self) -> &mut Vec<DnsQuery> {
+    pub fn get_queries_mut(&mut self) -> &mut Vec<RRQuery> {
         self.queries.as_mut()
     }
 

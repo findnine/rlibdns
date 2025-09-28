@@ -6,13 +6,13 @@ use crate::messages::inter::rr_types::RRTypes;
 use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 
 #[derive(Debug, Clone)]
-pub struct DnsQuery {
+pub struct RRQuery {
     fqdn: String,
     _type: RRTypes,
     class: RRClasses
 }
 
-impl DnsQuery {
+impl RRQuery {
 
     pub fn new(fqdn: &str, _type: RRTypes, class: RRClasses) -> Self {
         Self {
@@ -79,7 +79,7 @@ impl DnsQuery {
     }
 }
 
-impl fmt::Display for DnsQuery {
+impl fmt::Display for RRQuery {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{:<31}{:<8}{}", format!("{}.", self.fqdn), self.class.to_string(), self._type)
