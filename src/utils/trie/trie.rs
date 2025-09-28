@@ -149,6 +149,14 @@ impl<V> Trie<V> {
         self.get(key).is_some()
     }
 
+    pub fn iter(&self) -> Entries<'_, V> {
+        let mut stack = Vec::new();
+        if let Some(root) = self.root.as_ref() {
+            Entries::push_node(&mut stack, root);
+        }
+        Entries { stack }
+    }
+
     fn insert_at(slot: &mut Option<Node<Vec<u8>, V>>, key: Vec<u8>, val: V) -> Option<V> {
         match slot {
             None => {
@@ -197,6 +205,56 @@ impl<V> Trie<V> {
         }
     }
 }
+
+pub struct Entries<'a, V> {
+    stack: Vec<Frame<'a, V>>
+}
+
+enum Frame<'a, V> {
+    Branch { br: &'a Branch<Vec<u8>, V>, idx: usize },
+    Leaf(&'a Leaf<Vec<u8>, V>)
+}
+
+impl<V> Entries<'_, V> {
+
+    fn push_node<'a>(stack: &mut Vec<Frame<'a, V>>, node: &'a Node<Vec<u8>, V>) {
+        match node {
+            Node::Leaf(l) => stack.push(Frame::Leaf(l)),
+            Node::Branch(b) => stack.push(Frame::Branch { br: b, idx: 0 })
+        }
+    }
+}
+
+impl<'a, V> Iterator for Entries<'a, V> {
+
+    type Item = (&'a [u8], &'a V);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while let Some(frame) = self.stack.pop() {
+            match frame {
+                Frame::Leaf(leaf) => return Some((leaf.key.as_slice(), &leaf.val)),
+                Frame::Branch { br, mut idx } => {
+                    while idx <= 16 {
+                        if let Some(child) = br.get_child(idx) {
+                            self.stack.push(Frame::Branch { br, idx: idx + 1 });
+                            match child {
+                                Node::Leaf(l) => return Some((l.key.as_slice(), &l.val)),
+                                Node::Branch(b) => {
+                                    self.stack.push(Frame::Branch { br: b, idx: 0 });
+                                    break;
+                                }
+                            }
+                        }
+                        idx += 1;
+                    }
+                }
+            }
+        }
+        None
+    }
+}
+
+
 
 fn is_apex_key(k: &[u8]) -> bool {
     k.is_empty() || (k.len() == 1 && k[0] == 0)

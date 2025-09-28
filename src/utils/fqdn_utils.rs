@@ -119,6 +119,14 @@ pub fn decode_fqdn(buf: &[u8]) -> String {
     builder.join(".")
 }
 
+pub fn to_fqdn(apex: &str, child: &str) -> String {
+    if child.is_empty() {
+        return apex.to_string();
+    }
+
+    format!("{}.{}", child, apex)
+}
+
 pub fn fqdn_to_relative(apex: &str, child: &str) -> Option<String> {
     if apex == child {
         return Some(String::new());

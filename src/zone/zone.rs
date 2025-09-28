@@ -78,8 +78,8 @@ impl Zone {
         self.records.get(&encode_fqdn(name))
     }
 
-    pub fn get_all_records_recursive(&self) {
-        
+    pub fn get_all_records_recursive(&self) -> impl Iterator<Item = (String, &BTreeMap<RRTypes, Vec<Box<dyn RecordBase>>>)> {
+        self.records.iter().map(|(key, records)| (decode_fqdn(key), records))
     }
 
     pub fn get_delegation_point(&self, name: &str) -> Option<(String, &BTreeMap<RRTypes, Vec<Box<dyn RecordBase>>>)> {
