@@ -23,7 +23,7 @@ impl Default for AaaaRecord {
 impl RecordBase for AaaaRecord {
 
     fn from_bytes(buf: &[u8], off: usize) -> Self {
-        let length = u16::from_be_bytes([buf[off+6], buf[off+7]]) as usize;
+        let length = u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
         let record = &buf[off + 2..off + 2 + length];
 
         let address = match record.len() {

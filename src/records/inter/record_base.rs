@@ -71,7 +71,7 @@ impl dyn RecordBase {
             Txt    => TxtRecord::new().upcast(),
             Loc    => LocRecord::new().upcast(),
             Srv    => SrvRecord::new(ttl, class).upcast(),
-            Naptr  => NaptrRecord::new(ttl, class).upcast(),
+            Naptr  => NaptrRecord::new().upcast(),
             SshFp  => SshFpRecord::new(ttl, class).upcast(),
             RRSig  => RRSigRecord::new(ttl, class).upcast(),
             Nsec   => NSecRecord::new(ttl, class).upcast(),

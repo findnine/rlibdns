@@ -23,9 +23,9 @@ impl Default for CNameRecord {
 impl RecordBase for CNameRecord {
 
     fn from_bytes(buf: &[u8], off: usize) -> Self {
-        //let z = u16::from_be_bytes([buf[off+6], buf[off+7]]);
+        //let z = u16::from_be_bytes([buf[off], buf[off+1]]);
 
-        let (target, _) = unpack_fqdn(buf, off+8);
+        let (target, _) = unpack_fqdn(buf, off+2);
 
         Self {
             target: Some(target)
