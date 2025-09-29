@@ -23,7 +23,7 @@ impl ZoneStore {
         let mut zone = Zone::new(ZoneTypes::Master);
 
         let mut reader = ZoneReader::open(file_path, fqdn)?;
-        for (mut query, ttl, record) in reader.iter() {
+        for (query, ttl, record) in reader.iter() {
             let fqdn = query.get_fqdn();
             match fqdn {
                 //"." => self.add_record(record), //BE CAREFUL WITH THIS ONE - DONT ALLOW MOST OF THE TIME
