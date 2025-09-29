@@ -70,21 +70,18 @@ impl Zone {
                         .iter_mut()
                         .find(|s| s.get_type().eq(&_type)) {
                     Some(set) => {
-                        if set.get_ttl() != ttl {
-                            set.set_ttl(set.get_ttl().min(ttl));
-                        }
-                        set.add_record(record);
+                        set.add_record(ttl, record);
                     }
                     None => {
-                        let mut set = RRSet::new(_type, class, ttl);
-                        set.add_record(record);
+                        let mut set = RRSet::new(_type, class);
+                        set.add_record(ttl, record);
                         sets.push(set);
                     }
                 }
             }
             None => {
-                let mut set = RRSet::new(_type, class, ttl);
-                set.add_record(record);
+                let mut set = RRSet::new(_type, class);
+                set.add_record(ttl, record);
                 self.rrmap.insert(key, vec![set]);
             }
         }

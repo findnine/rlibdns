@@ -12,11 +12,11 @@ pub struct RRSet {
 
 impl RRSet {
 
-    pub fn new(_type: RRTypes, class: RRClasses, ttl: u32) -> Self {
+    pub fn new(_type: RRTypes, class: RRClasses) -> Self {
         Self {
             class,
             _type,
-            ttl,
+            ttl: 300,
             records: Vec::new()
         }
     }
@@ -45,7 +45,11 @@ impl RRSet {
         self.ttl
     }
 
-    pub fn add_record(&mut self, record: Box<dyn RecordBase>) {
+    pub fn add_record(&mut self, ttl: u32, record: Box<dyn RecordBase>) {
+        if self.ttl != ttl {
+            self.ttl = self.ttl.min(ttl);
+        }
+
         self.records.push(record);
     }
 

@@ -548,14 +548,11 @@ fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> Vec<RRName> {
                         .iter_mut()
                         .find(|s| s.get_type().eq(&_type) && s.get_class().eq(&class)) {
                     Some(set) => {
-                        if set.get_ttl() != ttl {
-                            set.set_ttl(set.get_ttl().min(ttl));
-                        }
-                        set.add_record(record);
+                        set.add_record(ttl, record);
                     }
                     None => {
-                        let mut set = RRSet::new(_type, class, ttl);
-                        set.add_record(record);
+                        let mut set = RRSet::new(_type, class);
+                        set.add_record(ttl, record);
                         section[index].add_set(set);
                     }
                 }
@@ -630,14 +627,11 @@ fn add_record(section: &mut Vec<RRName>, query: &RRQuery, ttl: u32, record: Box<
         .iter_mut()
         .find(|s| s.get_type().eq(&_type) && s.get_class().eq(&class)) {
         Some(set) => {
-            if set.get_ttl() != ttl {
-                set.set_ttl(set.get_ttl().min(ttl));
-            }
-            set.add_record(record);
+            set.add_record(ttl, record);
         }
         None => {
-            let mut set = RRSet::new(_type, class, ttl);
-            set.add_record(record);
+            let mut set = RRSet::new(_type, class);
+            set.add_record(ttl, record);
             section[index].add_set(set);
         }
     }
