@@ -77,7 +77,7 @@ impl dyn RecordBase {
             Nsec   => NSecRecord::new(ttl, class).upcast(),
             DnsKey => DnsKeyRecord::new(ttl, class).upcast(),
             Smimea => SmimeaRecord::new().upcast(),
-            Svcb   => SvcbRecord::new(ttl, class).upcast(),
+            Svcb   => SvcbRecord::new().upcast(),
             Https  => HttpsRecord::new().upcast(),
             /*
             Spf => {

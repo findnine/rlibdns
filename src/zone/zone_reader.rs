@@ -470,7 +470,7 @@ fn set_data(record: &mut dyn RecordBase, pos: usize, value: &str) {
                                     .flatten()
                                     .collect()
                             };
-                            record.params.insert(key, value);
+                            record.params.push(SvcParam::new(key, value));
                         }
                         None => panic!("Invalid SVCB parameter format: expected key=value")
                     }

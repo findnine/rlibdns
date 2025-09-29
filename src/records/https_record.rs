@@ -117,10 +117,6 @@ impl HttpsRecord {
         self.target.clone()
     }
 
-    pub fn has_param(&self, key: &SvcParamKeys) -> bool {
-        self.params.iter().find(|param| param.get_key().eq(&key)).is_some()//.contains_key(key)
-    }
-
     pub fn insert_param(&mut self, key: SvcParamKeys, param: Vec<u8>) {
         self.params.push(SvcParam::new(key, param));
     }
