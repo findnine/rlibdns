@@ -12,11 +12,11 @@ pub struct RRSet {
 
 impl RRSet {
 
-    pub fn new(_type: RRTypes, class: RRClasses) -> Self {
+    pub fn new(_type: RRTypes, class: RRClasses, ttl: u32) -> Self {
         Self {
             class,
             _type,
-            ttl: 300,
+            ttl,
             records: Vec::new()
         }
     }

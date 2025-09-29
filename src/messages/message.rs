@@ -550,7 +550,7 @@ fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> Vec<RRName> {
                         set.add_record(ttl, record);
                     }
                     None => {
-                        let mut set = RRSet::new(_type, class);
+                        let mut set = RRSet::new(_type, class, ttl);
                         set.add_record(ttl, record);
                         section[index].add_set(set);
                     }
@@ -629,7 +629,7 @@ fn add_record(section: &mut Vec<RRName>, query: &RRQuery, ttl: u32, record: Box<
             set.add_record(ttl, record);
         }
         None => {
-            let mut set = RRSet::new(_type, class);
+            let mut set = RRSet::new(_type, class, ttl);
             set.add_record(ttl, record);
             section[index].add_set(set);
         }

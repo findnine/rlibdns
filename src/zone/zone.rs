@@ -73,14 +73,14 @@ impl Zone {
                         set.add_record(ttl, record);
                     }
                     None => {
-                        let mut set = RRSet::new(_type, class);
+                        let mut set = RRSet::new(_type, class, ttl);
                         set.add_record(ttl, record);
                         sets.push(set);
                     }
                 }
             }
             None => {
-                let mut set = RRSet::new(_type, class);
+                let mut set = RRSet::new(_type, class, ttl);
                 set.add_record(ttl, record);
                 self.rrmap.insert(key, vec![set]);
             }
