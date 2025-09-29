@@ -9,8 +9,6 @@ use crate::utils::coord_utils::CoordUtils;
 
 #[derive(Clone, Debug)]
 pub struct LocRecord {
-    class: RRClasses,
-    ttl: u32,
     pub(crate) version: u8,
     pub(crate) size: u8,
     pub(crate) h_precision: u8,
@@ -24,8 +22,6 @@ impl Default for LocRecord {
 
     fn default() -> Self {
         Self {
-            class: RRClasses::default(),
-            ttl: 0,
             version: 0,
             size: 0,
             h_precision: 0,
@@ -40,22 +36,17 @@ impl Default for LocRecord {
 impl RecordBase for LocRecord {
 
     fn from_bytes(buf: &[u8], off: usize) -> Self {
-        let class = RRClasses::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
-        let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
+        //let z = u16::from_be_bytes([buf[off], buf[off+1]]);
 
-        //let z = u16::from_be_bytes([buf[off+6], buf[off+7]]);
-
-        let version = buf[off+8];
-        let size = buf[off+9];
-        let h_precision = buf[off+10];
-        let v_precision = buf[off+11];
-        let latitude = u32::from_be_bytes([buf[off+12], buf[off+13], buf[off+14], buf[off+15]]);
-        let longitude = u32::from_be_bytes([buf[off+16], buf[off+17], buf[off+18], buf[off+19]]);
-        let altitude = u32::from_be_bytes([buf[off+20], buf[off+21], buf[off+22], buf[off+23]]);
+        let version = buf[off+2];
+        let size = buf[off+3];
+        let h_precision = buf[off+4];
+        let v_precision = buf[off+5];
+        let latitude = u32::from_be_bytes([buf[off+6], buf[off+7], buf[off+8], buf[off+9]]);
+        let longitude = u32::from_be_bytes([buf[off+10], buf[off+11], buf[off+12], buf[off+13]]);
+        let altitude = u32::from_be_bytes([buf[off+14], buf[off+15], buf[off+16], buf[off+17]]);
 
         Self {
-            class,
-            ttl,
             version,
             size,
             h_precision,
@@ -67,20 +58,17 @@ impl RecordBase for LocRecord {
     }
 
     fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {
-        let mut buf = vec![0u8; 24];
+        let mut buf = vec![0u8; 18];
 
-        buf.splice(0..2, self.class.get_code().to_be_bytes());
-        buf.splice(2..6, self.ttl.to_be_bytes());
+        buf[3] = self.version;
+        buf[4] = self.size;
+        buf[5] = self.h_precision;
+        buf[6] = self.v_precision;
+        buf.splice(6..10, self.latitude.to_be_bytes());
+        buf.splice(10..14, self.longitude.to_be_bytes());
+        buf.splice(14..18, self.altitude.to_be_bytes());
 
-        buf[9] = self.version;
-        buf[10] = self.size;
-        buf[11] = self.h_precision;
-        buf[12] = self.v_precision;
-        buf.splice(12..16, self.latitude.to_be_bytes());
-        buf.splice(16..20, self.longitude.to_be_bytes());
-        buf.splice(20..24, self.altitude.to_be_bytes());
-
-        buf.splice(6..8, ((buf.len()-8) as u16).to_be_bytes());
+        buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
 
         Ok(buf)
     }
@@ -108,28 +96,10 @@ impl RecordBase for LocRecord {
 
 impl LocRecord {
 
-    pub fn new(ttl: u32, class: RRClasses) -> Self {
+    pub fn new() -> Self {
         Self {
-            class,
-            ttl,
             ..Self::default()
         }
-    }
-
-    pub fn set_class(&mut self, class: RRClasses) {
-        self.class = class;
-    }
-
-    pub fn get_class(&self) -> RRClasses {
-        self.class
-    }
-
-    pub fn set_ttl(&mut self, ttl: u32) {
-        self.ttl = ttl;
-    }
-
-    pub fn get_ttl(&self) -> u32 {
-        self.ttl
     }
 
     pub fn set_version(&mut self, version: u8) {
@@ -196,9 +166,7 @@ impl fmt::Display for LocRecord {
         let (lon_deg, lon_min, lon_sec, lon_dir) = self.longitude.to_coord(false);
         let alt = (self.altitude as f64 - 100_000.0 * 100.0) / 100.0;
 
-        write!(f, "{:<8}{:<8}{:<8}{} {} {:.3} {} {} {} {:.3} {} {:.2}m {:.2}m {:.2}m {:.2}m", self.ttl,
-               self.class.to_string(),
-               self.get_type().to_string(),
+        write!(f, "{:<8}{} {} {:.3} {} {} {} {:.3} {} {:.2}m {:.2}m {:.2}m {:.2}m", self.get_type().to_string(),
                lat_deg,
                lat_min,
                lat_sec,

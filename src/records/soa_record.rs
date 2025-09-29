@@ -35,7 +35,7 @@ impl Default for SoaRecord {
 impl RecordBase for SoaRecord {
 
     fn from_bytes(buf: &[u8], off: usize) -> Self {
-        //let z = u16::from_be_bytes([buf[off+6], buf[off+7]]);
+        //let z = u16::from_be_bytes([buf[off], buf[off+1]]);
 
         let (fqdn, length) = unpack_fqdn(buf, off+2);
         let mut off = off+length+2;
