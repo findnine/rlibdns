@@ -1,11 +1,11 @@
 [package]
 name = "rlibdns"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 authors = ["DrBrad <brad@bradeagle.com>"]
 description = "Rust DNS Library"
 license = "MIT"
-repository = "https://github.com/ethernaught/rlibdns"
+repository = "https://github.com/findnine/rlibdns"
 readme = "README.md"
 keywords = ["dns", "resolver"]
 categories = ["network-programming", "command-line-utilities"]
