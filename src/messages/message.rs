@@ -524,7 +524,6 @@ fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> Vec<RRName> {
             RRTypes::TSig => {}
             RRTypes::Opt => {
                 let record = <dyn RecordBase>::from_wire(_type, buf, *off+2).unwrap();
-                println!("{:x?}", &buf[*off..]);
             }
             RRTypes::Any => {}
             _ => {
