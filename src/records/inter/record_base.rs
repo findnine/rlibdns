@@ -62,7 +62,7 @@ impl dyn RecordBase {
         Some(match rrt {
             A      => ARecord::new().upcast(),
             Aaaa   => AaaaRecord::new().upcast(),
-            Ns     => NsRecord::new(ttl, class).upcast(),
+            Ns     => NsRecord::new().upcast(),
             CName  => CNameRecord::new().upcast(),
             Soa    => SoaRecord::new().upcast(),
             Ptr    => PtrRecord::new(ttl, class).upcast(),
