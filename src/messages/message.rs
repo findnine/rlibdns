@@ -11,7 +11,6 @@ use crate::messages::inter::rr_types::RRTypes;
 use crate::messages::rr_name::RRName;
 use crate::messages::rr_set::RRSet;
 use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
-use crate::utils::index_map::IndexMap;
 /*
                                1  1  1  1  1  1
  0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
@@ -297,7 +296,7 @@ impl Message {
         self.sections[0] = section;
     }
 
-    pub fn add_answer(&mut self, query: RRQuery, ttl: u32, record: Box<dyn RecordBase>) {
+    pub fn add_answer(&mut self, query: &RRQuery, ttl: u32, record: Box<dyn RecordBase>) {
         add_record(self.sections[0].as_mut(), query, ttl, record);
     }
 
@@ -321,7 +320,7 @@ impl Message {
         self.sections[1] = section;
     }
 
-    pub fn add_authority_record(&mut self, query: RRQuery, ttl: u32, record: Box<dyn RecordBase>) {
+    pub fn add_authority_record(&mut self, query: &RRQuery, ttl: u32, record: Box<dyn RecordBase>) {
         add_record(self.sections[1].as_mut(), query, ttl, record);
     }
 
@@ -345,7 +344,7 @@ impl Message {
         self.sections[2] = section;
     }
 
-    pub fn add_additional_record(&mut self, query: RRQuery, ttl: u32, record: Box<dyn RecordBase>) {
+    pub fn add_additional_record(&mut self, query: &RRQuery, ttl: u32, record: Box<dyn RecordBase>) {
         add_record(self.sections[2].as_mut(), query, ttl, record);
     }
 
@@ -612,7 +611,7 @@ fn records_to_bytes(off: usize, section: &[RRName], label_map: &mut HashMap<Stri
     (buf, i, truncated)
 }
 
-fn add_record(section: &mut Vec<RRName>, query: RRQuery, ttl: u32, record: Box<dyn RecordBase>) {
+fn add_record(section: &mut Vec<RRName>, query: &RRQuery, ttl: u32, record: Box<dyn RecordBase>) {
     let fqdn = query.get_fqdn();
 
     let index = match section.iter().position(|name: &RRName| fqdn.eq(name.get_fqdn())) {
@@ -629,7 +628,7 @@ fn add_record(section: &mut Vec<RRName>, query: RRQuery, ttl: u32, record: Box<d
     match section[index]
         .get_sets_mut() //I DONT LIKE HAVING TO MUT SEARCH BUT WHATEVER...
         .iter_mut()
-        .find(|s| s.get_type().eq(&query.get_type()) && s.get_class().eq(&query.get_class())) {
+        .find(|s| s.get_type().eq(&_type) && s.get_class().eq(&class)) {
         Some(set) => {
             if set.get_ttl() != ttl {
                 set.set_ttl(set.get_ttl().min(ttl));
