@@ -9,8 +9,6 @@ use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 
 #[derive(Clone, Debug)]
 pub struct SoaRecord {
-    class: RRClasses,
-    ttl: u32,
     pub(crate) fqdn: Option<String>,
     pub(crate) mailbox: Option<String>,
     pub(crate) serial: u32,
@@ -24,8 +22,6 @@ impl Default for SoaRecord {
 
     fn default() -> Self {
         Self {
-            class: RRClasses::default(),
-            ttl: 0,
             fqdn: None,
             mailbox: None,
             serial: 0,
@@ -40,15 +36,10 @@ impl Default for SoaRecord {
 impl RecordBase for SoaRecord {
 
     fn from_bytes(buf: &[u8], off: usize) -> Self {
-        let mut off = off;
-
-        let class = RRClasses::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
-        let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
-
         //let z = u16::from_be_bytes([buf[off+6], buf[off+7]]);
 
-        let (fqdn, length) = unpack_fqdn(buf, off+8);
-        off += length+8;
+        let (fqdn, length) = unpack_fqdn(buf, off+2);
+        let mut off = off+length+2;
 
         let (mailbox, length) = unpack_fqdn(buf, off);
         off += length;
@@ -60,8 +51,6 @@ impl RecordBase for SoaRecord {
         let minimum_ttl = u32::from_be_bytes([buf[off+16], buf[off+17], buf[off+18], buf[off+19]]);
 
         Self {
-            class,
-            ttl,
             fqdn: Some(fqdn),
             mailbox: Some(mailbox),
             serial,
@@ -75,12 +64,9 @@ impl RecordBase for SoaRecord {
     fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {
         let mut off = off;
 
-        let mut buf = vec![0u8; 8];
+        let mut buf = vec![0u8; 2];
 
-        buf.splice(0..2, self.class.get_code().to_be_bytes());
-        buf.splice(2..6, self.ttl.to_be_bytes());
-
-        let fqdn = pack_fqdn(self.fqdn.as_ref().unwrap().as_str(), label_map, off+8, true);
+        let fqdn = pack_fqdn(self.fqdn.as_ref().unwrap().as_str(), label_map, off+2, true);
         buf.extend_from_slice(&fqdn);
 
         off += fqdn.len()+8;
@@ -94,7 +80,7 @@ impl RecordBase for SoaRecord {
         buf.extend_from_slice(&self.expire.to_be_bytes());
         buf.extend_from_slice(&self.minimum_ttl.to_be_bytes());
 
-        buf.splice(6..8, ((buf.len()-8) as u16).to_be_bytes());
+        buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
 
         Ok(buf)
     }
@@ -122,28 +108,10 @@ impl RecordBase for SoaRecord {
 
 impl SoaRecord {
 
-    pub fn new(ttl: u32, class: RRClasses) -> Self {
+    pub fn new() -> Self {
         Self {
-            class,
-            ttl,
             ..Self::default()
         }
-    }
-
-    pub fn set_class(&mut self, class: RRClasses) {
-        self.class = class;
-    }
-
-    pub fn get_class(&self) -> RRClasses {
-        self.class
-    }
-
-    pub fn set_ttl(&mut self, ttl: u32) {
-        self.ttl = ttl;
-    }
-
-    pub fn get_ttl(&self) -> u32 {
-        self.ttl
     }
 
     pub fn set_fqdn(&mut self, fqdn: &str) {
@@ -206,9 +174,7 @@ impl SoaRecord {
 impl fmt::Display for SoaRecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:<8}{:<8}{:<8}{} {} {} {} {} {} {}", self.ttl,
-               self.class.to_string(),
-               self.get_type().to_string(),
+        write!(f, "{:<8}{} {} {} {} {} {} {}", self.get_type().to_string(),
                format!("{}.", self.fqdn.as_ref().unwrap()),
                format!("{}.", self.mailbox.as_ref().unwrap()),
                self.serial,
