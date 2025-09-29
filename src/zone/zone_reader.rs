@@ -138,7 +138,7 @@ impl ZoneReader {
                             _type = t;
                             state = ParserState::Data;
                             data_count = 0;
-                            record = Some((RRQuery::new(&self.name, _type, class), ttl, <dyn RecordBase>::new(_type, ttl, class).unwrap()));
+                            record = Some((RRQuery::new(self.get_relative_name(&self.name), _type, class), ttl, <dyn RecordBase>::new(_type, ttl, class).unwrap()));
 
                         } else {
                             ttl = word.parse().unwrap();//.expect(&format!("Parse error on line {} pos {}", self.line_no, pos));
@@ -216,6 +216,13 @@ impl ZoneReader {
         &self.origin
     }
 
+    pub fn get_relative_name<'a>(&self, name: &'a str) -> &'a str {
+        if name.eq("@") {
+            return "";
+        }
+
+        &name
+    }
     /*
     pub fn absolute_name(&self, name: &str) -> String {
         assert!(name != "");

@@ -27,10 +27,10 @@ impl ZoneStore {
             let fqdn = query.get_fqdn();
             match fqdn {
                 //"." => self.add_record(record), //BE CAREFUL WITH THIS ONE - DONT ALLOW MOST OF THE TIME
-                "@" => {
-                    query.set_fqdn("");
-                    zone.add_record(&query, ttl, record)
-                }
+                //"@" => {
+                //    query.set_fqdn("");
+                //    zone.add_record(&query, ttl, record)
+                //}
                 _ => zone.add_record(&query, ttl, record)/*{
                     match self.trie.get_fqdn_mut(&name) {
                         Some(zone) => zone.add_record(record),
