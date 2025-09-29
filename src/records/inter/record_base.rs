@@ -83,9 +83,9 @@ impl dyn RecordBase {
             Spf => {
                 todo!()
             }*/
-            TKey => TKeyRecord::new(ttl, class).upcast(),
-            TSig => TSigRecord::new(ttl, class).upcast(),
-            Uri    => UriRecord::new(ttl, class).upcast(),
+            TKey   => TKeyRecord::new(ttl, class).upcast(),
+            TSig   => TSigRecord::new(ttl, class).upcast(),
+            Uri    => UriRecord::new().upcast(),
             /*Caa => {
                 todo!()
             }
@@ -125,9 +125,9 @@ impl dyn RecordBase {
             Spf => {
                 todo!()
             }*/
-            TKey => TKeyRecord::from_bytes(buf, off).upcast(),
-            TSig => TSigRecord::from_bytes(buf, off).upcast(),
-            Uri => UriRecord::from_bytes(buf, off).upcast(),
+            TKey   => TKeyRecord::from_bytes(buf, off).upcast(),
+            TSig   => TSigRecord::from_bytes(buf, off).upcast(),
+            Uri    => UriRecord::from_bytes(buf, off).upcast(),
             /*Caa => {
                 todo!()
             }
