@@ -5,15 +5,15 @@ use std::fmt::Formatter;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::svc_param_keys::SvcParamKeys;
 use crate::records::inter::record_base::RecordBase;
+use crate::records::inter::svc_param::SvcParam;
 use crate::utils::base64;
 use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
-use crate::utils::index_map::IndexMap;
 
 #[derive(Clone, Debug)]
 pub struct HttpsRecord {
     pub(crate) priority: u16,
     pub(crate) target: Option<String>,
-    pub(crate) params: IndexMap<SvcParamKeys, Vec<u8>>
+    pub(crate) params: Vec<SvcParam>
 }
 
 impl Default for HttpsRecord {
@@ -22,7 +22,7 @@ impl Default for HttpsRecord {
         Self {
             priority: 0,
             target: None,
-            params: IndexMap::new()
+            params: Vec::new()
         }
     }
 }
@@ -39,11 +39,11 @@ impl RecordBase for HttpsRecord {
         let length = off+2+u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
         off += 4+target_length;
 
-        let mut params = IndexMap::new();
+        let mut params = Vec::new();
         while off < length {
             let key = SvcParamKeys::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
             let length = u16::from_be_bytes([buf[off+2], buf[off+3]]) as usize;
-            params.insert(key, buf[off + 4..off + 4 + length].to_vec());
+            params.push(SvcParam::new(key, buf[off + 4..off + 4 + length].to_vec()));
             off += length+4;
         }
 
@@ -61,10 +61,10 @@ impl RecordBase for HttpsRecord {
 
         buf.extend_from_slice(&pack_fqdn(self.target.as_ref().unwrap().as_str(), label_map, off+4, true));
 
-        for (key, value) in self.params.iter() {
-            buf.extend_from_slice(&key.get_code().to_be_bytes());
-            buf.extend_from_slice(&(value.len() as u16).to_be_bytes());
-            buf.extend_from_slice(&value);
+        for param in self.params.iter() {
+            buf.extend_from_slice(&param.get_key().get_code().to_be_bytes());
+            buf.extend_from_slice(&(param.get_value().len() as u16).to_be_bytes());
+            buf.extend_from_slice(&param.get_value());
         }
 
         buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
@@ -118,26 +118,26 @@ impl HttpsRecord {
     }
 
     pub fn has_param(&self, key: &SvcParamKeys) -> bool {
-        self.params.contains_key(key)
+        self.params.iter().find(|param| param.get_key().eq(&key)).is_some()//.contains_key(key)
     }
 
     pub fn insert_param(&mut self, key: SvcParamKeys, param: Vec<u8>) {
-        self.params.insert(key, param);
+        self.params.push(SvcParam::new(key, param));
     }
 
     pub fn get_param(&self, key: &SvcParamKeys) -> Option<&Vec<u8>> {
-        self.params.get(key)
+        Some(self.params.iter().find(|param| param.get_key().eq(&key))?.get_value())
     }
 
-    pub fn get_param_mut(&mut self, key: &SvcParamKeys) -> Option<&mut Vec<u8>> {
-        self.params.get_mut(key)
+    pub fn get_param_mut(&mut self, key: &SvcParamKeys) -> Option<&Vec<u8>> {
+        Some(self.params.iter_mut().find(|param| param.get_key().eq(&key))?.get_value_mut())
     }
 
-    pub fn get_params(&self) -> &IndexMap<SvcParamKeys, Vec<u8>> {
+    pub fn get_params(&self) -> &Vec<SvcParam> {
         self.params.as_ref()
     }
 
-    pub fn get_params_mut(&mut self) -> &mut IndexMap<SvcParamKeys, Vec<u8>> {
+    pub fn get_params_mut(&mut self) -> &mut Vec<SvcParam> {
         self.params.as_mut()
     }
 }
@@ -147,9 +147,11 @@ impl fmt::Display for HttpsRecord {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let mut output = Vec::new();
 
-        for (key, value) in self.params.iter() {
-            let formatted = match key {
+        for param in self.params.iter() {
+            let key = param.get_key();
+            let formatted = match param.get_key() {
                 SvcParamKeys::Alpn => {
+                    let value = param.get_value();
                     let mut parts = Vec::new();
                     let mut i = 0;
                     while i < value.len() {
@@ -166,7 +168,7 @@ impl fmt::Display for HttpsRecord {
                     format!("{}=\"{}\"", key, parts.join(","))
                 }
                 SvcParamKeys::Ipv4Hint => {
-                    let ips = value
+                    let ips = param.get_value()
                         .chunks_exact(4)
                         .map(|chunk| {
                             std::net::Ipv4Addr::new(chunk[0], chunk[1], chunk[2], chunk[3]).to_string()
@@ -175,10 +177,10 @@ impl fmt::Display for HttpsRecord {
                     format!("{}={}", key, ips.join(","))
                 }
                 SvcParamKeys::Ech => {
-                    format!("{}={:x?}", key, base64::encode(value))
+                    format!("{}={:x?}", key, base64::encode(&param.get_value()))
                 }
                 SvcParamKeys::Ipv6Hint => {
-                    let ips = value
+                    let ips = param.get_value()
                         .chunks_exact(16)
                         .map(|chunk| {
                             std::net::Ipv6Addr::from(<[u8; 16]>::try_from(chunk).unwrap()).to_string()
@@ -186,7 +188,7 @@ impl fmt::Display for HttpsRecord {
                         .collect::<Vec<_>>();
                     format!("{}={}", key, ips.join(","))
                 }
-                _ => format!("{}={:x?}", key, value),
+                _ => format!("{}={:x?}", key, param.get_value()),
             };
 
             output.push(formatted);
@@ -199,3 +201,4 @@ impl fmt::Display for HttpsRecord {
                output.join(" "))
     }
 }
+

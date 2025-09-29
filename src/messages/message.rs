@@ -622,9 +622,9 @@ fn add_record(section: &mut Vec<RRName>, query: &RRQuery, ttl: u32, record: Box<
     let class = query.get_class();
 
     match section[index]
-        .get_sets_mut() //I DONT LIKE HAVING TO MUT SEARCH BUT WHATEVER...
-        .iter_mut()
-        .find(|s| s.get_type().eq(&_type) && s.get_class().eq(&class)) {
+            .get_sets_mut() //I DONT LIKE HAVING TO MUT SEARCH BUT WHATEVER...
+            .iter_mut()
+            .find(|s| s.get_type().eq(&_type) && s.get_class().eq(&class)) {
         Some(set) => {
             set.add_record(ttl, record);
         }

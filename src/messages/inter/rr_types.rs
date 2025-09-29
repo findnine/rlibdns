@@ -3,7 +3,7 @@ use std::fmt::Formatter;
 
 //https://www.iana.org/assignments/dns-parameters/dns-parameters.xhtml
 
-#[derive(Copy, Default, Clone, Eq, PartialEq, Hash, Debug, Ord, PartialOrd)]
+#[derive(Copy, Default, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum RRTypes {
     #[default]
     A,

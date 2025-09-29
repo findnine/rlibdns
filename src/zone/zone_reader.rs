@@ -31,6 +31,7 @@ use crate::records::{
 use crate::records::inter::naptr_flags::NaptrFlags;
 use crate::records::inter::svc_param_keys::SvcParamKeys;
 use crate::records::inter::record_base::RecordBase;
+use crate::records::inter::svc_param::SvcParam;
 use crate::utils::{base64, hex};
 use crate::utils::time_utils::TimeUtils;
 
@@ -512,7 +513,7 @@ fn set_data(record: &mut dyn RecordBase, pos: usize, value: &str) {
                                     .flatten()
                                     .collect()
                             };
-                            record.params.insert(key, value);
+                            record.params.push(SvcParam::new(key, value));
                         }
                         None => panic!("Invalid HTTPS parameter format: expected key=value")
                     }
