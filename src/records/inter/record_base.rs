@@ -68,7 +68,7 @@ impl dyn RecordBase {
             Ptr    => PtrRecord::new(ttl, class).upcast(),
             HInfo  => HInfoRecord::new(ttl, class).upcast(),
             Mx     => MxRecord::new(ttl, class).upcast(),
-            Txt    => TxtRecord::new(ttl, class).upcast(),
+            Txt    => TxtRecord::new().upcast(),
             Loc    => LocRecord::new(ttl, class).upcast(),
             Srv    => SrvRecord::new(ttl, class).upcast(),
             Naptr  => NaptrRecord::new(ttl, class).upcast(),
