@@ -2,7 +2,6 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
-use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::svc_param_keys::SvcParamKeys;
 use crate::records::inter::record_base::RecordBase;
@@ -12,8 +11,6 @@ use crate::utils::index_map::IndexMap;
 
 #[derive(Clone, Debug)]
 pub struct HttpsRecord {
-    class: RRClasses,
-    ttl: u32,
     pub(crate) priority: u16,
     pub(crate) target: Option<String>,
     pub(crate) params: IndexMap<SvcParamKeys, Vec<u8>>
@@ -23,8 +20,6 @@ impl Default for HttpsRecord {
 
     fn default() -> Self {
         Self {
-            class: RRClasses::default(),
-            ttl: 0,
             priority: 0,
             target: None,
             params: IndexMap::new()
@@ -37,15 +32,12 @@ impl RecordBase for HttpsRecord {
     fn from_bytes(buf: &[u8], off: usize) -> Self {
         let mut off = off;
 
-        let class = RRClasses::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
-        let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
+        let priority = u16::from_be_bytes([buf[off+2], buf[off+3]]);
 
-        let priority = u16::from_be_bytes([buf[off+8], buf[off+9]]);
+        let (target, target_length) = unpack_fqdn(&buf, off+4);
 
-        let (target, target_length) = unpack_fqdn(&buf, off+10);
-
-        let length = off+8+u16::from_be_bytes([buf[off+6], buf[off+7]]) as usize;
-        off += 10+target_length;
+        let length = off+2+u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
+        off += 4+target_length;
 
         let mut params = IndexMap::new();
         while off < length {
@@ -56,8 +48,6 @@ impl RecordBase for HttpsRecord {
         }
 
         Self {
-            class,
-            ttl,
             priority,
             target: Some(target),
             params
@@ -65,14 +55,11 @@ impl RecordBase for HttpsRecord {
     }
 
     fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {
-        let mut buf = vec![0u8; 10];
+        let mut buf = vec![0u8; 4];
 
-        buf.splice(0..2, self.class.get_code().to_be_bytes());
-        buf.splice(2..6, self.ttl.to_be_bytes());
+        buf.splice(2..4, self.priority.to_be_bytes());
 
-        buf.splice(8..10, self.priority.to_be_bytes());
-
-        buf.extend_from_slice(&pack_fqdn(self.target.as_ref().unwrap().as_str(), label_map, off+10, true));
+        buf.extend_from_slice(&pack_fqdn(self.target.as_ref().unwrap().as_str(), label_map, off+4, true));
 
         for (key, value) in self.params.iter() {
             buf.extend_from_slice(&key.get_code().to_be_bytes());
@@ -80,7 +67,7 @@ impl RecordBase for HttpsRecord {
             buf.extend_from_slice(&value);
         }
 
-        buf.splice(6..8, ((buf.len()-8) as u16).to_be_bytes());
+        buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
 
         Ok(buf)
     }
@@ -108,28 +95,10 @@ impl RecordBase for HttpsRecord {
 
 impl HttpsRecord {
 
-    pub fn new(ttl: u32, class: RRClasses) -> Self {
+    pub fn new() -> Self {
         Self {
-            class,
-            ttl,
             ..Self::default()
         }
-    }
-
-    pub fn set_class(&mut self, class: RRClasses) {
-        self.class = class;
-    }
-
-    pub fn get_class(&self) -> RRClasses {
-        self.class
-    }
-
-    pub fn set_ttl(&mut self, ttl: u32) {
-        self.ttl = ttl;
-    }
-
-    pub fn get_ttl(&self) -> u32 {
-        self.ttl
     }
 
     pub fn set_priority(&mut self, priority: u16) {
@@ -224,9 +193,7 @@ impl fmt::Display for HttpsRecord {
         }
 
 
-        write!(f, "{:<8}{:<8}{:<8}{} {} {}", self.ttl,
-               self.class.to_string(),
-               self.get_type().to_string(),
+        write!(f, "{:<8}{} {} {}", self.get_type().to_string(),
                self.priority,
                format!("{}.", self.target.as_ref().unwrap()),
                output.join(" "))
