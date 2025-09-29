@@ -1,9 +1,7 @@
-use std::collections::BTreeMap;
 use std::io;
 use std::path::PathBuf;
 use crate::journal::journal_reader::JournalReader;
 use crate::messages::inter::rr_types::RRTypes;
-use crate::messages::rr_name::RRName;
 use crate::messages::rr_query::RRQuery;
 use crate::messages::rr_set::RRSet;
 use crate::records::inter::record_base::RecordBase;
