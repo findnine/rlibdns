@@ -60,18 +60,14 @@ impl RecordBase for NaptrRecord {
         let length = buf[off] as usize;
         let replacement = String::from_utf8(buf[off + 1..off + 1 + length].to_vec()).unwrap();
 
-        let s = Self {
+        Self {
             order,
             preference,
             flags,
             service: Some(service),
             regex: Some(regex),
             replacement: Some(replacement)
-        };
-
-        println!("{}", s);
-
-        s
+        }
     }
 
     fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {

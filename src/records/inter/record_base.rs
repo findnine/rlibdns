@@ -76,7 +76,7 @@ impl dyn RecordBase {
             RRSig  => RRSigRecord::new(ttl, class).upcast(),
             Nsec   => NSecRecord::new(ttl, class).upcast(),
             DnsKey => DnsKeyRecord::new(ttl, class).upcast(),
-            Smimea => SmimeaRecord::new(ttl, class).upcast(),
+            Smimea => SmimeaRecord::new().upcast(),
             Svcb   => SvcbRecord::new(ttl, class).upcast(),
             Https  => HttpsRecord::new(ttl, class).upcast(),
             /*
