@@ -11,7 +11,7 @@ pub enum SvcParam {
     Port(u16),
     Ipv4Hint(Vec<Ipv4Addr>),
     Ech(Vec<u8>),
-    Ipv6Hint(u16, Vec<u8>),
+    Ipv6Hint(u16, Vec<u8>)
 }
 
 impl SvcParam {
