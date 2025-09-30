@@ -88,7 +88,7 @@ impl Message {
         let flags = u16::from_be_bytes([buf[2], buf[3]]);
 
         let qr = (flags & 0x8000) != 0;
-        let op_code = OpCodes::from_code(((flags >> 11) & 0x0F) as u8).ok_or(io::Error::from(io::ErrorKind::InvalidData))?;
+        let op_code = OpCodes::try_from(((flags >> 11) & 0x0F) as u8).unwrap();//.ok_or(io::Error::from(io::ErrorKind::InvalidData))?;
         let authoritative = (flags & 0x0400) != 0;
         let truncated = (flags & 0x0200) != 0;
         let recursion_desired = (flags & 0x0100) != 0;
@@ -96,7 +96,7 @@ impl Message {
         //let z = (flags & 0x0040) != 0;
         let authenticated_data = (flags & 0x0020) != 0;
         let checking_disabled = (flags & 0x0010) != 0;
-        let response_code = ResponseCodes::from_code((flags & 0x000F) as u8).ok_or(io::Error::from(io::ErrorKind::InvalidData))?;
+        let response_code = ResponseCodes::try_from((flags & 0x000F) as u8).unwrap();//.ok_or(io::Error::from(io::ErrorKind::InvalidData))?;
 
         let qd_count = u16::from_be_bytes([buf[4], buf[5]]);
 

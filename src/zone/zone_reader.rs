@@ -379,13 +379,14 @@ fn set_data(record: &mut dyn RecordBase, pos: usize, value: &str) {
             match pos {
                 0 => record.order = value.parse().unwrap(),
                 1 => record.preference = value.parse().unwrap(),
-                2 => record.flags = {
-                    let mut flags = Vec::new();
-                    for flag in value.split(',') {
-                        flags.push(NaptrFlags::from_str(flag).unwrap());
-                    }
-                    flags
-                },
+                2 => record.flags = value.split(",")
+                    .filter_map(|tok| {
+                        let tok = tok.trim();
+                        if tok.is_empty() {
+                            return None;
+                        }
+                        tok.chars().next().map(|c| NaptrFlags::try_from(c).unwrap())
+                    }).collect::<Vec<_>>(),
                 3 => record.service = Some(value.to_string()),
                 4 => record.regex = Some(value.to_string()),
                 5 => record.replacement = Some(match value.strip_suffix('.') {

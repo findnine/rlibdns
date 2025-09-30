@@ -39,11 +39,16 @@ impl RecordBase for NaptrRecord {
         let preference = u16::from_be_bytes([buf[off+4], buf[off+5]]);
 
         let length = buf[off+6] as usize;
-        let f = String::from_utf8(buf[off + 7..off + 7 + length].to_vec()).unwrap();
-        let mut flags = Vec::new();
-        for flag in f.split(',') {
-            flags.push(NaptrFlags::from_str(flag).unwrap());
-        }
+        let flags = String::from_utf8(buf[off + 7..off + 7 + length].to_vec()).unwrap();
+
+        let flags = flags.split(",")
+            .filter_map(|tok| {
+                let tok = tok.trim();
+                if tok.is_empty() {
+                    return None;
+                }
+                tok.chars().next().map(|c| NaptrFlags::try_from(c).unwrap())
+            }).collect::<Vec<_>>();
 
         let mut off = off+7+length;
 

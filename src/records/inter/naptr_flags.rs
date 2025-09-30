@@ -11,21 +11,6 @@ pub enum NaptrFlags {
 
 impl NaptrFlags {
 
-    pub fn from_str(value: &str) -> Option<Self> {
-        for c in [
-            Self::S,
-            Self::A,
-            Self::U,
-            Self::P
-        ] {
-            if c.to_string() == value {
-                return Some(c);
-            }
-        }
-
-        None
-    }
-
     pub fn get_code(&self) -> u8 {
         match self {
             Self::S => b'S',
@@ -33,6 +18,24 @@ impl NaptrFlags {
             Self::U => b'U',
             Self::P => b'P'
         }
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct NaptrFlagParseError(char);
+
+impl TryFrom<char> for NaptrFlags {
+
+    type Error = NaptrFlagParseError;
+
+    fn try_from(c: char) -> Result<Self, Self::Error> {
+        Ok(match c {
+            'S' => Self::S,
+            'A' => Self::A,
+            'U' => Self::U,
+            'P' => Self::P,
+            _  => return Err(NaptrFlagParseError(c)),
+        })
     }
 }
 
