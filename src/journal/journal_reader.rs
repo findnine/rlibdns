@@ -190,7 +190,7 @@ impl JournalReader {
             let (name, length) = unpack_fqdn(&buf, off);
             off += length;
 
-            let _type = RRTypes::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
+            let _type = RRTypes::try_from(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
 
             if _type == RRTypes::Soa {
                 seen_soa += 1;

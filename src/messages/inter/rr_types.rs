@@ -1,6 +1,6 @@
 use std::fmt;
 use std::fmt::Formatter;
-
+use std::str::FromStr;
 //https://www.iana.org/assignments/dns-parameters/dns-parameters.xhtml
 
 #[derive(Copy, Default, Clone, Eq, PartialEq, Hash, Debug)]
@@ -38,45 +38,6 @@ pub enum RRTypes {
 
 impl RRTypes {
 
-    pub fn from_code(code: u16) -> Option<Self> {
-        for c in [
-            Self::A,
-            Self::Aaaa,
-            Self::Ns,
-            Self::CName,
-            Self::Soa,
-            Self::Ptr,
-            Self::HInfo,
-            Self::Mx,
-            Self::Txt,
-            Self::Loc,
-            Self::Srv,
-            Self::Naptr,
-            Self::Opt,
-            Self::SshFp,
-            Self::RRSig,
-            Self::Nsec,
-            Self::DnsKey,
-            Self::Smimea,
-            Self::Svcb,
-            Self::Https,
-            Self::Spf,
-            Self::TKey,
-            Self::TSig,
-            Self::Ixfr,
-            Self::Axfr,
-            Self::Any,
-            Self::Uri,
-            Self::Caa
-        ] {
-            if c.get_code() == code {
-                return Some(c);
-            }
-        }
-
-        None
-    }
-
     pub fn get_code(&self) -> u16 {
         match self {
             Self::A => 1,
@@ -109,44 +70,89 @@ impl RRTypes {
             Self::Caa => 257
         }
     }
+}
 
-    pub fn from_str(value: &str) -> Option<Self> {
-        for c in [
-            Self::A,
-            Self::Aaaa,
-            Self::Ns,
-            Self::CName,
-            Self::Soa,
-            Self::Ptr,
-            Self::HInfo,
-            Self::Mx,
-            Self::Txt,
-            Self::Loc,
-            Self::Srv,
-            Self::Naptr,
-            Self::Opt,
-            Self::SshFp,
-            Self::RRSig,
-            Self::Nsec,
-            Self::DnsKey,
-            Self::Smimea,
-            Self::Svcb,
-            Self::Https,
-            Self::Spf,
-            Self::TKey,
-            Self::TSig,
-            Self::Ixfr,
-            Self::Axfr,
-            Self::Any,
-            Self::Uri,
-            Self::Caa
-        ] {
-            if c.to_string() == value {
-                return Some(c);
-            }
-        }
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub enum RRTypeParseError {
+    UnknownCode(u16),
+    UnknownName(String)
+}
 
-        None
+impl TryFrom<u16> for RRTypes {
+
+    type Error = RRTypeParseError;
+
+    fn try_from(v: u16) -> Result<Self, Self::Error> {
+        Ok(match v {
+            1 => Self::A,
+            28 => Self::Aaaa,
+            2 => Self::Ns,
+            5 => Self::CName,
+            6 => Self::Soa,
+            12 => Self::Ptr,
+            13 => Self::HInfo,
+            15 => Self::Mx,
+            16 => Self::Txt,
+            29 => Self::Loc,
+            33 => Self::Srv,
+            35 => Self::Naptr,
+            41 => Self::Opt,
+            44 => Self::SshFp,
+            46 => Self::RRSig,
+            47 => Self::Nsec,
+            48 => Self::DnsKey,
+            53 => Self::Smimea,
+            64 => Self::Svcb,
+            65 => Self::Https,
+            99 => Self::Spf,
+            249 => Self::TKey,
+            250 => Self::TSig,
+            251 => Self::Ixfr,
+            252 => Self::Axfr,
+            255 => Self::Any,
+            256 => Self::Uri,
+            257 => Self::Caa,
+            _  => return Err(RRTypeParseError::UnknownCode(v)),
+        })
+    }
+}
+
+impl FromStr for RRTypes {
+    
+    type Err = RRTypeParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
+            "A" => Self::A,
+            "AAAA" => Self::Aaaa,
+            "NS" => Self::Ns,
+            "CNAME" => Self::CName,
+            "SOA" => Self::Soa,
+            "PTR" => Self::Ptr,
+            "HINFO" => Self::HInfo,
+            "MX" => Self::Mx,
+            "TXT" => Self::Txt,
+            "LOC" => Self::Loc,
+            "SRV" => Self::Srv,
+            "NAPTR" => Self::Naptr,
+            "OPT" => Self::Opt,
+            "SSHFP" => Self::SshFp,
+            "RRSIG" => Self::RRSig,
+            "NSEC" => Self::Nsec,
+            "DNSKEY" => Self::DnsKey,
+            "SMIMEA" => Self::Smimea,
+            "SVCB" => Self::Svcb,
+            "HTTPS" => Self::Https,
+            "SPF" => Self::Spf,
+            "TKEY" => Self::TKey,
+            "TSIG" => Self::TSig,
+            "IXFR" => Self::Ixfr,
+            "AXFR" => Self::Axfr,
+            "ANY" => Self::Any,
+            "URI" => Self::Uri,
+            "CAA" => Self::Caa,
+            _  => return Err(RRTypeParseError::UnknownName(s.to_string())),
+        })
     }
 }
 

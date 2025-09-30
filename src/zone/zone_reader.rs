@@ -3,6 +3,7 @@ use std::io;
 use std::io::{BufRead, BufReader, Read};
 use std::ops::DerefMut;
 use std::path::PathBuf;
+use std::str::FromStr;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::messages::rr_query::RRQuery;
@@ -134,7 +135,7 @@ impl ZoneReader {
                         if let Some(c) = RRClasses::from_str(&word) {
                             class = c;
 
-                        } else if let Some(t) = RRTypes::from_str(&word) {
+                        } else if let Ok(t) = RRTypes::from_str(&word) {
                             _type = t;
                             state = ParserState::Data;
                             data_count = 0;

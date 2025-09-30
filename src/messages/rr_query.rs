@@ -26,7 +26,7 @@ impl RRQuery {
         let (fqdn, len) = unpack_fqdn(buf, *off);
         *off += len;
 
-        let _type = RRTypes::from_code(u16::from_be_bytes([buf[*off], buf[*off+1]])).unwrap();
+        let _type = RRTypes::try_from(u16::from_be_bytes([buf[*off], buf[*off+1]])).unwrap();
         let class = RRClasses::from_code(u16::from_be_bytes([buf[*off+2], buf[*off+3]])).unwrap();
         *off += 4;
 

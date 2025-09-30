@@ -531,7 +531,7 @@ fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> Vec<RRName> {
         let (fqdn, length) = unpack_fqdn(buf, *off);
         *off += length;
 
-        let _type = RRTypes::from_code(u16::from_be_bytes([buf[*off], buf[*off+1]])).unwrap();
+        let _type = RRTypes::try_from(u16::from_be_bytes([buf[*off], buf[*off+1]])).unwrap();
 
         match _type {
             RRTypes::TKey => {}
