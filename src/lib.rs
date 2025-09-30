@@ -26,6 +26,15 @@ mod tests {
 
     //RRClass should be per zone so we dont need to specify it at record level...
 
+    //Don't use hashmaps or indexmaps or btreemaps at all
+    //Remove the order crap from types
+    //Just use vecs as its faster
+
+    //Try to switch svcparamkeys to contain the value in the enum
+
+    //REMOVE HASHMAP FOR POSITION POINTERS WHEN ENCODING
+
+
     #[test]
     fn encode_and_decode() {
         ////JUST QUERY

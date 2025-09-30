@@ -24,7 +24,7 @@ impl RecordBase for TxtRecord {
     fn from_bytes(buf: &[u8], off: usize) -> Self {
         let mut off = off;
 
-        let data_length = off+8+u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
+        let data_length = off+2+u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
         off += 2;
 
         let mut data = Vec::new();
@@ -105,4 +105,11 @@ impl fmt::Display for TxtRecord {
                     .collect::<Vec<_>>()
                     .join(" "))
     }
+}
+
+#[test]
+fn test() {
+    let buf = vec![ 0x0, 0xa, 0x9, 0x76, 0x3d, 0x62, 0x6c, 0x61, 0x20, 0x62, 0x6c, 0x61 ];
+    let record = TxtRecord::from_bytes(&buf, 0);
+    assert_eq!(buf, record.to_bytes(&mut HashMap::new(), 0).unwrap());
 }

@@ -180,3 +180,10 @@ impl fmt::Display for LocRecord {
                self.v_precision as f64 / 100.0)
     }
 }
+
+#[test]
+fn test() {
+    let buf = vec![ 0x0, 0x10, 0x0, 0x0, 0x0, 0x0, 0x6e, 0x67, 0x2d, 0xa0, 0x9c, 0xf7, 0xc5, 0x80, 0x0, 0x0, 0x0, 0x0 ];
+    let record = LocRecord::from_bytes(&buf, 0);
+    assert_eq!(buf, record.to_bytes(&mut HashMap::new(), 0).unwrap());
+}
