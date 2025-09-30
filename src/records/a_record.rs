@@ -4,6 +4,7 @@ use std::fmt;
 use std::fmt::Formatter;
 use std::net::Ipv4Addr;
 use crate::messages::inter::rr_types::RRTypes;
+use crate::messages::message::Message;
 use crate::records::inter::record_base::RecordBase;
 
 #[derive(Clone, Debug)]
@@ -90,4 +91,11 @@ impl fmt::Display for ARecord {
         write!(f, "{:<8}{}", self.get_type().to_string(),
                self.address.as_ref().unwrap())
     }
+}
+
+#[test]
+fn test() {
+    let buf = vec![ 0x0, 0x4, 0x7f, 0x0, 0x0, 0x1 ];
+    let record = ARecord::from_bytes(&buf, 0);
+    assert_eq!(buf, record.to_bytes(&mut HashMap::new(), 0).unwrap());
 }

@@ -90,3 +90,10 @@ impl fmt::Display for AaaaRecord {
                self.address.as_ref().unwrap())
     }
 }
+
+#[test]
+fn test() {
+    let buf = vec![ 0x0, 0x10, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1 ];
+    let record = AaaaRecord::from_bytes(&buf, 0);
+    assert_eq!(buf, record.to_bytes(&mut HashMap::new(), 0).unwrap());
+}

@@ -136,3 +136,10 @@ impl fmt::Display for MxRecord {
                format!("{}.", self.server.as_ref().unwrap()))
     }
 }
+
+#[test]
+fn test() {
+    let buf = vec![  ];
+    let record = MxRecord::from_bytes(&buf, 0);
+    assert_eq!(buf, record.to_bytes(&mut HashMap::new(), 0).unwrap());
+}

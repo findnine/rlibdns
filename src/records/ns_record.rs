@@ -35,7 +35,7 @@ impl RecordBase for NsRecord {
     fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {
         let mut buf = vec![0u8; 2];
 
-        buf.extend_from_slice(&pack_fqdn(self.server.as_ref().unwrap().as_str(), label_map, off+2, true));
+        buf.extend_from_slice(&pack_fqdn(self.server.as_ref().unwrap().as_str(), label_map, off+2, false));
 
         buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
 
@@ -86,4 +86,11 @@ impl fmt::Display for NsRecord {
         write!(f, "{:<8}{}", self.get_type().to_string(),
                format!("{}.", self.server.as_ref().unwrap()))
     }
+}
+
+#[test]
+fn test() {
+    let buf = vec![ 0x0, 0xf, 0x3, 0x6e, 0x73, 0x32, 0x5, 0x66, 0x69, 0x6e, 0x64, 0x39, 0x3, 0x6e, 0x65, 0x74, 0x0 ];
+    let record = NsRecord::from_bytes(&buf, 0);
+    assert_eq!(buf, record.to_bytes(&mut HashMap::new(), 0).unwrap());
 }
