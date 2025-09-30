@@ -45,7 +45,7 @@ impl TryFrom<u16> for RRClasses {
             4 => Self::Hs,
             254 => Self::None,
             255 => Self::Any,
-            _  => return Err(RRClassParseError::UnknownCode(v)),
+            _  => return Err(RRClassParseError::UnknownCode(v))
         })
     }
 }
@@ -62,7 +62,7 @@ impl FromStr for RRClasses {
             "HS" => Self::Hs,
             "NONE" => Self::None,
             "ANY" => Self::Any,
-            _  => return Err(RRClassParseError::UnknownName(s.to_string())),
+            _  => return Err(RRClassParseError::UnknownName(s.to_string()))
         })
     }
 }

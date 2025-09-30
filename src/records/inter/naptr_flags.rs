@@ -34,7 +34,7 @@ impl TryFrom<char> for NaptrFlags {
             'A' => Self::A,
             'U' => Self::U,
             'P' => Self::P,
-            _  => return Err(NaptrFlagParseError(c)),
+            _  => return Err(NaptrFlagParseError(c))
         })
     }
 }

@@ -112,13 +112,13 @@ impl TryFrom<u16> for RRTypes {
             255 => Self::Any,
             256 => Self::Uri,
             257 => Self::Caa,
-            _  => return Err(RRTypeParseError::UnknownCode(v)),
+            _  => return Err(RRTypeParseError::UnknownCode(v))
         })
     }
 }
 
 impl FromStr for RRTypes {
-    
+
     type Err = RRTypeParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -151,7 +151,7 @@ impl FromStr for RRTypes {
             "ANY" => Self::Any,
             "URI" => Self::Uri,
             "CAA" => Self::Caa,
-            _  => return Err(RRTypeParseError::UnknownName(s.to_string())),
+            _  => return Err(RRTypeParseError::UnknownName(s.to_string()))
         })
     }
 }

@@ -26,36 +26,6 @@ pub enum OptCodes {
 
 impl OptCodes {
 
-    pub fn from_code(code: u16) ->  Option<Self> {
-        for c in [
-            Self::Llq,
-            Self::Ul,
-            Self::Nsid,
-            Self::Dau,
-            Self::Dhu,
-            Self::N3u,
-            Self::Ecs,
-            Self::Expire,
-            Self::Cookie,
-            Self::TcpKeepalive,
-            Self::Padding,
-            Self::Chain,
-            Self::KeyTag,
-            Self::Ede,
-            Self::DnsSecTrustedKey,
-            Self::DnsSecValidated,
-            Self::AdaptiveDnsDiscovery,
-            Self::DoH,
-            Self::MultiUserClientSubnet
-        ] {
-            if c.get_code() == code {
-                return Some(c);
-            }
-        }
-
-        None
-    }
-
     pub fn get_code(&self) -> u16 {
         match self {
             Self::Llq => 1,
@@ -78,6 +48,39 @@ impl OptCodes {
             Self::DoH => 20,
             Self::MultiUserClientSubnet => 21
         }
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct OptCodeParseError(u16);
+
+impl TryFrom<u16> for OptCodes {
+
+    type Error = OptCodeParseError;
+
+    fn try_from(v: u16) -> Result<Self, Self::Error> {
+        Ok(match v {
+            1 => Self::Llq,
+            2 => Self::Ul,
+            3 => Self::Nsid,
+            5 => Self::Dau,
+            6 => Self::Dhu,
+            7 => Self::N3u,
+            8 => Self::Ecs,
+            9 => Self::Expire,
+            10 => Self::Cookie,
+            11 => Self::TcpKeepalive,
+            12 => Self::Padding,
+            13 => Self::Chain,
+            14 => Self::KeyTag,
+            15 => Self::Ede,
+            17 => Self::DnsSecTrustedKey,
+            18 => Self::DnsSecValidated,
+            19 => Self::AdaptiveDnsDiscovery,
+            20 => Self::DoH,
+            21 => Self::MultiUserClientSubnet,
+            _  => return Err(OptCodeParseError(v))
+        })
     }
 }
 

@@ -1,6 +1,5 @@
 use std::fmt;
 use std::fmt::Formatter;
-use std::str::FromStr;
 
 #[derive(Copy, Default, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum ResponseCodes {
@@ -57,28 +56,7 @@ impl TryFrom<u8> for ResponseCodes {
             7 => Self::XrrSet,
             8 => Self::NotAuth,
             9 => Self::NotZone,
-            _  => return Err(ResponseCodeParseError::UnknownCode(v)),
-        })
-    }
-}
-
-impl FromStr for ResponseCodes {
-
-    type Err = ResponseCodeParseError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match s {
-            "NOERROR" => Self::NoError,
-            "FORMERR" => Self::FormErr,
-            "SERVFAIL" => Self::ServFail,
-            "NXDOMAIN" => Self::NxDomain,
-            "NOTIMP" => Self::NotImp,
-            "REFUSED" => Self::Refused,
-            "YXDOMAIN" => Self::YxDomain,
-            "XRRSET" => Self::XrrSet,
-            "NOTAUTH" => Self::NotAuth,
-            "NOTZONE" => Self::NotZone,
-            _  => return Err(ResponseCodeParseError::UnknownName(s.to_string())),
+            _  => return Err(ResponseCodeParseError::UnknownCode(v))
         })
     }
 }

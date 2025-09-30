@@ -40,6 +40,9 @@ mod tests {
 
     //DO RESULTS WHILE PARSING RECORDS.
 
+    //DONT USE UNWRAPS - MODIFY ALL ENUMS DOING IT - THEN CHANGE io::Result for from_bytes on Message to our own Result
+    //Check the same with each record to change the Result type
+
 
     #[test]
     fn encode_and_decode() {
