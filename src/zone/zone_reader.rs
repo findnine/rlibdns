@@ -443,7 +443,7 @@ fn set_data(record: &mut dyn RecordBase, pos: usize, value: &str) {
                     Some(base) => base.to_string(),
                     None => panic!("Domain is not fully qualified (missing trailing dot)")
                 }),
-                _ => record.params.push(SvcParams::from_str(value))
+                _ => record.params.push(SvcParams::from_str(value).unwrap())
             }
         }
         RRTypes::Https => {
@@ -454,7 +454,7 @@ fn set_data(record: &mut dyn RecordBase, pos: usize, value: &str) {
                     Some(base) => base.to_string(),
                     None => panic!("Domain is not fully qualified (missing trailing dot)")
                 }),
-                _ => record.params.push(SvcParams::from_str(value))
+                _ => record.params.push(SvcParams::from_str(value).unwrap())
             }
         }
         RRTypes::Spf => {}//@       SPF   "v=spf1 include:_spf.example.com ~all"

@@ -40,9 +40,9 @@ impl RecordBase for HttpsRecord {
 
         let mut params = Vec::new();
         while off < length {
-            let key = SvcParamKeys::from_code(u16::from_be_bytes([buf[off], buf[off+1]]));
+            let key = SvcParamKeys::try_from(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
             let length = u16::from_be_bytes([buf[off+2], buf[off+3]]) as usize;
-            params.push(SvcParams::from_bytes(key, &buf[off+4..off+4+length]).unwrap());
+            params.push(SvcParams::from_bytes(key, &buf[off+4..off+4+length]));
 
             off += length+4;
         }

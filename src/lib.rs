@@ -18,7 +18,7 @@ mod tests {
 
 
 
-    //Fix SVC AND SVCKEY PARAM ENUMS TO USE NEW ENUM SYSTEM
+    //Go through all error types and add a display error option
 
 
 
