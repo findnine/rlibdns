@@ -3,10 +3,8 @@ use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_types::RRTypes;
-use crate::records::inter::svc_param_keys::SvcParamKeys;
 use crate::records::inter::record_base::RecordBase;
 use crate::records::inter::svc_param::SvcParam;
-use crate::utils::base64;
 use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 
 #[derive(Clone, Debug)]
@@ -41,9 +39,10 @@ impl RecordBase for SvcbRecord {
 
         let mut params = Vec::new();
         while off < length {
-            let key = SvcParamKeys::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
+            let key = u16::from_be_bytes([buf[off], buf[off+1]]);
             let length = u16::from_be_bytes([buf[off+2], buf[off+3]]) as usize;
-            params.push(SvcParam::new(key, buf[off + 4..off + 4 + length].to_vec()));
+            params.push(SvcParam::from_bytes(key, &buf[off+4..off+4+length]).unwrap());
+
             off += length+4;
         }
 
@@ -62,9 +61,10 @@ impl RecordBase for SvcbRecord {
         buf.extend_from_slice(&pack_fqdn(self.target.as_ref().unwrap().as_str(), label_map, off+4, true));
 
         for param in self.params.iter() {
-            buf.extend_from_slice(&param.get_key().get_code().to_be_bytes());
-            buf.extend_from_slice(&(param.get_value().len() as u16).to_be_bytes());
-            buf.extend_from_slice(&param.get_value());
+            buf.extend_from_slice(&param.get_code().to_be_bytes());
+            let param_buf = param.to_bytes();
+            buf.extend_from_slice(&(param_buf.len() as u16).to_be_bytes());
+            buf.extend_from_slice(&param_buf);
         }
 
         buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
@@ -117,20 +117,8 @@ impl SvcbRecord {
         self.target.clone()
     }
 
-    pub fn insert_param(&mut self, key: SvcParamKeys, param: Vec<u8>) {
-        self.params.push(SvcParam::new(key, param));
-    }
-
-    pub fn get_param(&self, key: &SvcParamKeys) -> Option<&Vec<u8>> {
-        Some(self.params.iter().find(|param| param.get_key().eq(&key))?.get_value())
-    }
-
-    pub fn get_param_mut(&mut self, key: &SvcParamKeys) -> Option<&Vec<u8>> {
-        Some(self.params.iter_mut().find(|param| param.get_key().eq(&key))?.get_value_mut())
-    }
-
-    pub fn get_params(&self) -> &Vec<SvcParam> {
-        self.params.as_ref()
+    pub fn add_param(&mut self, param: SvcParam) {
+        self.params.push(param);
     }
 
     pub fn get_params_mut(&mut self) -> &mut Vec<SvcParam> {
@@ -141,60 +129,13 @@ impl SvcbRecord {
 impl fmt::Display for SvcbRecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        let mut output = Vec::new();
-
-
-        for param in self.params.iter() {
-            let key = param.get_key();
-            let formatted = match param.get_key() {
-                SvcParamKeys::Alpn => {
-                    let value = param.get_value();
-                    let mut parts = Vec::new();
-                    let mut i = 0;
-                    while i < value.len() {
-                        let len = value[i] as usize;
-                        i += 1;
-                        if i + len <= value.len() {
-                            let part = String::from_utf8_lossy(&value[i..i + len]);
-                            parts.push(part.into_owned());
-                            i += len;
-                        } else {
-                            break;
-                        }
-                    }
-                    format!("{}=\"{}\"", key, parts.join(","))
-                }
-                SvcParamKeys::Ipv4Hint => {
-                    let ips = param.get_value()
-                        .chunks_exact(4)
-                        .map(|chunk| {
-                            std::net::Ipv4Addr::new(chunk[0], chunk[1], chunk[2], chunk[3]).to_string()
-                        })
-                        .collect::<Vec<_>>();
-                    format!("{}={}", key, ips.join(","))
-                }
-                SvcParamKeys::Ech => {
-                    format!("{}={:x?}", key, base64::encode(&param.get_value()))
-                }
-                SvcParamKeys::Ipv6Hint => {
-                    let ips = param.get_value()
-                        .chunks_exact(16)
-                        .map(|chunk| {
-                            std::net::Ipv6Addr::from(<[u8; 16]>::try_from(chunk).unwrap()).to_string()
-                        })
-                        .collect::<Vec<_>>();
-                    format!("{}={}", key, ips.join(","))
-                }
-                _ => format!("{}={:x?}", key, param.get_value()),
-            };
-
-            output.push(formatted);
-        }
-
         write!(f, "{:<8}{} {} {}", self.get_type().to_string(),
                self.priority,
                format!("{}.", self.target.as_ref().unwrap()),
-               output.join(" "))
+               self.params.iter()
+                   .map(|s| s.to_string())
+                   .collect::<Vec<_>>()
+                   .join(" "))
     }
 }
 

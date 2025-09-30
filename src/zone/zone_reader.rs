@@ -446,6 +446,7 @@ fn set_data(record: &mut dyn RecordBase, pos: usize, value: &str) {
                     match value.split_once('=') {
                         Some((key, value)) => {
                             let key = SvcParamKeys::from_str(key).unwrap();
+                            /*
                             let value = match key {
                                 SvcParamKeys::Mandatory => value.split(',')
                                     .map(|k| SvcParamKeys::from_str(k).unwrap() as u16)
@@ -469,8 +470,8 @@ fn set_data(record: &mut dyn RecordBase, pos: usize, value: &str) {
                                     .map(|ip| ip.parse::<std::net::Ipv6Addr>().expect("Invalid IPv6").octets().to_vec())
                                     .flatten()
                                     .collect()
-                            };
-                            record.params.push(SvcParam::new(key, value));
+                            };*/
+                            //record.params.push(SvcParam::new(key, value));
                         }
                         None => panic!("Invalid SVCB parameter format: expected key=value")
                     }
@@ -489,6 +490,7 @@ fn set_data(record: &mut dyn RecordBase, pos: usize, value: &str) {
                     match value.split_once('=') {
                         Some((key, value)) => {
                             let key = SvcParamKeys::from_str(key).unwrap();
+                            /*
                             let value = match key {
                                 SvcParamKeys::Mandatory => value.split(',')
                                     .map(|k| SvcParamKeys::from_str(k).unwrap() as u16)
@@ -512,8 +514,8 @@ fn set_data(record: &mut dyn RecordBase, pos: usize, value: &str) {
                                     .map(|ip| ip.parse::<std::net::Ipv6Addr>().expect("Invalid IPv6").octets().to_vec())
                                     .flatten()
                                     .collect()
-                            };
-                            record.params.push(SvcParam::new(key, value));
+                            };*/
+                            //record.params.push(SvcParam::new(key, value));
                         }
                         None => panic!("Invalid HTTPS parameter format: expected key=value")
                     }

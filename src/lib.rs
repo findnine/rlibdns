@@ -34,6 +34,8 @@ mod tests {
 
     //REMOVE HASHMAP FOR POSITION POINTERS WHEN ENCODING
 
+    //DONT FOR LOOP FOR ENUMS - USE MATCH...
+
 
     #[test]
     fn encode_and_decode() {
