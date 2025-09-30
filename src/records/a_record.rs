@@ -36,10 +36,10 @@ impl RecordBase for ARecord {
     }
 
     fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {
-        let mut buf = vec![0u8; 2];
+        let mut buf = vec![0u8; 6];
 
-        buf.extend_from_slice(&self.address.as_ref().unwrap().octets().to_vec());
-
+        buf.splice(2..6, self.address.as_ref().unwrap().octets().to_vec());
+        
         buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
 
         Ok(buf)
