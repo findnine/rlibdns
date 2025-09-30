@@ -16,25 +16,24 @@ mod tests {
     use crate::zone::zone::Zone;
     use crate::zone::zone_store::ZoneStore;
 
-    //IT APPEARS THAT RFC STATES THIS
-    /*
-    An RRset = all RRs with the same owner name + class + type (e.g., all A RRs for www.example.com).
 
-    The standards say all RRs in an RRset must have the same TTL; sending different TTLs is deprecated and servers must not do it. If a client ever sees mixed TTLs, it must treat the whole set as having the lowest TTL.
-    */
-    //THIS MEANS I WILL HAVE TO REDO THE TTL SYSTEM NOT PER RECORD ANYMORE...
 
-    //RRClass should be per zone so we dont need to specify it at record level...
+    //Fix SVC AND SVCKEY PARAM ENUMS TO USE NEW ENUM SYSTEM
+
+
+
 
     //Don't use hashmaps or indexmaps or btreemaps at all
     //Remove the order crap from types
     //Just use vecs as its faster
 
-    //Try to switch svcparamkeys to contain the value in the enum
 
     //REMOVE HASHMAP FOR POSITION POINTERS WHEN ENCODING
 
     //DONT FOR LOOP FOR ENUMS - USE MATCH...
+
+
+
 
     //NEVER PANIC
 
