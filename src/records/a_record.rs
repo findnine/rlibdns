@@ -4,7 +4,6 @@ use std::fmt;
 use std::fmt::Formatter;
 use std::net::Ipv4Addr;
 use crate::messages::inter::rr_types::RRTypes;
-use crate::messages::message::Message;
 use crate::records::inter::record_base::RecordBase;
 
 #[derive(Clone, Debug)]
