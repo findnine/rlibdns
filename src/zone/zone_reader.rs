@@ -132,7 +132,7 @@ impl ZoneReader {
                     ParserState::Common => {
                         let word = String::from_utf8(part[0..word_len].to_vec()).unwrap().to_uppercase();
 
-                        if let Some(c) = RRClasses::from_str(&word) {
+                        if let Ok(c) = RRClasses::from_str(&word) {
                             class = c;
 
                         } else if let Ok(t) = RRTypes::from_str(&word) {

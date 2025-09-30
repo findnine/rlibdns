@@ -43,7 +43,7 @@ impl RecordBase for TSigRecord {
     fn from_bytes(buf: &[u8], off: usize) -> Self {
         let mut off = off;
 
-        let class = RRClasses::from_code(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
+        let class = RRClasses::try_from(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
         let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
 
         //let length = u16::from_be_bytes([buf[off+6], buf[off+7]]) as usize;

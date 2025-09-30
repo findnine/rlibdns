@@ -36,6 +36,10 @@ mod tests {
 
     //DONT FOR LOOP FOR ENUMS - USE MATCH...
 
+    //NEVER PANIC
+
+    //DO RESULTS WHILE PARSING RECORDS.
+
 
     #[test]
     fn encode_and_decode() {

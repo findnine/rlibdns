@@ -36,7 +36,7 @@ impl RecordBase for NSecRecord {
 
         let class = u16::from_be_bytes([buf[off], buf[off+1]]);
         let cache_flush = (class & 0x8000) != 0;
-        let class = RRClasses::from_code(class & 0x7FFF).unwrap();
+        let class = RRClasses::try_from(class & 0x7FFF).unwrap();
         let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
 
         let (fqdn, length) = unpack_fqdn(buf, off+8);

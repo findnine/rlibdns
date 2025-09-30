@@ -27,7 +27,7 @@ impl RRQuery {
         *off += len;
 
         let _type = RRTypes::try_from(u16::from_be_bytes([buf[*off], buf[*off+1]])).unwrap();
-        let class = RRClasses::from_code(u16::from_be_bytes([buf[*off+2], buf[*off+3]])).unwrap();
+        let class = RRClasses::try_from(u16::from_be_bytes([buf[*off+2], buf[*off+3]])).unwrap();
         *off += 4;
 
         Self {

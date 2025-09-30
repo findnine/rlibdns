@@ -543,7 +543,7 @@ fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> Vec<RRName> {
             _ => {
                 let class = u16::from_be_bytes([buf[*off+2], buf[*off+3]]);
                 let cache_flush = (class & 0x8000) != 0;
-                let class = RRClasses::from_code(class & 0x7FFF).unwrap();
+                let class = RRClasses::try_from(class & 0x7FFF).unwrap();
                 let ttl = u32::from_be_bytes([buf[*off+4], buf[*off+5], buf[*off+6], buf[*off+7]]);
 
                 let record = <dyn RecordBase>::from_wire(_type, buf, *off+8).unwrap();
