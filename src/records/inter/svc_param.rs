@@ -1,11 +1,12 @@
 use std::fmt;
 use std::fmt::Formatter;
 use std::net::{Ipv4Addr, Ipv6Addr};
+use crate::records::inter::svc_param_keys::SvcParamKeys;
 use crate::utils::{base64, hex};
 
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
-pub enum SvcParam {
-    Mandatory(Vec<u16>),
+pub enum SvcParams {
+    Mandatory(Vec<SvcParamKeys>),
     Alpn(Vec<Vec<u8>>),
     NoDefaultAlpn,
     Port(u16),
@@ -14,15 +15,15 @@ pub enum SvcParam {
     Ipv6Hint(u16, Vec<u8>)
 }
 
-impl SvcParam {
+impl SvcParams {
 
-    pub fn from_bytes(code: u16, buf: &[u8]) -> Option<Self> {
+    pub fn from_bytes(code: SvcParamKeys, buf: &[u8]) -> Option<Self> {
         Some(match code {
-            0 => SvcParam::Mandatory(buf
+            SvcParamKeys::Mandatory => Self::Mandatory(buf
                     .chunks_exact(2)
-                    .map(|c| u16::from_be_bytes([c[0], c[1]]))
+                    .map(|c| SvcParamKeys::from_code(u16::from_be_bytes([c[0], c[1]])))
                     .collect()),
-            1 => {
+            SvcParamKeys::Alpn => {
                 let mut ids = Vec::new();
                 let mut off = 0;
                 while off < buf.len() {
@@ -32,29 +33,29 @@ impl SvcParam {
                     ids.push(buf[off..end].to_vec());
                     off = end;
                 }
-                SvcParam::Alpn(ids)
+                Self::Alpn(ids)
             }
-            2 => Self::NoDefaultAlpn,
-            3 => SvcParam::Port(u16::from_be_bytes([buf[0], buf[1]])),
-            4 => SvcParam::Ipv4Hint(buf.chunks_exact(4)
+            SvcParamKeys::NoDefaultAlpn => Self::NoDefaultAlpn,
+            SvcParamKeys::Port => Self::Port(u16::from_be_bytes([buf[0], buf[1]])),
+            SvcParamKeys::Ipv4Hint => Self::Ipv4Hint(buf.chunks_exact(4)
                     .map(|c| Ipv4Addr::new(c[0], c[1], c[2], c[3]))
                     .collect()),
-            5 => SvcParam::Ech(buf.to_vec()),
-            6 => SvcParam::Ipv6Hint((buf.len() / 16) as u16, buf.to_vec()),
+            SvcParamKeys::Ech => Self::Ech(buf.to_vec()),
+            SvcParamKeys::Ipv6Hint => Self::Ipv6Hint((buf.len() / 16) as u16, buf.to_vec()),
             _ => return None
         })
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
         match self {
-            SvcParam::Mandatory(list) => {
+            Self::Mandatory(list) => {
                 let mut out = Vec::with_capacity(list.len() * 2);
                 for v in list {
-                    out.extend_from_slice(&v.to_be_bytes());
+                    out.extend_from_slice(&v.get_code().to_be_bytes());
                 }
                 out
             }
-            SvcParam::Alpn(ids) => {
+            Self::Alpn(ids) => {
                 let mut out = Vec::new();
                 for id in ids {
                     out.push(id.len() as u8);
@@ -62,83 +63,121 @@ impl SvcParam {
                 }
                 out
             }
-            SvcParam::NoDefaultAlpn => {
+            Self::NoDefaultAlpn => {
                 Vec::new() // always empty
             }
-            SvcParam::Port(port) => port.to_be_bytes().to_vec(),
-            SvcParam::Ipv4Hint(addrs) => {
+            Self::Port(port) => port.to_be_bytes().to_vec(),
+            Self::Ipv4Hint(addrs) => {
                 let mut out = Vec::with_capacity(addrs.len() * 4);
                 for ip in addrs {
                     out.extend_from_slice(&ip.octets());
                 }
                 out
             }
-            SvcParam::Ech(data) => data.clone(),
-            SvcParam::Ipv6Hint(_count, raw) => {
+            Self::Ech(data) => data.clone(),
+            Self::Ipv6Hint(_count, raw) => {
                 raw.clone()
             }
         }
     }
 
-    pub fn get_code(&self) -> u16 {
+    pub fn get_key(&self) -> SvcParamKeys {
         match self {
-            SvcParam::Mandatory(_)    => 0,
-            SvcParam::Alpn(_)         => 1,
-            SvcParam::NoDefaultAlpn   => 2,
-            SvcParam::Port(_)         => 3,
-            SvcParam::Ipv4Hint(_)     => 4,
-            SvcParam::Ech(_)          => 5,
-            SvcParam::Ipv6Hint(_, _)  => 6
+            Self::Mandatory(_)    => SvcParamKeys::Mandatory,
+            Self::Alpn(_)         => SvcParamKeys::Alpn,
+            Self::NoDefaultAlpn   => SvcParamKeys::NoDefaultAlpn,
+            Self::Port(_)         => SvcParamKeys::Port,
+            Self::Ipv4Hint(_)     => SvcParamKeys::Ipv4Hint,
+            Self::Ech(_)          => SvcParamKeys::Ech,
+            Self::Ipv6Hint(_, _)  => SvcParamKeys::Ipv6Hint,
+        }
+    }
+
+    pub fn get_code(&self) -> u16 {
+        self.get_key().get_code()
+    }
+
+    pub fn from_str(s: &str) -> Self {
+        match s.split_once('=') {
+            Some((key, value)) => {
+                match key {
+                    "mandatory" => SvcParams::Mandatory(value.trim_matches('"').split(',')
+                        .map(|k| SvcParamKeys::from_str(k).unwrap())
+                        .collect()),
+                    "alpn" => {
+                        let ids: Vec<Vec<u8>> = value.trim_matches('"')
+                            .split(',')
+                            .filter(|p| !p.trim().is_empty())
+                            .map(|p| p.trim().as_bytes().to_vec())
+                            .collect();
+                        SvcParams::Alpn(ids)
+                    }
+                    "no-default-alpn" => Self::NoDefaultAlpn,
+                    "port" => SvcParams::Port(value.parse::<u16>().unwrap()),
+                    "ipv4hint" => SvcParams::Ipv4Hint(value.trim_matches('"').split(',')
+                        .map(|ip| ip.parse::<Ipv4Addr>().expect("Invalid IPv4"))
+                        .collect()),
+                    "ech" => SvcParams::Ech(base64::decode(value).unwrap()),
+                    "ipv6hint" => {
+                        let addrs: Vec<Ipv6Addr> = value.trim_matches('"')
+                            .split(',')
+                            .filter(|p| !p.trim().is_empty())
+                            .map(|p| p.trim().parse::<Ipv6Addr>().expect("Invalid IPv6"))
+                            .collect();
+
+                        let mut raw = Vec::with_capacity(addrs.len() * 16);
+                        for ip in &addrs {
+                            raw.extend_from_slice(&ip.octets());
+                        }
+
+                        SvcParams::Ipv6Hint(addrs.len() as u16, raw)
+                    }
+                    _ => panic!("Invalid SVCB key: {}", key)
+                }
+            }
+            None => panic!("Invalid SVCB parameter: {}", s)
         }
     }
 }
 
-impl fmt::Display for SvcParam {
+impl fmt::Display for SvcParams {
 
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            SvcParam::Mandatory(list) => {
-                write!(f, "mandatory=")?;
-                let mut first = true;
-                for v in list {
-                    if !first {
-                        write!(f, ",")?;
-                    }
-                    write!(f, "{}", v)?;
-                    first = false;
-                }
-                Ok(())
+            Self::Mandatory(list) => {
+                write!(f, "{}={}", self.get_key(), list.iter().map(|p| p.to_string()).collect::<Vec<_>>().join(","))
             }
-            SvcParam::Alpn(ids) => {
+            Self::Alpn(ids) => {
                 let mut alpn_strs = Vec::new();
 
                 for id in ids {
                     if let Ok(s) = std::str::from_utf8(id) {
                         alpn_strs.push(s.to_string());
-                    } else {
-                        alpn_strs.push(hex::encode(id));
+                        continue;
                     }
+
+                    alpn_strs.push(hex::encode(id));
                 }
-                write!(f, "alpn=\"{}\"", alpn_strs.join(","))
+                write!(f, "{}=\"{}\"", self.get_key(), alpn_strs.join(","))
             }
-            SvcParam::NoDefaultAlpn => write!(f, "no-default-alpn"),
-            SvcParam::Port(p) => write!(f, "port={}", p),
-            SvcParam::Ipv4Hint(addrs) => {
+            Self::NoDefaultAlpn => write!(f, "no-default-alpn"),
+            Self::Port(p) => write!(f, "{}={}", self.get_key(), p),
+            Self::Ipv4Hint(addrs) => {
                 let ips: Vec<String> = addrs.iter().map(|ip| ip.to_string()).collect();
-                write!(f, "ipv4hint={}", ips.join(","))
+                write!(f, "{}={}", self.get_key(), ips.join(","))
             }
-            SvcParam::Ech(data) => write!(f, "ech={}", base64::encode(data)),
-            SvcParam::Ipv6Hint(_, raw) => {
+            Self::Ech(data) => write!(f, "{}={}", self.get_key(), base64::encode(data)),
+            Self::Ipv6Hint(_, raw) => {
                 if raw.len() % 16 == 0 {
                     let mut ips = Vec::new();
                     for chunk in raw.chunks_exact(16) {
                         let arr: [u8; 16] = chunk.try_into().unwrap();
                         ips.push(Ipv6Addr::from(arr).to_string());
                     }
-                    return write!(f, "ipv6hint={}", ips.join(","));
+                    return write!(f, "{}={}", self.get_key(), ips.join(","));
                 }
 
-                write!(f, "ipv6hint={}", hex::encode(raw))
+                write!(f, "{}={}", self.get_key(), hex::encode(raw))
             }
         }
     }

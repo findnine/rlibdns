@@ -29,9 +29,8 @@ use crate::records::{
     uri_record::UriRecord,
 };
 use crate::records::inter::naptr_flags::NaptrFlags;
-use crate::records::inter::svc_param_keys::SvcParamKeys;
 use crate::records::inter::record_base::RecordBase;
-use crate::records::inter::svc_param::SvcParam;
+use crate::records::inter::svc_param::SvcParams;
 use crate::utils::{base64, hex};
 use crate::utils::time_utils::TimeUtils;
 
@@ -442,40 +441,7 @@ fn set_data(record: &mut dyn RecordBase, pos: usize, value: &str) {
                     Some(base) => base.to_string(),
                     None => panic!("Domain is not fully qualified (missing trailing dot)")
                 }),
-                _ => {
-                    match value.split_once('=') {
-                        Some((key, value)) => {
-                            let key = SvcParamKeys::from_str(key).unwrap();
-                            /*
-                            let value = match key {
-                                SvcParamKeys::Mandatory => value.split(',')
-                                    .map(|k| SvcParamKeys::from_str(k).unwrap() as u16)
-                                    .flat_map(|code| code.to_be_bytes())
-                                    .collect(),
-                                SvcParamKeys::Alpn => value
-                                    .trim_matches('"')
-                                    .split(',')
-                                    .flat_map(|proto| {
-                                        std::iter::once(proto.len() as u8).chain(proto.bytes())
-                                    })
-                                    .collect(),
-                                SvcParamKeys::NoDefaultAlpn => Vec::new(),
-                                SvcParamKeys::Port => value.parse::<u16>().unwrap().to_be_bytes().to_vec(),
-                                SvcParamKeys::Ipv4Hint => value.split(',')
-                                    .map(|ip| ip.parse::<std::net::Ipv4Addr>().expect("Invalid IPv4").octets().to_vec())
-                                    .flatten()
-                                    .collect(),
-                                SvcParamKeys::Ech => base64::decode(value).unwrap(),
-                                SvcParamKeys::Ipv6Hint => value.split(',')
-                                    .map(|ip| ip.parse::<std::net::Ipv6Addr>().expect("Invalid IPv6").octets().to_vec())
-                                    .flatten()
-                                    .collect()
-                            };*/
-                            //record.params.push(SvcParam::new(key, value));
-                        }
-                        None => panic!("Invalid SVCB parameter format: expected key=value")
-                    }
-                }
+                _ => record.params.push(SvcParams::from_str(value))
             }
         }
         RRTypes::Https => {
@@ -486,40 +452,7 @@ fn set_data(record: &mut dyn RecordBase, pos: usize, value: &str) {
                     Some(base) => base.to_string(),
                     None => panic!("Domain is not fully qualified (missing trailing dot)")
                 }),
-                _ => {
-                    match value.split_once('=') {
-                        Some((key, value)) => {
-                            let key = SvcParamKeys::from_str(key).unwrap();
-                            /*
-                            let value = match key {
-                                SvcParamKeys::Mandatory => value.split(',')
-                                    .map(|k| SvcParamKeys::from_str(k).unwrap() as u16)
-                                    .flat_map(|code| code.to_be_bytes())
-                                    .collect(),
-                                SvcParamKeys::Alpn => value
-                                    .trim_matches('"')
-                                    .split(',')
-                                    .flat_map(|proto| {
-                                        std::iter::once(proto.len() as u8).chain(proto.bytes())
-                                    })
-                                    .collect(),
-                                SvcParamKeys::NoDefaultAlpn => Vec::new(),
-                                SvcParamKeys::Port => value.parse::<u16>().unwrap().to_be_bytes().to_vec(),
-                                SvcParamKeys::Ipv4Hint => value.split(',')
-                                    .map(|ip| ip.parse::<std::net::Ipv4Addr>().expect("Invalid IPv4").octets().to_vec())
-                                    .flatten()
-                                    .collect(),
-                                SvcParamKeys::Ech => base64::decode(value).unwrap(),
-                                SvcParamKeys::Ipv6Hint => value.split(',')
-                                    .map(|ip| ip.parse::<std::net::Ipv6Addr>().expect("Invalid IPv6").octets().to_vec())
-                                    .flatten()
-                                    .collect()
-                            };*/
-                            //record.params.push(SvcParam::new(key, value));
-                        }
-                        None => panic!("Invalid HTTPS parameter format: expected key=value")
-                    }
-                }
+                _ => record.params.push(SvcParams::from_str(value))
             }
         }
         RRTypes::Spf => {}//@       SPF   "v=spf1 include:_spf.example.com ~all"

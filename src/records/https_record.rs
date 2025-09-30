@@ -4,14 +4,15 @@ use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::RecordBase;
-use crate::records::inter::svc_param::SvcParam;
+use crate::records::inter::svc_param::SvcParams;
+use crate::records::inter::svc_param_keys::SvcParamKeys;
 use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 
 #[derive(Clone, Debug)]
 pub struct HttpsRecord {
     pub(crate) priority: u16,
     pub(crate) target: Option<String>,
-    pub(crate) params: Vec<SvcParam>
+    pub(crate) params: Vec<SvcParams>
 }
 
 impl Default for HttpsRecord {
@@ -39,9 +40,9 @@ impl RecordBase for HttpsRecord {
 
         let mut params = Vec::new();
         while off < length {
-            let key = u16::from_be_bytes([buf[off], buf[off+1]]);
+            let key = SvcParamKeys::from_code(u16::from_be_bytes([buf[off], buf[off+1]]));
             let length = u16::from_be_bytes([buf[off+2], buf[off+3]]) as usize;
-            params.push(SvcParam::from_bytes(key, &buf[off+4..off+4+length]).unwrap());
+            params.push(SvcParams::from_bytes(key, &buf[off+4..off+4+length]).unwrap());
 
             off += length+4;
         }
@@ -117,15 +118,15 @@ impl HttpsRecord {
         self.target.clone()
     }
 
-    pub fn add_param(&mut self, param: SvcParam) {
+    pub fn add_param(&mut self, param: SvcParams) {
         self.params.push(param);
     }
 
-    pub fn get_params(&self) -> &Vec<SvcParam> {
+    pub fn get_params(&self) -> &Vec<SvcParams> {
         self.params.as_ref()
     }
 
-    pub fn get_params_mut(&mut self) -> &mut Vec<SvcParam> {
+    pub fn get_params_mut(&mut self) -> &mut Vec<SvcParams> {
         self.params.as_mut()
     }
 }
