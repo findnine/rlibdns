@@ -404,7 +404,6 @@ impl fmt::Display for Message {
 
 
 
-        /*
         writeln!(f, "\r\n;; QUESTION SECTION:")?;
         for q in &self.queries {
             writeln!(f, ";{}", q)?;
@@ -412,27 +411,42 @@ impl fmt::Display for Message {
 
         if !self.sections[0].is_empty() {
             writeln!(f, "\r\n;; ANSWER SECTION:")?;
-            for (q, r) in self.sections[0].iter() {
-                writeln!(f, "{:<24}{}", format!("{}.", q), r)?;
+
+            for name in self.sections[0].iter() {
+                let fqdn = format!("{}.", name.get_fqdn());
+                for set in name.get_sets() {
+                    for record in set.get_records() {
+                        writeln!(f, "{:<24}{:<8}{:<8}{}", fqdn, set.get_ttl(), set.get_class().to_string(), record)?;
+                    }
+                }
             }
         }
 
         if !self.sections[1].is_empty() {
             writeln!(f, "\r\n;; AUTHORITATIVE SECTION:")?;
-            for (q, r) in self.sections[1].iter() {
-                writeln!(f, "{:<24}{}", format!("{}.", q), r)?;
+
+            for name in self.sections[1].iter() {
+                let fqdn = format!("{}.", name.get_fqdn());
+                for set in name.get_sets() {
+                    for record in set.get_records() {
+                        writeln!(f, "{:<24}{:<8}{:<8}{}", fqdn, set.get_ttl(), set.get_class().to_string(), record)?;
+                    }
+                }
             }
         }
 
         if !self.sections[2].is_empty() {
             writeln!(f, "\r\n;; ADDITIONAL SECTION:")?;
-            for (q, r) in self.sections[2].iter() {
-                if !q.eq("") && !r.get_type().eq(&RRTypes::Opt) {
-                    writeln!(f, "{:<24}{}", format!("{}.", q), r)?;
+
+            for name in self.sections[2].iter() {
+                let fqdn = format!("{}.", name.get_fqdn());
+                for set in name.get_sets() {
+                    for record in set.get_records() {
+                        writeln!(f, "{:<24}{:<8}{:<8}{}", fqdn, set.get_ttl(), set.get_class().to_string(), record)?;
+                    }
                 }
             }
         }
-        */
 
         Ok(())
     }

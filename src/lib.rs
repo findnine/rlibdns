@@ -66,7 +66,7 @@ mod tests {
 
         let message = Message::from_bytes(&x).unwrap();
 
-        println!("{:?}", message);
+        println!("{}", message);
 
         assert_eq!(x, message.to_bytes(512));
     }
