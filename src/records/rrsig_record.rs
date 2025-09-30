@@ -4,7 +4,7 @@ use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
-use crate::records::inter::record_base::RecordBase;
+use crate::records::inter::record_base::{RecordBase, RecordError};
 use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 use crate::utils::base64;
 use crate::utils::time_utils::TimeUtils;
@@ -45,7 +45,7 @@ impl Default for RRSigRecord {
 
 impl RecordBase for RRSigRecord {
 
-    fn from_bytes(buf: &[u8], off: usize) -> Self {
+    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> {
         let mut off = off;
 
         let class = RRClasses::try_from(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
@@ -68,7 +68,7 @@ impl RecordBase for RRSigRecord {
 
         let signature = buf[off..data_length].to_vec();
 
-        Self {
+        Ok(Self {
             class,
             ttl,
             type_covered,
@@ -80,7 +80,7 @@ impl RecordBase for RRSigRecord {
             key_tag,
             signer_name: Some(signer_name),
             signature
-        }
+        })
     }
 
     fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {

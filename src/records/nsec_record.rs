@@ -4,7 +4,7 @@ use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
-use crate::records::inter::record_base::RecordBase;
+use crate::records::inter::record_base::{RecordBase, RecordError};
 use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 
 #[derive(Clone, Debug)]
@@ -31,7 +31,7 @@ impl Default for NSecRecord {
 
 impl RecordBase for NSecRecord {
 
-    fn from_bytes(buf: &[u8], off: usize) -> Self {
+    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> {
         let mut off = off;
 
         let class = u16::from_be_bytes([buf[off], buf[off+1]]);
@@ -67,13 +67,13 @@ impl RecordBase for NSecRecord {
             off += 2+length;
         }
 
-        Self {
+        Ok(Self {
             class,
             cache_flush,
             ttl,
             fqdn: Some(fqdn),
             rr_types
-        }
+        })
     }
 
     fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {

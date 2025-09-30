@@ -35,7 +35,7 @@ impl ResponseCodes {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct ResponseCodeParseError(u8);
+pub struct ResponseCodeParseError(pub u8);
 
 impl fmt::Display for ResponseCodeParseError {
 

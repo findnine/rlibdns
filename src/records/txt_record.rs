@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_types::RRTypes;
-use crate::records::inter::record_base::RecordBase;
+use crate::records::inter::record_base::{RecordBase, RecordError};
 
 #[derive(Clone, Debug)]
 pub struct TxtRecord {
@@ -21,7 +21,7 @@ impl Default for TxtRecord {
 
 impl RecordBase for TxtRecord {
 
-    fn from_bytes(buf: &[u8], off: usize) -> Self {
+    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> {
         let mut off = off;
 
         let data_length = off+2+u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
@@ -36,9 +36,9 @@ impl RecordBase for TxtRecord {
             off += length+1;
         }
 
-        Self {
+        Ok(Self {
             data
-        }
+        })
     }
 
     fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {
@@ -110,6 +110,6 @@ impl fmt::Display for TxtRecord {
 #[test]
 fn test() {
     let buf = vec![ 0x0, 0xa, 0x9, 0x76, 0x3d, 0x62, 0x6c, 0x61, 0x20, 0x62, 0x6c, 0x61 ];
-    let record = TxtRecord::from_bytes(&buf, 0);
+    let record = TxtRecord::from_bytes(&buf, 0).unwrap();
     assert_eq!(buf, record.to_bytes(&mut HashMap::new(), 0).unwrap());
 }

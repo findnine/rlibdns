@@ -4,7 +4,7 @@ use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
-use crate::records::inter::record_base::RecordBase;
+use crate::records::inter::record_base::{RecordBase, RecordError};
 use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 use crate::utils::hex;
 
@@ -40,7 +40,7 @@ impl Default for TSigRecord {
 
 impl RecordBase for TSigRecord {
 
-    fn from_bytes(buf: &[u8], off: usize) -> Self {
+    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> {
         let mut off = off;
 
         let class = RRClasses::try_from(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
@@ -69,7 +69,7 @@ impl RecordBase for TSigRecord {
         let data_length = off+6+u16::from_be_bytes([buf[off+4], buf[off+5]]) as usize;
         let data = buf[off + 6..data_length].to_vec();
 
-        Self {
+        Ok(Self {
             class,
             ttl,
             algorithm_name: Some(algorithm_name),
@@ -79,7 +79,7 @@ impl RecordBase for TSigRecord {
             original_id,
             error,
             data
-        }
+        })
     }
 
     fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {

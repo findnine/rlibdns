@@ -4,7 +4,7 @@ use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
-use crate::records::inter::record_base::RecordBase;
+use crate::records::inter::record_base::{RecordBase, RecordError};
 use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 
 #[derive(Clone, Debug)]
@@ -29,7 +29,7 @@ impl Default for MxRecord {
 
 impl RecordBase for MxRecord {
 
-    fn from_bytes(buf: &[u8], off: usize) -> Self {
+    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> {
         let class = RRClasses::try_from(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
         let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
 
@@ -39,12 +39,12 @@ impl RecordBase for MxRecord {
 
         let (server, _) = unpack_fqdn(buf, off+10);
 
-        Self {
+        Ok(Self {
             class,
             ttl,
             priority,
             server: Some(server)
-        }
+        })
     }
 
     fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {
@@ -140,6 +140,6 @@ impl fmt::Display for MxRecord {
 #[test]
 fn test() {
     let buf = vec![  ];
-    let record = MxRecord::from_bytes(&buf, 0);
+    let record = MxRecord::from_bytes(&buf, 0).unwrap();
     assert_eq!(buf, record.to_bytes(&mut HashMap::new(), 0).unwrap());
 }

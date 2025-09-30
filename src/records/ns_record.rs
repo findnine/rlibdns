@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_types::RRTypes;
-use crate::records::inter::record_base::RecordBase;
+use crate::records::inter::record_base::{RecordBase, RecordError};
 use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 
 #[derive(Clone, Debug)]
@@ -22,14 +22,14 @@ impl Default for NsRecord {
 
 impl RecordBase for NsRecord {
 
-    fn from_bytes(buf: &[u8], off: usize) -> Self {
+    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> {
         //let z = u16::from_be_bytes([buf[off+6], buf[off+7]]);
 
         let (server, _) = unpack_fqdn(buf, off+2);
 
-        Self {
+        Ok(Self {
             server: Some(server)
-        }
+        })
     }
 
     fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {
@@ -91,6 +91,6 @@ impl fmt::Display for NsRecord {
 #[test]
 fn test() {
     let buf = vec![ 0x0, 0xf, 0x3, 0x6e, 0x73, 0x32, 0x5, 0x66, 0x69, 0x6e, 0x64, 0x39, 0x3, 0x6e, 0x65, 0x74, 0x0 ];
-    let record = NsRecord::from_bytes(&buf, 0);
+    let record = NsRecord::from_bytes(&buf, 0).unwrap();
     assert_eq!(buf, record.to_bytes(&mut HashMap::new(), 0).unwrap());
 }

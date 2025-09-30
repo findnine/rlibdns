@@ -73,6 +73,12 @@ impl Default for Message {
     }
 }
 
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub enum MessageError {
+    HeaderError(String),
+    RecordError(String)
+}
+
 impl Message {
 
     pub fn new(id: u16) -> Self {
@@ -82,13 +88,13 @@ impl Message {
         }
     }
 
-    pub fn from_bytes(buf: &[u8]) -> io::Result<Self> {
+    pub fn from_bytes(buf: &[u8]) -> Result<Self, MessageError> {
         let id = u16::from_be_bytes([buf[0], buf[1]]);
 
         let flags = u16::from_be_bytes([buf[2], buf[3]]);
 
         let qr = (flags & 0x8000) != 0;
-        let op_code = OpCodes::try_from(((flags >> 11) & 0x0F) as u8).unwrap();//.ok_or(io::Error::from(io::ErrorKind::InvalidData))?;
+        let op_code = OpCodes::try_from(((flags >> 11) & 0x0F) as u8).map_err(|e| MessageError::HeaderError(e.to_string()))?;
         let authoritative = (flags & 0x0400) != 0;
         let truncated = (flags & 0x0200) != 0;
         let recursion_desired = (flags & 0x0100) != 0;
@@ -96,7 +102,7 @@ impl Message {
         //let z = (flags & 0x0040) != 0;
         let authenticated_data = (flags & 0x0020) != 0;
         let checking_disabled = (flags & 0x0010) != 0;
-        let response_code = ResponseCodes::try_from((flags & 0x000F) as u8).unwrap();//.ok_or(io::Error::from(io::ErrorKind::InvalidData))?;
+        let response_code = ResponseCodes::try_from((flags & 0x000F) as u8).map_err(|e| MessageError::HeaderError(e.to_string()))?;
 
         let qd_count = u16::from_be_bytes([buf[4], buf[5]]);
 
@@ -108,9 +114,9 @@ impl Message {
         }
 
         let sections = [
-            records_from_bytes(buf, &mut off, u16::from_be_bytes([buf[6], buf[7]])),
-            records_from_bytes(buf, &mut off, u16::from_be_bytes([buf[8], buf[9]])),
-            records_from_bytes(buf, &mut off, u16::from_be_bytes([buf[10], buf[11]]))
+            records_from_bytes(buf, &mut off, u16::from_be_bytes([buf[6], buf[7]]))?,
+            records_from_bytes(buf, &mut off, u16::from_be_bytes([buf[8], buf[9]]))?,
+            records_from_bytes(buf, &mut off, u16::from_be_bytes([buf[10], buf[11]]))?
         ];
 
         Ok(Self {
@@ -524,29 +530,29 @@ impl<'a> Iterator for WireIter<'a> {
     }
 }
 
-fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> Vec<RRName> {
+fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> Result<Vec<RRName>, MessageError> {
     let mut section = Vec::new();
 
     for _ in 0..count {
         let (fqdn, length) = unpack_fqdn(buf, *off);
         *off += length;
 
-        let _type = RRTypes::try_from(u16::from_be_bytes([buf[*off], buf[*off+1]])).unwrap();
+        let _type = RRTypes::try_from(u16::from_be_bytes([buf[*off], buf[*off+1]])).map_err(|e| MessageError::RecordError(e.to_string()))?;
 
         match _type {
             RRTypes::TKey => {}
             RRTypes::TSig => {}
             RRTypes::Opt => {
-                let record = <dyn RecordBase>::from_wire(_type, buf, *off+2).unwrap();
+                let record = <dyn RecordBase>::from_wire(_type, buf, *off+2).map_err(|e| MessageError::RecordError(e.to_string()))?;
             }
             RRTypes::Any => {}
             _ => {
                 let class = u16::from_be_bytes([buf[*off+2], buf[*off+3]]);
                 let cache_flush = (class & 0x8000) != 0;
-                let class = RRClasses::try_from(class & 0x7FFF).unwrap();
+                let class = RRClasses::try_from(class & 0x7FFF).map_err(|e| MessageError::RecordError(e.to_string()))?;
                 let ttl = u32::from_be_bytes([buf[*off+4], buf[*off+5], buf[*off+6], buf[*off+7]]);
 
-                let record = <dyn RecordBase>::from_wire(_type, buf, *off+8).unwrap();
+                let record = <dyn RecordBase>::from_wire(_type, buf, *off+8).map_err(|e| MessageError::RecordError(e.to_string()))?;
 
                 let index = match section.iter().position(|name: &RRName| fqdn.eq(name.get_fqdn())) {
                     Some(i) => i,
@@ -575,7 +581,7 @@ fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> Vec<RRName> {
         *off += 10+u16::from_be_bytes([buf[*off+8], buf[*off+9]]) as usize;
     }
 
-    section
+    Ok(section)
 }
 
 fn records_to_bytes(off: usize, section: &[RRName], label_map: &mut HashMap<String, usize>, max_payload_len: usize) -> (Vec<u8>, u16, bool) {

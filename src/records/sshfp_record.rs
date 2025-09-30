@@ -4,7 +4,7 @@ use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
-use crate::records::inter::record_base::RecordBase;
+use crate::records::inter::record_base::{RecordBase, RecordError};
 use crate::utils::hex;
 
 #[derive(Clone, Debug)]
@@ -31,7 +31,7 @@ impl Default for SshFpRecord {
 
 impl RecordBase for SshFpRecord {
 
-    fn from_bytes(buf: &[u8], off: usize) -> Self {
+    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> {
         let class = RRClasses::try_from(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
         let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
 
@@ -42,13 +42,13 @@ impl RecordBase for SshFpRecord {
 
         let fingerprint = buf[off+10..data_length].to_vec();
 
-        Self {
+        Ok(Self {
             class,
             ttl,
             algorithm,
             fingerprint_type,
             fingerprint
-        }
+        })
     }
 
     fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {

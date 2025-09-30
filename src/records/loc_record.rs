@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_types::RRTypes;
-use crate::records::inter::record_base::RecordBase;
+use crate::records::inter::record_base::{RecordBase, RecordError};
 use crate::utils::coord_utils::CoordUtils;
 
 #[derive(Clone, Debug)]
@@ -34,7 +34,7 @@ impl Default for LocRecord {
 
 impl RecordBase for LocRecord {
 
-    fn from_bytes(buf: &[u8], off: usize) -> Self {
+    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> {
         //let z = u16::from_be_bytes([buf[off], buf[off+1]]);
 
         let version = buf[off+2];
@@ -45,7 +45,7 @@ impl RecordBase for LocRecord {
         let longitude = u32::from_be_bytes([buf[off+10], buf[off+11], buf[off+12], buf[off+13]]);
         let altitude = u32::from_be_bytes([buf[off+14], buf[off+15], buf[off+16], buf[off+17]]);
 
-        Self {
+        Ok(Self {
             version,
             size,
             h_precision,
@@ -53,7 +53,7 @@ impl RecordBase for LocRecord {
             latitude,
             longitude,
             altitude
-        }
+        })
     }
 
     fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {
@@ -184,6 +184,6 @@ impl fmt::Display for LocRecord {
 #[test]
 fn test() {
     let buf = vec![ 0x0, 0x10, 0x0, 0x0, 0x0, 0x0, 0x6e, 0x67, 0x2d, 0xa0, 0x9c, 0xf7, 0xc5, 0x80, 0x0, 0x0, 0x0, 0x0 ];
-    let record = LocRecord::from_bytes(&buf, 0);
+    let record = LocRecord::from_bytes(&buf, 0).unwrap();
     assert_eq!(buf, record.to_bytes(&mut HashMap::new(), 0).unwrap());
 }

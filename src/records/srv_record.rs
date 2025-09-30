@@ -4,7 +4,7 @@ use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
-use crate::records::inter::record_base::RecordBase;
+use crate::records::inter::record_base::{RecordBase, RecordError};
 use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 
 #[derive(Clone, Debug)]
@@ -35,7 +35,7 @@ impl Default for SrvRecord {
 
 impl RecordBase for SrvRecord {
 
-    fn from_bytes(buf: &[u8], off: usize) -> Self {
+    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> {
         let class = u16::from_be_bytes([buf[off], buf[off+1]]);
         let cache_flush = (class & 0x8000) != 0;
         let class = RRClasses::try_from(class & 0x7FFF).unwrap();
@@ -49,7 +49,7 @@ impl RecordBase for SrvRecord {
 
         let (target, _) = unpack_fqdn(buf, off+14);
 
-        Self {
+        Ok(Self {
             class,
             cache_flush,
             ttl,
@@ -57,7 +57,7 @@ impl RecordBase for SrvRecord {
             weight,
             port,
             target: Some(target)
-        }
+        })
     }
 
     fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {

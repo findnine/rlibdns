@@ -4,7 +4,7 @@ use std::fmt;
 use std::fmt::Formatter;
 use std::net::Ipv6Addr;
 use crate::messages::inter::rr_types::RRTypes;
-use crate::records::inter::record_base::RecordBase;
+use crate::records::inter::record_base::{RecordBase, RecordError};
 
 #[derive(Clone, Debug)]
 pub struct AaaaRecord {
@@ -22,18 +22,18 @@ impl Default for AaaaRecord {
 
 impl RecordBase for AaaaRecord {
 
-    fn from_bytes(buf: &[u8], off: usize) -> Self {
+    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> {
         let length = u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
         let record = &buf[off + 2..off + 2 + length];
 
         let address = match record.len() {
             16 => Ipv6Addr::from(<[u8; 16]>::try_from(record).expect("Invalid IPv6 address")),
-            _ => panic!("Invalid Inet Address")
+            _ => return Err(RecordError("invalid inet address".to_string()))
         };
 
-        Self {
+        Ok(Self {
             address: Some(address)
-        }
+        })
     }
 
     fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {
@@ -94,6 +94,6 @@ impl fmt::Display for AaaaRecord {
 #[test]
 fn test() {
     let buf = vec![ 0x0, 0x10, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1 ];
-    let record = AaaaRecord::from_bytes(&buf, 0);
+    let record = AaaaRecord::from_bytes(&buf, 0).unwrap();
     assert_eq!(buf, record.to_bytes(&mut HashMap::new(), 0).unwrap());
 }

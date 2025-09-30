@@ -5,7 +5,7 @@ use std::fmt::Formatter;
 use std::net::{Ipv4Addr, Ipv6Addr};
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::opt_codes::OptCodes;
-use crate::records::inter::record_base::RecordBase;
+use crate::records::inter::record_base::{RecordBase, RecordError};
 use crate::utils::hex;
 use crate::utils::index_map::IndexMap;
 
@@ -33,7 +33,7 @@ impl Default for OptRecord {
 
 impl RecordBase for OptRecord {
 
-    fn from_bytes(buf: &[u8], off: usize) -> Self {
+    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> {
         let payload_size = u16::from_be_bytes([buf[off], buf[off+1]]);
         let ext_rcode = buf[off+2];
         let version = buf[off+3];
@@ -51,13 +51,13 @@ impl RecordBase for OptRecord {
             off += 4+length;
         }
 
-        Self {
+        Ok(Self {
             payload_size,
             ext_rcode,
             version,
             flags,
             options
-        }
+        })
     }
 
     fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {

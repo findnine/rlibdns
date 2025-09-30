@@ -27,7 +27,7 @@ impl OpCodes {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct OpCodeParseError(u8);
+pub struct OpCodeParseError(pub u8);
 
 impl fmt::Display for OpCodeParseError {
 

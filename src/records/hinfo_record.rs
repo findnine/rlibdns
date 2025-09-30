@@ -4,7 +4,7 @@ use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
-use crate::records::inter::record_base::RecordBase;
+use crate::records::inter::record_base::{RecordBase, RecordError};
 
 #[derive(Clone, Debug)]
 pub struct HInfoRecord {
@@ -28,7 +28,7 @@ impl Default for HInfoRecord {
 
 impl RecordBase for HInfoRecord {
 
-    fn from_bytes(buf: &[u8], off: usize) -> Self {
+    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> {
         let class = RRClasses::try_from(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
         let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
 
@@ -41,12 +41,12 @@ impl RecordBase for HInfoRecord {
         let length = buf[off] as usize;
         let os = String::from_utf8(buf[off+1..off+1+length].to_vec()).unwrap();
 
-        Self {
+        Ok(Self {
             class,
             ttl,
             cpu: Some(cpu),
             os: Some(os)
-        }
+        })
     }
 
     fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {

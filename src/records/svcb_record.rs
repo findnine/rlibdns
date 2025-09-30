@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_types::RRTypes;
-use crate::records::inter::record_base::RecordBase;
+use crate::records::inter::record_base::{RecordBase, RecordError};
 use crate::records::inter::svc_param::SvcParams;
 use crate::records::inter::svc_param_keys::SvcParamKeys;
 use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
@@ -28,7 +28,7 @@ impl Default for SvcbRecord {
 
 impl RecordBase for SvcbRecord {
 
-    fn from_bytes(buf: &[u8], off: usize) -> Self {
+    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> {
         let mut off = off;
 
         let priority = u16::from_be_bytes([buf[off+2], buf[off+3]]);
@@ -42,16 +42,16 @@ impl RecordBase for SvcbRecord {
         while off < length {
             let key = SvcParamKeys::try_from(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
             let length = u16::from_be_bytes([buf[off+2], buf[off+3]]) as usize;
-            params.push(SvcParams::from_bytes(key, &buf[off+4..off+4+length]));
+            params.push(SvcParams::from_bytes(key, &buf[off+4..off+4+length]).unwrap());
 
             off += length+4;
         }
 
-        Self {
+        Ok(Self {
             priority,
             target: Some(target),
             params
-        }
+        })
     }
 
     fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {
@@ -143,6 +143,6 @@ impl fmt::Display for SvcbRecord {
 #[test]
 fn test() {
     let buf = vec![ 0x0, 0x37, 0x0, 0x1, 0x3, 0x77, 0x77, 0x77, 0x5, 0x66, 0x69, 0x6e, 0x64, 0x39, 0x3, 0x6e, 0x65, 0x74, 0x0, 0x0, 0x1, 0x0, 0x6, 0x2, 0x68, 0x33, 0x2, 0x68, 0x32, 0x0, 0x4, 0x0, 0x4, 0x7f, 0x0, 0x0, 0x1, 0x0, 0x6, 0x0, 0x10, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1 ];
-    let record = SvcbRecord::from_bytes(&buf, 0);
+    let record = SvcbRecord::from_bytes(&buf, 0).unwrap();
     assert_eq!(buf, record.to_bytes(&mut HashMap::new(), 0).unwrap());
 }

@@ -17,7 +17,7 @@ pub enum SvcParams {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct SvcParamParseError(String);
+pub struct SvcParamParseError(pub String);
 
 impl fmt::Display for SvcParamParseError {
 
@@ -28,12 +28,16 @@ impl fmt::Display for SvcParamParseError {
 
 impl SvcParams {
 
-    pub fn from_bytes(key: SvcParamKeys, buf: &[u8]) -> Self {
-        match key {
-            SvcParamKeys::Mandatory => Self::Mandatory(buf
-                    .chunks_exact(2)
-                    .map(|c| SvcParamKeys::try_from(u16::from_be_bytes([c[0], c[1]])).unwrap())
-                    .collect()),
+    pub fn from_bytes(key: SvcParamKeys, buf: &[u8]) -> Result<Self, SvcParamParseError> {
+        Ok(match key {
+            SvcParamKeys::Mandatory => {
+                let mut out = Vec::new();
+                for c in buf.chunks_exact(2) {
+                    out.push(SvcParamKeys::try_from(u16::from_be_bytes([c[0], c[1]])).map_err(|e| SvcParamParseError(e.to_string()))?);
+                }
+
+                Self::Mandatory(out)
+            }
             SvcParamKeys::Alpn => {
                 let mut ids = Vec::new();
                 let mut off = 0;
@@ -53,7 +57,7 @@ impl SvcParams {
                     .collect()),
             SvcParamKeys::Ech => Self::Ech(buf.to_vec()),
             SvcParamKeys::Ipv6Hint => Self::Ipv6Hint((buf.len() / 16) as u16, buf.to_vec())
-        }
+        })
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
@@ -116,9 +120,14 @@ impl FromStr for SvcParams {
                 match SvcParamKeys::from_str(key) {
                     Ok(key) => {
                         match key {
-                            SvcParamKeys::Mandatory => Ok(SvcParams::Mandatory(value.trim_matches('"').split(',')
-                                .map(|k| SvcParamKeys::from_str(k).unwrap())
-                                .collect())),
+                            SvcParamKeys::Mandatory => {
+                                let mut out = Vec::new();
+                                for k in value.trim_matches('"').split(',') {
+                                    out.push(SvcParamKeys::from_str(k).map_err(|e| SvcParamParseError(e.to_string()))?);
+                                }
+
+                                Ok(SvcParams::Mandatory(out))
+                            }
                             SvcParamKeys::Alpn => {
                                 let ids: Vec<Vec<u8>> = value.trim_matches('"')
                                     .split(',')
@@ -132,9 +141,7 @@ impl FromStr for SvcParams {
                             SvcParamKeys::Ipv4Hint => {
                                 let mut addrs = Vec::new();
                                 for tok in value.trim_matches('"').split(',').map(|t| t.trim()).filter(|t| !t.is_empty()) {
-                                    let ip: Ipv4Addr = tok.parse().map_err(|_| {
-                                        SvcParamParseError(format!("invalid IPv4 address `{tok}`"))
-                                    })?;
+                                    let ip: Ipv4Addr = tok.parse().map_err(|_| SvcParamParseError(format!("invalid ipv4 address `{tok}`")))?;
                                     addrs.push(ip);
                                 }
 
@@ -148,9 +155,7 @@ impl FromStr for SvcParams {
                             SvcParamKeys::Ipv6Hint => {
                                 let mut ips = Vec::new();
                                 for tok in value.trim_matches('"').split(',').map(|t| t.trim()).filter(|t| !t.is_empty()) {
-                                    let ip: Ipv6Addr = tok.parse().map_err(|_| {
-                                        SvcParamParseError(format!("invalid IPv6 address `{tok}`"))
-                                    })?;
+                                    let ip: Ipv6Addr = tok.parse().map_err(|_| SvcParamParseError(format!("invalid ipv4 address `{tok}`")))?;
                                     ips.push(ip);
                                 }
                                 if ips.is_empty() {

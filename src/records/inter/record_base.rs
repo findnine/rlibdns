@@ -26,13 +26,24 @@ use crate::records::{
 
 use std::any::Any;
 use std::collections::HashMap;
-use std::fmt::{Debug, Display};
+use std::fmt;
+use std::fmt::{Debug, Display, Formatter};
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
 
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct RecordError(pub String);
+
+impl Display for RecordError {
+
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 pub trait RecordBase: Display + Debug + Send + Sync {
 
-    fn from_bytes(buf: &[u8], off: usize) -> Self where Self: Sized;
+    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> where Self: Sized;
 
     fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String>;
 
@@ -56,37 +67,35 @@ impl Clone for Box<dyn RecordBase> {
 
 impl dyn RecordBase {
 
-    pub fn new(rrt: RRTypes, ttl: u32, class: RRClasses) -> Option<Box<dyn RecordBase>> {
-        use RRTypes::*;
-
-        Some(match rrt {
-            A      => ARecord::new().upcast(),
-            Aaaa   => AaaaRecord::new().upcast(),
-            Ns     => NsRecord::new().upcast(),
-            CName  => CNameRecord::new().upcast(),
-            Soa    => SoaRecord::new().upcast(),
-            Ptr    => PtrRecord::new(ttl, class).upcast(),
-            HInfo  => HInfoRecord::new(ttl, class).upcast(),
-            Mx     => MxRecord::new(ttl, class).upcast(),
-            Txt    => TxtRecord::new().upcast(),
-            Loc    => LocRecord::new().upcast(),
-            Srv    => SrvRecord::new(ttl, class).upcast(),
-            Naptr  => NaptrRecord::new().upcast(),
-            SshFp  => SshFpRecord::new(ttl, class).upcast(),
-            RRSig  => RRSigRecord::new(ttl, class).upcast(),
-            Nsec   => NSecRecord::new(ttl, class).upcast(),
-            DnsKey => DnsKeyRecord::new(ttl, class).upcast(),
-            Smimea => SmimeaRecord::new().upcast(),
-            Svcb   => SvcbRecord::new().upcast(),
-            Https  => HttpsRecord::new().upcast(),
+    pub fn new(_type: RRTypes, ttl: u32, class: RRClasses) -> Option<Box<dyn RecordBase>> {
+        Some(match _type {
+            RRTypes::A      => ARecord::new().upcast(),
+            RRTypes::Aaaa   => AaaaRecord::new().upcast(),
+            RRTypes::Ns     => NsRecord::new().upcast(),
+            RRTypes::CName  => CNameRecord::new().upcast(),
+            RRTypes::Soa    => SoaRecord::new().upcast(),
+            RRTypes::Ptr    => PtrRecord::new(ttl, class).upcast(),
+            RRTypes::HInfo  => HInfoRecord::new(ttl, class).upcast(),
+            RRTypes::Mx     => MxRecord::new(ttl, class).upcast(),
+            RRTypes::Txt    => TxtRecord::new().upcast(),
+            RRTypes::Loc    => LocRecord::new().upcast(),
+            RRTypes::Srv    => SrvRecord::new(ttl, class).upcast(),
+            RRTypes::Naptr  => NaptrRecord::new().upcast(),
+            RRTypes::SshFp  => SshFpRecord::new(ttl, class).upcast(),
+            RRTypes::RRSig  => RRSigRecord::new(ttl, class).upcast(),
+            RRTypes::Nsec   => NSecRecord::new(ttl, class).upcast(),
+            RRTypes::DnsKey => DnsKeyRecord::new(ttl, class).upcast(),
+            RRTypes::Smimea => SmimeaRecord::new().upcast(),
+            RRTypes::Svcb   => SvcbRecord::new().upcast(),
+            RRTypes::Https  => HttpsRecord::new().upcast(),
             /*
-            Spf => {
+            RRTypes::Spf => {
                 todo!()
             }*/
-            TKey   => TKeyRecord::new(ttl, class).upcast(),
-            TSig   => TSigRecord::new(ttl, class).upcast(),
-            Uri    => UriRecord::new().upcast(),
-            /*Caa => {
+            RRTypes::TKey   => TKeyRecord::new(ttl, class).upcast(),
+            RRTypes::TSig   => TSigRecord::new(ttl, class).upcast(),
+            RRTypes::Uri    => UriRecord::new().upcast(),
+            /*RRTypes::Caa => {
                 todo!()
             }
             _ => {
@@ -98,45 +107,43 @@ impl dyn RecordBase {
         })
     }
 
-    pub fn from_wire(rrt: RRTypes, buf: &[u8], off: usize) -> Option<Box<dyn RecordBase>> {
-        use RRTypes::*;
-
-        Some(match rrt {
-            A      => ARecord::from_bytes(buf, off).upcast(),
-            Aaaa   => AaaaRecord::from_bytes(buf, off).upcast(),
-            Ns     => NsRecord::from_bytes(buf, off).upcast(),
-            CName  => CNameRecord::from_bytes(buf, off).upcast(),
-            Soa    => SoaRecord::from_bytes(buf, off).upcast(),
-            Ptr    => PtrRecord::from_bytes(buf, off).upcast(),
-            HInfo  => HInfoRecord::from_bytes(buf, off).upcast(),
-            Mx     => MxRecord::from_bytes(buf, off).upcast(),
-            Txt    => TxtRecord::from_bytes(buf, off).upcast(),
-            Loc    => LocRecord::from_bytes(buf, off).upcast(),
-            Srv    => SrvRecord::from_bytes(buf, off).upcast(),
-            Naptr  => NaptrRecord::from_bytes(buf, off).upcast(),
-            SshFp  => SshFpRecord::from_bytes(buf, off).upcast(),
-            RRSig  => RRSigRecord::from_bytes(buf, off).upcast(),
-            Nsec   => NSecRecord::from_bytes(buf, off).upcast(),
-            DnsKey => DnsKeyRecord::from_bytes(buf, off).upcast(),
-            Smimea => SmimeaRecord::from_bytes(buf, off).upcast(),
-            Svcb   => SvcbRecord::from_bytes(buf, off).upcast(),
-            Https  => HttpsRecord::from_bytes(buf, off).upcast(),
+    pub fn from_wire(_type: RRTypes, buf: &[u8], off: usize) -> Result<Box<dyn RecordBase>, RecordError> {
+        Ok(match _type {
+            RRTypes::A      => ARecord::from_bytes(buf, off)?.upcast(),
+            RRTypes::Aaaa   => AaaaRecord::from_bytes(buf, off)?.upcast(),
+            RRTypes::Ns     => NsRecord::from_bytes(buf, off)?.upcast(),
+            RRTypes::CName  => CNameRecord::from_bytes(buf, off)?.upcast(),
+            RRTypes::Soa    => SoaRecord::from_bytes(buf, off)?.upcast(),
+            RRTypes::Ptr    => PtrRecord::from_bytes(buf, off)?.upcast(),
+            RRTypes::HInfo  => HInfoRecord::from_bytes(buf, off)?.upcast(),
+            RRTypes::Mx     => MxRecord::from_bytes(buf, off)?.upcast(),
+            RRTypes::Txt    => TxtRecord::from_bytes(buf, off)?.upcast(),
+            RRTypes::Loc    => LocRecord::from_bytes(buf, off)?.upcast(),
+            RRTypes::Srv    => SrvRecord::from_bytes(buf, off)?.upcast(),
+            RRTypes::Naptr  => NaptrRecord::from_bytes(buf, off)?.upcast(),
+            RRTypes::SshFp  => SshFpRecord::from_bytes(buf, off)?.upcast(),
+            RRTypes::RRSig  => RRSigRecord::from_bytes(buf, off)?.upcast(),
+            RRTypes::Nsec   => NSecRecord::from_bytes(buf, off)?.upcast(),
+            RRTypes::DnsKey => DnsKeyRecord::from_bytes(buf, off)?.upcast(),
+            RRTypes::Smimea => SmimeaRecord::from_bytes(buf, off)?.upcast(),
+            RRTypes::Svcb   => SvcbRecord::from_bytes(buf, off)?.upcast(),
+            RRTypes::Https  => HttpsRecord::from_bytes(buf, off)?.upcast(),
             /*
-            Spf => {
+            RRTypes::Spf => {
                 todo!()
             }*/
-            TKey   => TKeyRecord::from_bytes(buf, off).upcast(),
-            TSig   => TSigRecord::from_bytes(buf, off).upcast(),
-            Uri    => UriRecord::from_bytes(buf, off).upcast(),
-            /*Caa => {
+            RRTypes::TKey   => TKeyRecord::from_bytes(buf, off)?.upcast(),
+            RRTypes::TSig   => TSigRecord::from_bytes(buf, off)?.upcast(),
+            RRTypes::Uri    => UriRecord::from_bytes(buf, off)?.upcast(),
+            /*RRTypes::Caa => {
                 todo!()
             }
             _ => {
                 todo!()
             }
             */
-            Opt => OptRecord::from_bytes(buf, off).upcast(),
-            _ => return None
+            RRTypes::Opt => OptRecord::from_bytes(buf, off)?.upcast(),
+            _ => return Err(RecordError("rrtype could not produce a record".to_string()))
         })
     }
 }
