@@ -1,6 +1,7 @@
 use std::fmt;
 use std::fmt::Formatter;
 use std::str::FromStr;
+
 //https://www.iana.org/assignments/dns-parameters/dns-parameters.xhtml
 
 #[derive(Copy, Default, Clone, Eq, PartialEq, Hash, Debug)]
@@ -76,6 +77,16 @@ impl RRTypes {
 pub enum RRTypeParseError {
     UnknownCode(u16),
     UnknownName(String)
+}
+
+impl fmt::Display for RRTypeParseError {
+
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
+            Self::UnknownCode(v) => format!("unknown type code: {}", v),
+            Self::UnknownName(s) => format!("unknown type name: {}", s)
+        })
+    }
 }
 
 impl TryFrom<u16> for RRTypes {

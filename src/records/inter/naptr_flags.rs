@@ -24,6 +24,13 @@ impl NaptrFlags {
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct NaptrFlagParseError(char);
 
+impl fmt::Display for NaptrFlagParseError {
+
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "unknown naptr flag: {}", self.0)
+    }
+}
+
 impl TryFrom<char> for NaptrFlags {
 
     type Error = NaptrFlagParseError;

@@ -38,8 +38,8 @@ impl fmt::Display for SvcParamKeyParseError {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{}", match self {
-            Self::UnknownCode(v) => format!("Unknown SVCB Parameter Code: {}", v),
-            Self::UnknownName(s) => format!("Unknown SVCB Parameter Key: {}", s)
+            Self::UnknownCode(v) => format!("unknown svc parameter code: {}", v),
+            Self::UnknownName(s) => format!("unknown svc parameter key: {}", s)
         })
     }
 }

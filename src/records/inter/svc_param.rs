@@ -19,6 +19,13 @@ pub enum SvcParams {
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct SvcParamParseError(String);
 
+impl fmt::Display for SvcParamParseError {
+
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 impl SvcParams {
 
     pub fn from_bytes(key: SvcParamKeys, buf: &[u8]) -> Self {
@@ -66,9 +73,7 @@ impl SvcParams {
                 }
                 out
             }
-            Self::NoDefaultAlpn => {
-                Vec::new() // always empty
-            }
+            Self::NoDefaultAlpn => Vec::new(),
             Self::Port(port) => port.to_be_bytes().to_vec(),
             Self::Ipv4Hint(addrs) => {
                 let mut out = Vec::with_capacity(addrs.len() * 4);
@@ -92,7 +97,7 @@ impl SvcParams {
             Self::Port(_)         => SvcParamKeys::Port,
             Self::Ipv4Hint(_)     => SvcParamKeys::Ipv4Hint,
             Self::Ech(_)          => SvcParamKeys::Ech,
-            Self::Ipv6Hint(_, _)  => SvcParamKeys::Ipv6Hint,
+            Self::Ipv6Hint(_, _)  => SvcParamKeys::Ipv6Hint
         }
     }
 
@@ -124,23 +129,40 @@ impl FromStr for SvcParams {
                             }
                             SvcParamKeys::NoDefaultAlpn => Ok(Self::NoDefaultAlpn),
                             SvcParamKeys::Port => Ok(SvcParams::Port(value.parse::<u16>().unwrap())),
-                            SvcParamKeys::Ipv4Hint => Ok(SvcParams::Ipv4Hint(value.trim_matches('"').split(',')
-                                .map(|ip| ip.parse::<Ipv4Addr>().expect("Invalid IPv4"))
-                                .collect())),
+                            SvcParamKeys::Ipv4Hint => {
+                                let mut addrs = Vec::new();
+                                for tok in value.trim_matches('"').split(',').map(|t| t.trim()).filter(|t| !t.is_empty()) {
+                                    let ip: Ipv4Addr = tok.parse().map_err(|_| {
+                                        SvcParamParseError(format!("invalid IPv4 address `{tok}`"))
+                                    })?;
+                                    addrs.push(ip);
+                                }
+
+                                if addrs.is_empty() {
+                                    return Err(SvcParamParseError("ipv4hint must not be empty".into()));
+                                }
+
+                                Ok(SvcParams::Ipv4Hint(addrs))
+                            }
                             SvcParamKeys::Ech => Ok(SvcParams::Ech(base64::decode(value).unwrap())),
                             SvcParamKeys::Ipv6Hint => {
-                                let addrs: Vec<Ipv6Addr> = value.trim_matches('"')
-                                    .split(',')
-                                    .filter(|p| !p.trim().is_empty())
-                                    .map(|p| p.trim().parse::<Ipv6Addr>().expect("Invalid IPv6"))
-                                    .collect();
+                                let mut ips = Vec::new();
+                                for tok in value.trim_matches('"').split(',').map(|t| t.trim()).filter(|t| !t.is_empty()) {
+                                    let ip: Ipv6Addr = tok.parse().map_err(|_| {
+                                        SvcParamParseError(format!("invalid IPv6 address `{tok}`"))
+                                    })?;
+                                    ips.push(ip);
+                                }
+                                if ips.is_empty() {
+                                    return Err(SvcParamParseError("ipv6hint must not be empty".into()));
+                                }
 
-                                let mut raw = Vec::with_capacity(addrs.len() * 16);
-                                for ip in &addrs {
+                                let mut raw = Vec::with_capacity(ips.len() * 16);
+                                for ip in &ips {
                                     raw.extend_from_slice(&ip.octets());
                                 }
 
-                                Ok(SvcParams::Ipv6Hint(addrs.len() as u16, raw))
+                                Ok(SvcParams::Ipv6Hint(ips.len() as u16, raw))
                             }
                         }
                     }

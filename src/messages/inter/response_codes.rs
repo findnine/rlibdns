@@ -35,9 +35,13 @@ impl ResponseCodes {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub enum ResponseCodeParseError {
-    UnknownCode(u8),
-    UnknownName(String)
+pub struct ResponseCodeParseError(u8);
+
+impl fmt::Display for ResponseCodeParseError {
+
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "unknown response code: {}", self.0)
+    }
 }
 
 impl TryFrom<u8> for ResponseCodes {
@@ -56,7 +60,7 @@ impl TryFrom<u8> for ResponseCodes {
             7 => Self::XrrSet,
             8 => Self::NotAuth,
             9 => Self::NotZone,
-            _  => return Err(ResponseCodeParseError::UnknownCode(v))
+            _  => return Err(ResponseCodeParseError(v))
         })
     }
 }

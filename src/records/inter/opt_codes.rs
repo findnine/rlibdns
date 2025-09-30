@@ -54,6 +54,13 @@ impl OptCodes {
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct OptCodeParseError(u16);
 
+impl fmt::Display for OptCodeParseError {
+
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "unknown opt code: {}", self.0)
+    }
+}
+
 impl TryFrom<u16> for OptCodes {
 
     type Error = OptCodeParseError;

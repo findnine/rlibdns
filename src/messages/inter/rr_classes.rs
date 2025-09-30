@@ -33,6 +33,16 @@ pub enum RRClassParseError {
     UnknownName(String)
 }
 
+impl fmt::Display for RRClassParseError {
+
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
+            Self::UnknownCode(v) => format!("unknown class code: {}", v),
+            Self::UnknownName(s) => format!("unknown class name: {}", s)
+        })
+    }
+}
+
 impl TryFrom<u16> for RRClasses {
 
     type Error = RRClassParseError;

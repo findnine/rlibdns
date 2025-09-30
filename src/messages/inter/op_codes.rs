@@ -27,9 +27,13 @@ impl OpCodes {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub enum OpCodeParseError {
-    UnknownCode(u8),
-    UnknownName(String)
+pub struct OpCodeParseError(u8);
+
+impl fmt::Display for OpCodeParseError {
+
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "unknown opt code: {}", self.0)
+    }
 }
 
 impl TryFrom<u8> for OpCodes {
@@ -44,7 +48,7 @@ impl TryFrom<u8> for OpCodes {
             3 => Self::Notify,
             4 => Self::Update,
             5 => Self::Dso,
-            _  => return Err(OpCodeParseError::UnknownCode(v))
+            _  => return Err(OpCodeParseError(v))
         })
     }
 }
