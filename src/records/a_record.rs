@@ -1,5 +1,4 @@
 use std::any::Any;
-use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use std::net::Ipv4Addr;
@@ -35,11 +34,11 @@ impl RecordBase for ARecord {
         })
     }
 
-    fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {
+    fn to_bytes(&self, _labels: &mut Vec<(String, usize)>, _off: usize) -> Result<Vec<u8>, String> {
         let mut buf = vec![0u8; 6];
 
         buf.splice(2..6, self.address.as_ref().unwrap().octets().to_vec());
-        
+
         buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
 
         Ok(buf)
@@ -95,5 +94,5 @@ impl fmt::Display for ARecord {
 fn test() {
     let buf = vec![ 0x0, 0x4, 0x7f, 0x0, 0x0, 0x1 ];
     let record = ARecord::from_bytes(&buf, 0).unwrap();
-    assert_eq!(buf, record.to_bytes(&mut HashMap::new(), 0).unwrap());
+    assert_eq!(buf, record.to_bytes(&mut Vec::new(), 0).unwrap());
 }

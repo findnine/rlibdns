@@ -37,8 +37,8 @@ impl RRQuery {
         }
     }
 
-    pub fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Vec<u8> {
-        let mut buf = pack_fqdn(&self.fqdn, label_map, off, true);
+    pub fn to_bytes(&self, labels: &mut Vec<(String, usize)>, off: usize) -> Vec<u8> {
+        let mut buf = pack_fqdn(&self.fqdn, labels, off, true);
 
         buf.extend_from_slice(&self._type.get_code().to_be_bytes());
         buf.extend_from_slice(&self.class.get_code().to_be_bytes());

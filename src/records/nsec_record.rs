@@ -1,5 +1,5 @@
 use std::any::Any;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_classes::RRClasses;
@@ -76,7 +76,7 @@ impl RecordBase for NSecRecord {
         })
     }
 
-    fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {
+    fn to_bytes(&self, labels: &mut Vec<(String, usize)>, off: usize) -> Result<Vec<u8>, String> {
         let mut buf = vec![0u8; 8];
 
         let mut class = self.class.get_code();
@@ -87,7 +87,7 @@ impl RecordBase for NSecRecord {
         buf.splice(0..2, class.to_be_bytes());
         buf.splice(2..6, self.ttl.to_be_bytes());
 
-        buf.extend_from_slice(&pack_fqdn(self.fqdn.as_ref().unwrap().as_str(), label_map, off+10, true));
+        buf.extend_from_slice(&pack_fqdn(self.fqdn.as_ref().unwrap().as_str(), labels, off+10, true));
 
         let mut windows: BTreeMap<u8, Vec<u8>> = BTreeMap::new();
 

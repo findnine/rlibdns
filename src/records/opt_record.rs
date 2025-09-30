@@ -1,5 +1,4 @@
 use std::any::Any;
-use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use std::net::{Ipv4Addr, Ipv6Addr};
@@ -60,7 +59,7 @@ impl RecordBase for OptRecord {
         })
     }
 
-    fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {
+    fn to_bytes(&self, _labels: &mut Vec<(String, usize)>, _off: usize) -> Result<Vec<u8>, String> {
         let mut buf = vec![0u8; 8];
 
         buf.splice(0..2, self.payload_size.to_be_bytes());

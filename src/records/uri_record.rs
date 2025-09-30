@@ -1,5 +1,4 @@
 use std::any::Any;
-use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_types::RRTypes;
@@ -40,7 +39,7 @@ impl RecordBase for UriRecord {
         })
     }
 
-    fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {
+    fn to_bytes(&self, _labels: &mut Vec<(String, usize)>, _off: usize) -> Result<Vec<u8>, String> {
         let mut buf = vec![0u8; 6];
 
         buf.splice(2..4, self.priority.to_be_bytes());
@@ -121,5 +120,5 @@ impl fmt::Display for UriRecord {
 fn test() {
     let buf = vec![ 0x0, 0x16, 0x0, 0x1, 0x0, 0x1, 0x66, 0x69, 0x6e, 0x64, 0x39, 0x3a, 0x2f, 0x2f, 0x6e, 0x61, 0x6d, 0x65, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72 ];
     let record = UriRecord::from_bytes(&buf, 0).unwrap();
-    assert_eq!(buf, record.to_bytes(&mut HashMap::new(), 0).unwrap());
+    assert_eq!(buf, record.to_bytes(&mut Vec::new(), 0).unwrap());
 }

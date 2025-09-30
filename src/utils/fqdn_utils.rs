@@ -1,6 +1,5 @@
-use std::collections::HashMap;
 
-pub fn pack_fqdn(fqdn: &str, labels_map: &mut HashMap<String, usize>, off: usize, compress: bool) -> Vec<u8> {
+pub fn pack_fqdn(fqdn: &str, labels: &mut Vec<(String, usize)>, off: usize, compress: bool) -> Vec<u8> {
     if fqdn.is_empty() {
         return vec![0x00];
     }
@@ -14,7 +13,7 @@ pub fn pack_fqdn(fqdn: &str, labels_map: &mut HashMap<String, usize>, off: usize
         let suffix = parts[i..].join(".");
 
         if compress {
-            if let Some(&ptr) = labels_map.get(&suffix) {
+            if let Some((_, ptr)) = labels.iter().find(|(s, _)| s.eq(&suffix)) {
                 buf.push(0xC0 | ((ptr >> 8) as u8 & 0x3F));
                 buf.push((ptr & 0xFF) as u8);
                 return buf;
@@ -27,8 +26,11 @@ pub fn pack_fqdn(fqdn: &str, labels_map: &mut HashMap<String, usize>, off: usize
         buf.extend_from_slice(label_bytes);
 
         if off <= 0x3FFF {
-            labels_map.entry(suffix).or_insert(off);
+            if !labels.iter().any(|(k, _)| k.eq(&suffix)) {
+                labels.push((suffix.to_string(), off));
+            }
         }
+
         off = off.saturating_add(label_bytes.len() + 1);
     }
 

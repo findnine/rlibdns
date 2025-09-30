@@ -146,12 +146,12 @@ impl Message {
 
         buf.splice(4..6, (self.queries.len() as u16).to_be_bytes());
 
-        let mut label_map = HashMap::new();
+        let mut labels = Vec::new();
         let mut off = DNS_HEADER_LEN;
         let mut truncated = false;
 
         for query in &self.queries {
-            let q = query.to_bytes(&mut label_map, off);
+            let q = query.to_bytes(&mut labels, off);
             if off+q.len() > max_payload_len {
                 truncated = true;
                 break;
@@ -163,7 +163,7 @@ impl Message {
 
         if !truncated {
             for (i, section) in self.sections.iter().enumerate() {
-                let (records, count, t) = records_to_bytes(off, section, &mut label_map, max_payload_len);
+                let (records, count, t) = records_to_bytes(off, section, &mut labels, max_payload_len);
                 buf.extend_from_slice(&records);
                 buf.splice(i*2+6..i*2+8, count.to_be_bytes());
 
@@ -492,12 +492,12 @@ impl<'a> Iterator for WireIter<'a> {
 
         buf.splice(4..6, (self.message.queries.len() as u16).to_be_bytes());
 
-        let mut label_map = HashMap::new();
+        let mut labels = Vec::new();
         let mut off = DNS_HEADER_LEN;
         let mut truncated = false;
 
         for query in &self.message.queries {
-            let q = query.to_bytes(&mut label_map, off);
+            let q = query.to_bytes(&mut labels, off);
             if off+q.len() > self.max_payload_len {
                 truncated = true;
                 break;
@@ -514,7 +514,7 @@ impl<'a> Iterator for WireIter<'a> {
                 total += self.message.sections[i].len();
 
                 if self.position < total {
-                    let (records, count, t) = records_to_bytes(off, &records[self.position - before..], &mut label_map, self.max_payload_len);
+                    let (records, count, t) = records_to_bytes(off, &records[self.position - before..], &mut labels, self.max_payload_len);
                     buf.extend_from_slice(&records);
                     buf.splice(i*2+6..i*2+8, count.to_be_bytes());
                     self.position += count as usize;
@@ -584,7 +584,7 @@ fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> Result<Vec<RRN
     Ok(section)
 }
 
-fn records_to_bytes(off: usize, section: &[RRName], label_map: &mut HashMap<String, usize>, max_payload_len: usize) -> (Vec<u8>, u16, bool) {
+fn records_to_bytes(off: usize, section: &[RRName], labels: &mut Vec<(String, usize)>, max_payload_len: usize) -> (Vec<u8>, u16, bool) {
     let mut truncated = false;
 
     let mut buf = Vec::new();
@@ -592,7 +592,7 @@ fn records_to_bytes(off: usize, section: &[RRName], label_map: &mut HashMap<Stri
     let mut off = off;
 
     for name in section.iter() {
-        let fqdn = pack_fqdn(name.get_fqdn(), label_map, off, true);
+        let fqdn = pack_fqdn(name.get_fqdn(), labels, off, true);
 
         for set in name.get_sets() {
             let class = set.get_class().get_code().to_be_bytes();
@@ -601,7 +601,7 @@ fn records_to_bytes(off: usize, section: &[RRName], label_map: &mut HashMap<Stri
             for record in set.get_records() {
                 off += fqdn.len()+8;
 
-                match record.to_bytes(label_map, off) {
+                match record.to_bytes(labels, off) {
                     Ok(r) => {
                         if off+r.len() > max_payload_len {
                             truncated = true;

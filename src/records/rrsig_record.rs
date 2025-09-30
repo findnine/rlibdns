@@ -1,5 +1,4 @@
 use std::any::Any;
-use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_classes::RRClasses;
@@ -83,7 +82,7 @@ impl RecordBase for RRSigRecord {
         })
     }
 
-    fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {
+    fn to_bytes(&self, labels: &mut Vec<(String, usize)>, off: usize) -> Result<Vec<u8>, String> {
         let mut buf = vec![0u8; 26];
 
         buf.splice(0..2, self.class.get_code().to_be_bytes());
@@ -99,7 +98,7 @@ impl RecordBase for RRSigRecord {
         buf.splice(20..24, self.inception.to_be_bytes());
         buf.splice(24..26, self.key_tag.to_be_bytes());
 
-        buf.extend_from_slice(&pack_fqdn(self.signer_name.as_ref().unwrap(), label_map, off+26, true));
+        buf.extend_from_slice(&pack_fqdn(self.signer_name.as_ref().unwrap(), labels, off+26, true));
 
         buf.extend_from_slice(&self.signature);
 

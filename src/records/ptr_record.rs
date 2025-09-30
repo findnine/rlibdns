@@ -1,5 +1,4 @@
 use std::any::Any;
-use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_classes::RRClasses;
@@ -47,7 +46,7 @@ impl RecordBase for PtrRecord {
         })
     }
 
-    fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {
+    fn to_bytes(&self, labels: &mut Vec<(String, usize)>, off: usize) -> Result<Vec<u8>, String> {
         let mut buf = vec![0u8; 8];
 
         let mut class = self.class.get_code();
@@ -58,7 +57,7 @@ impl RecordBase for PtrRecord {
         buf.splice(0..2, class.to_be_bytes());
         buf.splice(2..6, self.ttl.to_be_bytes());
 
-        buf.extend_from_slice(&pack_fqdn(self.fqdn.as_ref().unwrap().as_str(), label_map, off+8, true));
+        buf.extend_from_slice(&pack_fqdn(self.fqdn.as_ref().unwrap().as_str(), labels, off+8, true));
 
         buf.splice(6..8, ((buf.len()-8) as u16).to_be_bytes());
 

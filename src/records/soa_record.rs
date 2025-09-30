@@ -1,5 +1,4 @@
 use std::any::Any;
-use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_types::RRTypes;
@@ -60,17 +59,17 @@ impl RecordBase for SoaRecord {
         })
     }
 
-    fn to_bytes(&self, label_map: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {
+    fn to_bytes(&self, labels: &mut Vec<(String, usize)>, off: usize) -> Result<Vec<u8>, String> {
         let mut off = off;
 
         let mut buf = vec![0u8; 2];
 
-        let fqdn = pack_fqdn(self.fqdn.as_ref().unwrap().as_str(), label_map, off+2, true);
+        let fqdn = pack_fqdn(self.fqdn.as_ref().unwrap().as_str(), labels, off+2, true);
         buf.extend_from_slice(&fqdn);
 
         off += fqdn.len()+8;
 
-        let mailbox = pack_fqdn(self.mailbox.as_ref().unwrap().as_str(), label_map, off, true);
+        let mailbox = pack_fqdn(self.mailbox.as_ref().unwrap().as_str(), labels, off, true);
         buf.extend_from_slice(&mailbox);
 
         buf.extend_from_slice(&self.serial.to_be_bytes());
@@ -188,5 +187,5 @@ impl fmt::Display for SoaRecord {
 fn test() {
     let buf = vec![ 0x0, 0x34, 0x3, 0x6e, 0x73, 0x31, 0x5, 0x66, 0x69, 0x6e, 0x64, 0x39, 0x3, 0x6e, 0x65, 0x74, 0x0, 0x5, 0x61, 0x64, 0x6d, 0x69, 0x6e, 0x5, 0x66, 0x69, 0x6e, 0x64, 0x39, 0x3, 0x6e, 0x65, 0x74, 0x0, 0x0, 0x0, 0x0, 0x4, 0x0, 0x9, 0x3a, 0x80, 0x0, 0x1, 0x51, 0x80, 0x0, 0x24, 0xea, 0x0, 0x0, 0x9, 0x3a, 0x80 ];
     let record = SoaRecord::from_bytes(&buf, 0).unwrap();
-    assert_eq!(buf, record.to_bytes(&mut HashMap::new(), 0).unwrap());
+    assert_eq!(buf, record.to_bytes(&mut Vec::new(), 0).unwrap());
 }
