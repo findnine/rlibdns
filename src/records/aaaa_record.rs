@@ -24,10 +24,13 @@ impl RecordBase for AaaaRecord {
 
     fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> {
         let length = u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
-        let record = &buf[off + 2..off + 2 + length];
 
-        let address = match record.len() {
-            16 => Ipv6Addr::from(<[u8; 16]>::try_from(record).expect("Invalid IPv6 address")),
+        let address = match length {
+            16 => {
+                let mut octets = [0u8; 16];
+                octets.copy_from_slice(&buf[off + 2..off + 2 + length]);
+                Ipv6Addr::from(octets)
+            }
             _ => return Err(RecordError("invalid inet address".to_string()))
         };
 

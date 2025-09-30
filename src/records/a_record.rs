@@ -24,7 +24,6 @@ impl RecordBase for ARecord {
 
     fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> {
         let length = u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
-        //let record = &buf[off + 2..off + 2 + length];
 
         let address = match length {
             4 => Ipv4Addr::new(buf[off+2], buf[off+3], buf[off+4], buf[off+5]),
