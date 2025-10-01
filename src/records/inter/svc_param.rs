@@ -137,7 +137,7 @@ impl FromStr for SvcParams {
                                 Ok(SvcParams::Alpn(ids))
                             }
                             SvcParamKeys::NoDefaultAlpn => Ok(Self::NoDefaultAlpn),
-                            SvcParamKeys::Port => Ok(SvcParams::Port(value.parse::<u16>().unwrap())),
+                            SvcParamKeys::Port => Ok(SvcParams::Port(value.parse::<u16>().map_err(|e| SvcParamParseError(e.to_string()))?)),
                             SvcParamKeys::Ipv4Hint => {
                                 let mut addrs = Vec::new();
                                 for tok in value.trim_matches('"').split(',').map(|t| t.trim()).filter(|t| !t.is_empty()) {
@@ -151,7 +151,7 @@ impl FromStr for SvcParams {
 
                                 Ok(SvcParams::Ipv4Hint(addrs))
                             }
-                            SvcParamKeys::Ech => Ok(SvcParams::Ech(base64::decode(value).unwrap())),
+                            SvcParamKeys::Ech => Ok(SvcParams::Ech(base64::decode(value).map_err(|e| SvcParamParseError(e.to_string()))?)),
                             SvcParamKeys::Ipv6Hint => {
                                 let mut ips = Vec::new();
                                 for tok in value.trim_matches('"').split(',').map(|t| t.trim()).filter(|t| !t.is_empty()) {

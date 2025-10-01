@@ -31,7 +31,8 @@ impl RecordBase for UriRecord {
 
         let length = u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
 
-        let target = String::from_utf8(buf[off+6..off+2+length].to_vec()).unwrap();
+        let target = String::from_utf8(buf[off+6..off+2+length].to_vec())
+            .map_err(|e| RecordError(e.to_string()))?;
 
         Ok(Self {
             priority,
@@ -46,7 +47,7 @@ impl RecordBase for UriRecord {
         buf.splice(2..4, self.priority.to_be_bytes());
         buf.splice(4..6, self.weight.to_be_bytes());
 
-        buf.extend_from_slice(self.target.as_ref().unwrap().as_bytes());
+        buf.extend_from_slice(self.target.as_ref().ok_or_else(|| RecordError("target param was not set".to_string()))?.as_bytes());
 
         buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
 

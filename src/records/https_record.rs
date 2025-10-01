@@ -40,9 +40,11 @@ impl RecordBase for HttpsRecord {
 
         let mut params = Vec::new();
         while off < length {
-            let key = SvcParamKeys::try_from(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
+            let key = SvcParamKeys::try_from(u16::from_be_bytes([buf[off], buf[off+1]]))
+                .map_err(|e| RecordError(e.to_string()))?;
             let length = u16::from_be_bytes([buf[off+2], buf[off+3]]) as usize;
-            params.push(SvcParams::from_bytes(key, &buf[off+4..off+4+length]).unwrap());
+            params.push(SvcParams::from_bytes(key, &buf[off+4..off+4+length])
+                .map_err(|e| RecordError(e.to_string()))?);
 
             off += length+4;
         }
@@ -59,7 +61,8 @@ impl RecordBase for HttpsRecord {
 
         buf.splice(2..4, self.priority.to_be_bytes());
 
-        buf.extend_from_slice(&pack_fqdn(self.target.as_ref().unwrap().as_str(), compression_data, off+4, true));
+        buf.extend_from_slice(&pack_fqdn(self.target.as_ref()
+            .ok_or_else(|| RecordError("target param was not set".to_string()))?.as_str(), compression_data, off+4, true));
 
         for param in self.params.iter() {
             buf.extend_from_slice(&param.get_code().to_be_bytes());

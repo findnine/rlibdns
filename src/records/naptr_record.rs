@@ -39,31 +39,37 @@ impl RecordBase for NaptrRecord {
         let preference = u16::from_be_bytes([buf[off+4], buf[off+5]]);
 
         let length = buf[off+6] as usize;
-        let flags = String::from_utf8(buf[off + 7..off + 7 + length].to_vec()).unwrap();
+        let mut flags = Vec::new();
 
-        let flags = flags.split(",")
-            .filter_map(|tok| {
-                let tok = tok.trim();
-                if tok.is_empty() {
-                    return None;
-                }
-                tok.chars().next().map(|c| NaptrFlags::try_from(c).unwrap())
-            }).collect::<Vec<_>>();
+        for flag in String::from_utf8(buf[off + 7..off + 7 + length].to_vec())
+                .map_err(|e| RecordError(e.to_string()))?.split(",") {
+            let tok = flag.trim();
+            if tok.is_empty() {
+                continue;
+            }
+
+            flags.push(NaptrFlags::try_from(flag.chars()
+                .next()
+                .ok_or_else(|| RecordError("empty NAPTR flag token".to_string()))?).map_err(|e| RecordError(e.to_string()))?);
+        }
 
         let mut off = off+7+length;
 
         let length = buf[off] as usize;
-        let service = String::from_utf8(buf[off + 1..off + 1 + length].to_vec()).unwrap();
+        let service = String::from_utf8(buf[off + 1..off + 1 + length].to_vec())
+            .map_err(|e| RecordError(e.to_string()))?;
 
         off += 1+length;
 
         let length = buf[off] as usize;
-        let regex = String::from_utf8(buf[off + 1..off + 1 + length].to_vec()).unwrap();
+        let regex = String::from_utf8(buf[off + 1..off + 1 + length].to_vec())
+            .map_err(|e| RecordError(e.to_string()))?;
 
         off += 1+length;
 
         let length = buf[off] as usize;
-        let replacement = String::from_utf8(buf[off + 1..off + 1 + length].to_vec()).unwrap();
+        let replacement = String::from_utf8(buf[off + 1..off + 1 + length].to_vec())
+            .map_err(|e| RecordError(e.to_string()))?;
 
         Ok(Self {
             order,
@@ -90,15 +96,15 @@ impl RecordBase for NaptrRecord {
             }
         }
 
-        let service = self.service.as_ref().unwrap().as_bytes();
+        let service = self.service.as_ref().ok_or_else(|| RecordError("service param was not set".to_string()))?.as_bytes();
         buf.push(service.len() as u8);
         buf.extend_from_slice(service);
 
-        let regex = self.regex.as_ref().unwrap().as_bytes();
+        let regex = self.regex.as_ref().ok_or_else(|| RecordError("regex param was not set".to_string()))?.as_bytes();
         buf.push(regex.len() as u8);
         buf.extend_from_slice(regex);
 
-        let replacement = self.replacement.as_ref().unwrap().as_bytes();
+        let replacement = self.replacement.as_ref().ok_or_else(|| RecordError("replacement param was not set".to_string()))?.as_bytes();
         buf.push(replacement.len() as u8);
         buf.extend_from_slice(replacement);
 

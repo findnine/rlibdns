@@ -31,7 +31,8 @@ impl RecordBase for TxtRecord {
 
         while off < data_length {
             let length = buf[off] as usize;
-            let record = String::from_utf8(buf[off + 1..off + 1 + length].to_vec()).unwrap();
+            let record = String::from_utf8(buf[off + 1..off + 1 + length].to_vec())
+                .map_err(|e| RecordError(e.to_string()))?;
             data.push(record);
             off += length+1;
         }
