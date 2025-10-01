@@ -25,6 +25,7 @@ use crate::records::{
 };
 
 use std::any::Any;
+use std::collections::HashMap;
 use std::fmt;
 use std::fmt::{Debug, Display, Formatter};
 use crate::messages::inter::rr_classes::RRClasses;
@@ -44,7 +45,7 @@ pub trait RecordBase: Display + Debug + Send + Sync {
 
     fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> where Self: Sized;
 
-    fn to_bytes(&self, labels: &mut Vec<(String, usize)>, off: usize) -> Result<Vec<u8>, String>;
+    fn to_bytes(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String>;
 
     fn get_type(&self) -> RRTypes;
 

@@ -1,4 +1,5 @@
 use std::any::Any;
+use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_types::RRTypes;
@@ -31,10 +32,10 @@ impl RecordBase for CNameRecord {
         })
     }
 
-    fn to_bytes(&self, labels: &mut Vec<(String, usize)>, off: usize) -> Result<Vec<u8>, String> {
+    fn to_bytes(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {
         let mut buf = vec![0u8; 2];
 
-        buf.extend_from_slice(&pack_fqdn(self.target.as_ref().unwrap().as_str(), labels, off+2, true));
+        buf.extend_from_slice(&pack_fqdn(self.target.as_ref().unwrap().as_str(), compression_data, off+2, true));
 
         buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
 
@@ -91,5 +92,5 @@ impl fmt::Display for CNameRecord {
 fn test() {
     let buf = vec![ 0x0, 0xe, 0x2, 0x78, 0x32, 0x5, 0x66, 0x69, 0x6e, 0x64, 0x39, 0x3, 0x6e, 0x65, 0x74, 0x0 ];
     let record = CNameRecord::from_bytes(&buf, 0).unwrap();
-    assert_eq!(buf, record.to_bytes(&mut Vec::new(), 0).unwrap());
+    assert_eq!(buf, record.to_bytes(&mut HashMap::new(), 0).unwrap());
 }

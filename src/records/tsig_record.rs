@@ -1,4 +1,5 @@
 use std::any::Any;
+use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_classes::RRClasses;
@@ -81,13 +82,13 @@ impl RecordBase for TSigRecord {
         })
     }
 
-    fn to_bytes(&self, labels: &mut Vec<(String, usize)>, off: usize) -> Result<Vec<u8>, String> {
+    fn to_bytes(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {
         let mut buf = vec![0u8; 8];
 
         buf.splice(0..2, self.class.get_code().to_be_bytes());
         buf.splice(2..6, self.ttl.to_be_bytes());
 
-        buf.extend_from_slice(&pack_fqdn(self.algorithm_name.as_ref().unwrap().as_str(), labels, off+8, true)); //PROBABLY NO COMPRESS
+        buf.extend_from_slice(&pack_fqdn(self.algorithm_name.as_ref().unwrap().as_str(), compression_data, off+8, true)); //PROBABLY NO COMPRESS
 
         buf.extend_from_slice(&[
             ((self.time_signed >> 40) & 0xFF) as u8,

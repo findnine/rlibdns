@@ -1,4 +1,5 @@
 use std::any::Any;
+use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_types::RRTypes;
@@ -53,12 +54,12 @@ impl RecordBase for SvcbRecord {
         })
     }
 
-    fn to_bytes(&self, labels: &mut Vec<(String, usize)>, off: usize) -> Result<Vec<u8>, String> {
+    fn to_bytes(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {
         let mut buf = vec![0u8; 4];
 
         buf.splice(2..4, self.priority.to_be_bytes());
 
-        buf.extend_from_slice(&pack_fqdn(self.target.as_ref().unwrap().as_str(), labels, off+4, true));
+        buf.extend_from_slice(&pack_fqdn(self.target.as_ref().unwrap().as_str(), compression_data, off+4, true));
 
         for param in self.params.iter() {
             buf.extend_from_slice(&param.get_code().to_be_bytes());
@@ -143,5 +144,5 @@ impl fmt::Display for SvcbRecord {
 fn test() {
     let buf = vec![ 0x0, 0x37, 0x0, 0x1, 0x3, 0x77, 0x77, 0x77, 0x5, 0x66, 0x69, 0x6e, 0x64, 0x39, 0x3, 0x6e, 0x65, 0x74, 0x0, 0x0, 0x1, 0x0, 0x6, 0x2, 0x68, 0x33, 0x2, 0x68, 0x32, 0x0, 0x4, 0x0, 0x4, 0x7f, 0x0, 0x0, 0x1, 0x0, 0x6, 0x0, 0x10, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1 ];
     let record = SvcbRecord::from_bytes(&buf, 0).unwrap();
-    assert_eq!(buf, record.to_bytes(&mut Vec::new(), 0).unwrap());
+    assert_eq!(buf, record.to_bytes(&mut HashMap::new(), 0).unwrap());
 }

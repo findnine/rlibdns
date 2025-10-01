@@ -1,4 +1,5 @@
 use std::any::Any;
+use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_classes::RRClasses;
@@ -59,7 +60,7 @@ impl RecordBase for SrvRecord {
         })
     }
 
-    fn to_bytes(&self, labels: &mut Vec<(String, usize)>, off: usize) -> Result<Vec<u8>, String> {
+    fn to_bytes(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {
         let mut buf = vec![0u8; 14];
 
         let mut class = self.class.get_code();
@@ -74,7 +75,7 @@ impl RecordBase for SrvRecord {
         buf.splice(10..12, self.weight.to_be_bytes());
         buf.splice(12..14, self.port.to_be_bytes());
 
-        buf.extend_from_slice(&pack_fqdn(self.target.as_ref().unwrap().as_str(), labels, off+14, true));
+        buf.extend_from_slice(&pack_fqdn(self.target.as_ref().unwrap().as_str(), compression_data, off+14, true));
 
         buf.splice(6..8, ((buf.len()-8) as u16).to_be_bytes());
 

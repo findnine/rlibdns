@@ -1,4 +1,5 @@
 use std::any::Any;
+use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_classes::RRClasses;
@@ -46,7 +47,7 @@ impl RecordBase for MxRecord {
         })
     }
 
-    fn to_bytes(&self, labels: &mut Vec<(String, usize)>, off: usize) -> Result<Vec<u8>, String> {
+    fn to_bytes(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {
         let mut buf = vec![0u8; 10];
 
         buf.splice(0..2, self.class.get_code().to_be_bytes());
@@ -54,7 +55,7 @@ impl RecordBase for MxRecord {
 
         buf.splice(8..10, self.priority.to_be_bytes());
 
-        buf.extend_from_slice(&pack_fqdn(self.server.as_ref().unwrap().as_str(), labels, off+10, true));
+        buf.extend_from_slice(&pack_fqdn(self.server.as_ref().unwrap().as_str(), compression_data, off+10, true));
 
         buf.splice(6..8, ((buf.len()-8) as u16).to_be_bytes());
 
@@ -140,5 +141,5 @@ impl fmt::Display for MxRecord {
 fn test() {
     let buf = vec![  ];
     let record = MxRecord::from_bytes(&buf, 0).unwrap();
-    assert_eq!(buf, record.to_bytes(&mut Vec::new(), 0).unwrap());
+    assert_eq!(buf, record.to_bytes(&mut HashMap::new(), 0).unwrap());
 }

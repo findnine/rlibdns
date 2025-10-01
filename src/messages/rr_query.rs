@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_classes::RRClasses;
@@ -36,8 +37,8 @@ impl RRQuery {
         }
     }
 
-    pub fn to_bytes(&self, labels: &mut Vec<(String, usize)>, off: usize) -> Vec<u8> {
-        let mut buf = pack_fqdn(&self.fqdn, labels, off, true);
+    pub fn to_bytes(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Vec<u8> {
+        let mut buf = pack_fqdn(&self.fqdn, compression_data, off, true);
 
         buf.extend_from_slice(&self._type.get_code().to_be_bytes());
         buf.extend_from_slice(&self.class.get_code().to_be_bytes());

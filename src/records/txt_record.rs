@@ -1,4 +1,5 @@
 use std::any::Any;
+use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_types::RRTypes;
@@ -40,7 +41,7 @@ impl RecordBase for TxtRecord {
         })
     }
 
-    fn to_bytes(&self, _labels: &mut Vec<(String, usize)>, _off: usize) -> Result<Vec<u8>, String> {
+    fn to_bytes(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, String> {
         let mut buf = vec![0u8; 2];
 
         for record in &self.data {
@@ -110,5 +111,5 @@ impl fmt::Display for TxtRecord {
 fn test() {
     let buf = vec![ 0x0, 0xa, 0x9, 0x76, 0x3d, 0x62, 0x6c, 0x61, 0x20, 0x62, 0x6c, 0x61 ];
     let record = TxtRecord::from_bytes(&buf, 0).unwrap();
-    assert_eq!(buf, record.to_bytes(&mut Vec::new(), 0).unwrap());
+    assert_eq!(buf, record.to_bytes(&mut HashMap::new(), 0).unwrap());
 }
