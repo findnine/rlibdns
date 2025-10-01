@@ -45,7 +45,7 @@ impl RecordBase for SmimeaRecord {
         })
     }
 
-    fn to_bytes(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, String> {
+    fn to_bytes(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RecordError> {
         let mut buf = vec![0u8; 5];
 
         buf[2] = self.usage;

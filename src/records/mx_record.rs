@@ -9,8 +9,6 @@ use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 
 #[derive(Clone, Debug)]
 pub struct MxRecord {
-    class: RRClasses,
-    ttl: u32,
     pub(crate) priority: u16,
     pub(crate) server: Option<String>
 }
@@ -19,8 +17,6 @@ impl Default for MxRecord {
 
     fn default() -> Self {
         Self {
-            class: RRClasses::default(),
-            ttl: 0,
             priority: 0,
             server: None
         }
@@ -30,34 +26,27 @@ impl Default for MxRecord {
 impl RecordBase for MxRecord {
 
     fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> {
-        let class = RRClasses::try_from(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
-        let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
-
         //let z = u16::from_be_bytes([buf[off+6], buf[off+7]]);
 
-        let priority = u16::from_be_bytes([buf[off+8], buf[off+9]]);
+        let priority = u16::from_be_bytes([buf[off+2], buf[off+3]]);
 
-        let (server, _) = unpack_fqdn(buf, off+10);
+        let (server, _) = unpack_fqdn(buf, off+4);
 
         Ok(Self {
-            class,
-            ttl,
             priority,
             server: Some(server)
         })
     }
 
-    fn to_bytes(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {
-        let mut buf = vec![0u8; 10];
+    fn to_bytes(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RecordError> {
+        let mut buf = vec![0u8; 4];
 
-        buf.splice(0..2, self.class.get_code().to_be_bytes());
-        buf.splice(2..6, self.ttl.to_be_bytes());
+        buf.splice(2..4, self.priority.to_be_bytes());
 
-        buf.splice(8..10, self.priority.to_be_bytes());
+        buf.extend_from_slice(&pack_fqdn(self.server.as_ref()
+            .ok_or_else(|| RecordError("server param was not set".to_string()))?, compression_data, off+4, false));
 
-        buf.extend_from_slice(&pack_fqdn(self.server.as_ref().unwrap().as_str(), compression_data, off+10, true));
-
-        buf.splice(6..8, ((buf.len()-8) as u16).to_be_bytes());
+        buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
 
         Ok(buf)
     }
@@ -85,28 +74,10 @@ impl RecordBase for MxRecord {
 
 impl MxRecord {
 
-    pub fn new(ttl: u32, class: RRClasses) -> Self {
+    pub fn new() -> Self {
         Self {
-            class,
-            ttl,
             ..Self::default()
         }
-    }
-
-    pub fn set_class(&mut self, class: RRClasses) {
-        self.class = class;
-    }
-
-    pub fn get_class(&self) -> RRClasses {
-        self.class
-    }
-
-    pub fn set_ttl(&mut self, ttl: u32) {
-        self.ttl = ttl;
-    }
-
-    pub fn get_ttl(&self) -> u32 {
-        self.ttl
     }
 
     pub fn set_priority(&mut self, priority: u16) {
@@ -129,9 +100,7 @@ impl MxRecord {
 impl fmt::Display for MxRecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:<8}{:<8}{:<8}{} {}", self.ttl,
-               self.class.to_string(),
-               self.get_type().to_string(),
+        write!(f, "{:<8}{} {}", self.get_type().to_string(),
                self.priority,
                format!("{}.", self.server.as_ref().unwrap()))
     }

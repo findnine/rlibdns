@@ -32,10 +32,11 @@ impl RecordBase for NsRecord {
         })
     }
 
-    fn to_bytes(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {
+    fn to_bytes(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RecordError> {
         let mut buf = vec![0u8; 2];
 
-        buf.extend_from_slice(&pack_fqdn(self.server.as_ref().unwrap().as_str(), compression_data, off+2, false));
+        buf.extend_from_slice(&pack_fqdn(self.server.as_ref()
+            .ok_or_else(|| RecordError("server param was not set".to_string()))?, compression_data, off+2, false));
 
         buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
 

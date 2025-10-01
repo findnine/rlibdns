@@ -75,7 +75,7 @@ impl RecordBase for NaptrRecord {
         })
     }
 
-    fn to_bytes(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, String> {
+    fn to_bytes(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RecordError> {
         let mut buf = vec![0u8; 6];
 
         buf.splice(2..4, self.order.to_be_bytes());

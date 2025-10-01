@@ -45,7 +45,7 @@ pub trait RecordBase: Display + Debug + Send + Sync {
 
     fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> where Self: Sized;
 
-    fn to_bytes(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String>;
+    fn to_bytes(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RecordError>;
 
     fn get_type(&self) -> RRTypes;
 
@@ -76,7 +76,7 @@ impl dyn RecordBase {
             RRTypes::Soa    => SoaRecord::new().upcast(),
             RRTypes::Ptr    => PtrRecord::new(ttl, class).upcast(),
             RRTypes::HInfo  => HInfoRecord::new().upcast(),
-            RRTypes::Mx     => MxRecord::new(ttl, class).upcast(),
+            RRTypes::Mx     => MxRecord::new().upcast(),
             RRTypes::Txt    => TxtRecord::new().upcast(),
             RRTypes::Loc    => LocRecord::new().upcast(),
             RRTypes::Srv    => SrvRecord::new(ttl, class).upcast(),

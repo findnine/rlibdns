@@ -75,7 +75,7 @@ impl RecordBase for TKeyRecord {
         })
     }
 
-    fn to_bytes(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {
+    fn to_bytes(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RecordError> {
         let mut buf = vec![0u8; 8];
 
         buf.splice(0..2, self.class.get_code().to_be_bytes());

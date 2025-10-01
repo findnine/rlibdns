@@ -39,7 +39,7 @@ impl RecordBase for HInfoRecord {
         })
     }
 
-    fn to_bytes(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, String> {
+    fn to_bytes(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RecordError> {
         let mut buf = vec![0u8; 2];
 
         let cpu = self.cpu.as_ref().unwrap().as_bytes();

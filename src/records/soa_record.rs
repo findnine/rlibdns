@@ -60,7 +60,7 @@ impl RecordBase for SoaRecord {
         })
     }
 
-    fn to_bytes(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, String> {
+    fn to_bytes(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RecordError> {
         let mut off = off;
 
         let mut buf = vec![0u8; 2];

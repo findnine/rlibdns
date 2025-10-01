@@ -56,7 +56,7 @@ impl RecordBase for LocRecord {
         })
     }
 
-    fn to_bytes(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, String> {
+    fn to_bytes(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RecordError> {
         let mut buf = vec![0u8; 18];
 
         buf[3] = self.version;
