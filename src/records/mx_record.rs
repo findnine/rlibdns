@@ -139,7 +139,7 @@ impl fmt::Display for MxRecord {
 
 #[test]
 fn test() {
-    let buf = vec![  ];
+    let buf = vec![ 0x0, 0x4, 0x0, 0x1, 0xc0, 0xc ];
     let record = MxRecord::from_bytes(&buf, 0).unwrap();
     assert_eq!(buf, record.to_bytes(&mut HashMap::new(), 0).unwrap());
 }

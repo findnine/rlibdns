@@ -112,7 +112,7 @@ impl fmt::Display for HInfoRecord {
 
 #[test]
 fn test() {
-    let buf = vec![  ];
+    let buf = vec![ 0x0, 0x5, 0x3, 0x41, 0x4d, 0x44, 0x0 ];
     let record = HInfoRecord::from_bytes(&buf, 0).unwrap();
     assert_eq!(buf, record.to_bytes(&mut HashMap::new(), 0).unwrap());
 }
