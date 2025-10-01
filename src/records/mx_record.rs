@@ -44,7 +44,7 @@ impl RecordBase for MxRecord {
         buf.splice(2..4, self.priority.to_be_bytes());
 
         buf.extend_from_slice(&pack_fqdn(self.server.as_ref()
-            .ok_or_else(|| RecordError("server param was not set".to_string()))?, compression_data, off+4, false));
+            .ok_or_else(|| RecordError("server param was not set".to_string()))?, compression_data, off+4, true));
 
         buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
 
@@ -108,7 +108,7 @@ impl fmt::Display for MxRecord {
 
 #[test]
 fn test() {
-    let buf = vec![ 0x0, 0x4, 0x0, 0x1, 0xc0, 0xc ];
+    let buf = vec![ 0x0, 0xd, 0x0, 0x1, 0x5, 0x66, 0x69, 0x6e, 0x64, 0x39, 0x3, 0x6e, 0x65, 0x74, 0x0 ];
     let record = MxRecord::from_bytes(&buf, 0).unwrap();
     assert_eq!(buf, record.to_bytes(&mut HashMap::new(), 0).unwrap());
 }
