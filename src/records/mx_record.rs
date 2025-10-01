@@ -73,9 +73,10 @@ impl RecordBase for MxRecord {
 
 impl MxRecord {
 
-    pub fn new() -> Self {
+    pub fn new(priority: u16, server: &str) -> Self {
         Self {
-            ..Self::default()
+            priority,
+            server: Some(server.to_string())
         }
     }
 

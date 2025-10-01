@@ -72,9 +72,9 @@ impl RecordBase for AaaaRecord {
 
 impl AaaaRecord {
 
-    pub fn new() -> Self {
+    pub fn new(address: Ipv6Addr) -> Self {
         Self {
-            ..Self::default()
+            address: Some(address)
         }
     }
 

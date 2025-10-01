@@ -104,13 +104,13 @@ impl RecordBase for OptRecord {
 
 impl OptRecord {
 
-    pub fn new(payload_size: u16, ext_rcode: u8, version: u8, flags: u16) -> Self {
+    pub fn new(payload_size: u16, ext_rcode: u8, version: u8, flags: u16, options: IndexMap<OptCodes, Vec<u8>>) -> Self {
         Self {
             payload_size,
             ext_rcode,
             version,
             flags,
-            options: IndexMap::new()
+            options
         }
     }
 

@@ -139,7 +139,7 @@ impl ZoneReader {
                             _type = t;
                             state = ParserState::Data;
                             data_count = 0;
-                            record = Some((RRQuery::new(self.get_relative_name(&self.name), _type, class), ttl, <dyn RecordBase>::new(_type, ttl, class).unwrap()));
+                            record = Some((RRQuery::new(self.get_relative_name(&self.name), _type, class), ttl, <dyn RecordBase>::new(_type).unwrap()));
 
                         } else {
                             ttl = word.parse().unwrap();//.expect(&format!("Parse error on line {} pos {}", self.line_no, pos));

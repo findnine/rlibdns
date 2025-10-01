@@ -77,9 +77,11 @@ impl RecordBase for UriRecord {
 
 impl UriRecord {
 
-    pub fn new() -> Self {
+    pub fn new(priority: u16, weight: u16, target: &str) -> Self {
         Self {
-            ..Self::default()
+            priority,
+            weight,
+            target: Some(target.to_string())
         }
     }
 

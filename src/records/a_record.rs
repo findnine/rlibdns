@@ -68,9 +68,9 @@ impl RecordBase for ARecord {
 
 impl ARecord {
 
-    pub fn new() -> Self {
+    pub fn new(address: Ipv4Addr) -> Self {
         Self {
-            ..Self::default()
+            address: Some(address)
         }
     }
 

@@ -99,9 +99,11 @@ impl RecordBase for HttpsRecord {
 
 impl HttpsRecord {
 
-    pub fn new() -> Self {
+    pub fn new(priority: u16, target: &str, params: Vec<SvcParams>) -> Self {
         Self {
-            ..Self::default()
+            priority,
+            target: Some(target.to_string()),
+            params
         }
     }
 

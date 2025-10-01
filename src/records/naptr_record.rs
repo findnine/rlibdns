@@ -136,9 +136,14 @@ impl RecordBase for NaptrRecord {
 
 impl NaptrRecord {
 
-    pub fn new() -> Self {
+    pub fn new(order: u16, preference: u16, flags: Vec<NaptrFlags>, service: &str, regex: &str, replacement: &str) -> Self {
         Self {
-            ..Self::default()
+            order,
+            preference,
+            flags,
+            service: Some(service.to_string()),
+            regex: Some(regex.to_string()),
+            replacement: Some(replacement.to_string())
         }
     }
 

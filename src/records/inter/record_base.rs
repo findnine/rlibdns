@@ -67,34 +67,34 @@ impl Clone for Box<dyn RecordBase> {
 
 impl dyn RecordBase {
 
-    pub fn new(_type: RRTypes, ttl: u32, class: RRClasses) -> Option<Box<dyn RecordBase>> {
+    pub fn new(_type: RRTypes) -> Option<Box<dyn RecordBase>> {
         Some(match _type {
-            RRTypes::A      => ARecord::new().upcast(),
-            RRTypes::Aaaa   => AaaaRecord::new().upcast(),
-            RRTypes::Ns     => NsRecord::new().upcast(),
-            RRTypes::CName  => CNameRecord::new().upcast(),
-            RRTypes::Soa    => SoaRecord::new().upcast(),
-            RRTypes::Ptr    => PtrRecord::new(ttl, class).upcast(),
-            RRTypes::HInfo  => HInfoRecord::new().upcast(),
-            RRTypes::Mx     => MxRecord::new().upcast(),
-            RRTypes::Txt    => TxtRecord::new().upcast(),
-            RRTypes::Loc    => LocRecord::new().upcast(),
-            RRTypes::Srv    => SrvRecord::new(ttl, class).upcast(),
-            RRTypes::Naptr  => NaptrRecord::new().upcast(),
-            RRTypes::SshFp  => SshFpRecord::new(ttl, class).upcast(),
-            RRTypes::RRSig  => RRSigRecord::new(ttl, class).upcast(),
-            RRTypes::Nsec   => NSecRecord::new(ttl, class).upcast(),
-            RRTypes::DnsKey => DnsKeyRecord::new(ttl, class).upcast(),
-            RRTypes::Smimea => SmimeaRecord::new().upcast(),
-            RRTypes::Svcb   => SvcbRecord::new().upcast(),
-            RRTypes::Https  => HttpsRecord::new().upcast(),
+            RRTypes::A      => ARecord::default().upcast(),
+            RRTypes::Aaaa   => AaaaRecord::default().upcast(),
+            RRTypes::Ns     => NsRecord::default().upcast(),
+            RRTypes::CName  => CNameRecord::default().upcast(),
+            RRTypes::Soa    => SoaRecord::default().upcast(),
+            RRTypes::Ptr    => PtrRecord::default().upcast(),
+            RRTypes::HInfo  => HInfoRecord::default().upcast(),
+            RRTypes::Mx     => MxRecord::default().upcast(),
+            RRTypes::Txt    => TxtRecord::default().upcast(),
+            RRTypes::Loc    => LocRecord::default().upcast(),
+            RRTypes::Srv    => SrvRecord::default().upcast(),
+            RRTypes::Naptr  => NaptrRecord::default().upcast(),
+            RRTypes::SshFp  => SshFpRecord::default().upcast(),
+            RRTypes::RRSig  => RRSigRecord::default().upcast(),
+            RRTypes::Nsec   => NSecRecord::default().upcast(),
+            RRTypes::DnsKey => DnsKeyRecord::default().upcast(),
+            RRTypes::Smimea => SmimeaRecord::default().upcast(),
+            RRTypes::Svcb   => SvcbRecord::default().upcast(),
+            RRTypes::Https  => HttpsRecord::default().upcast(),
             /*
             RRTypes::Spf => {
                 todo!()
             }*/
-            RRTypes::TKey   => TKeyRecord::new(ttl, class).upcast(),
-            RRTypes::TSig   => TSigRecord::new(ttl, class).upcast(),
-            RRTypes::Uri    => UriRecord::new().upcast(),
+            RRTypes::TKey   => TKeyRecord::default().upcast(),
+            RRTypes::TSig   => TSigRecord::default().upcast(),
+            RRTypes::Uri    => UriRecord::default().upcast(),
             /*RRTypes::Caa => {
                 todo!()
             }

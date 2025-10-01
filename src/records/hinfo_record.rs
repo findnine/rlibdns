@@ -78,9 +78,10 @@ impl RecordBase for HInfoRecord {
 
 impl HInfoRecord {
 
-    pub fn new() -> Self {
+    pub fn new(cpu: &str, os: &str) -> Self {
         Self {
-            ..Self::default()
+            cpu: Some(cpu.to_string()),
+            os: Some(os.to_string())
         }
     }
 

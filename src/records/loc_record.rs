@@ -95,9 +95,15 @@ impl RecordBase for LocRecord {
 
 impl LocRecord {
 
-    pub fn new() -> Self {
+    pub fn new(version: u8, size: u8, h_precision: u8, v_precision: u8, latitude: u32, longitude: u32, altitude: u32) -> Self {
         Self {
-            ..Self::default()
+            version,
+            size,
+            h_precision,
+            v_precision,
+            latitude,
+            longitude,
+            altitude
         }
     }
 

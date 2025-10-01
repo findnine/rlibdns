@@ -78,9 +78,9 @@ impl RecordBase for TxtRecord {
 
 impl TxtRecord {
 
-    pub fn new() -> Self {
+    pub fn new(data: Vec<String>) -> Self {
         Self {
-            ..Self::default()
+            data
         }
     }
 

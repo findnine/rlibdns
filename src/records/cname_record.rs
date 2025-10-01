@@ -66,9 +66,9 @@ impl RecordBase for CNameRecord {
 
 impl CNameRecord {
 
-    pub fn new() -> Self {
+    pub fn new(target: &str) -> Self {
         Self {
-            ..Self::default()
+            target: Some(target.to_string())
         }
     }
 

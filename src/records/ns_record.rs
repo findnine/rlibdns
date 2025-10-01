@@ -66,9 +66,9 @@ impl RecordBase for NsRecord {
 
 impl NsRecord {
 
-    pub fn new() -> Self {
+    pub fn new(server: &str) -> Self {
         Self {
-            ..Self::default()
+            server: Some(server.to_string())
         }
     }
 

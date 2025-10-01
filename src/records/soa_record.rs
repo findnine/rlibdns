@@ -107,9 +107,15 @@ impl RecordBase for SoaRecord {
 
 impl SoaRecord {
 
-    pub fn new() -> Self {
+    pub fn new(fqdn: &str, mailbox: &str, serial: u32, refresh: u32, retry: u32, expire: u32, minimum_ttl: u32) -> Self {
         Self {
-            ..Self::default()
+            fqdn: Some(fqdn.to_string()),
+            mailbox: Some(mailbox.to_string()),
+            serial,
+            refresh,
+            retry,
+            expire,
+            minimum_ttl
         }
     }
 

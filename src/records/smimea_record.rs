@@ -82,9 +82,12 @@ impl RecordBase for SmimeaRecord {
 
 impl SmimeaRecord {
 
-    pub fn new() -> Self {
+    pub fn new(usage: u8, selector: u8, matching_type: u8, certificate: Vec<u8>) -> Self {
         Self {
-            ..Self::default()
+            usage,
+            selector,
+            matching_type,
+            certificate
         }
     }
 
