@@ -2,14 +2,11 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
-use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::{RecordBase, RecordError};
 
 #[derive(Clone, Debug)]
 pub struct HInfoRecord {
-    class: RRClasses,
-    ttl: u32,
     pub(crate) cpu: Option<String>,
     pub(crate) os: Option<String>
 }
@@ -18,8 +15,6 @@ impl Default for HInfoRecord {
 
     fn default() -> Self {
         Self {
-            class: RRClasses::default(),
-            ttl: 0,
             cpu: None,
             os: None
         }
@@ -29,31 +24,23 @@ impl Default for HInfoRecord {
 impl RecordBase for HInfoRecord {
 
     fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> {
-        let class = RRClasses::try_from(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
-        let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
-
         //let z = u16::from_be_bytes([buf[off+6], buf[off+7]]);
 
-        let length = buf[off+8] as usize;
-        let cpu = String::from_utf8(buf[off+9..off+9+length].to_vec()).unwrap();
-        let off = off+9+length;
+        let length = buf[off+2] as usize;
+        let cpu = String::from_utf8(buf[off+3..off+3+length].to_vec()).unwrap();
+        let off = off+3+length;
 
         let length = buf[off] as usize;
         let os = String::from_utf8(buf[off+1..off+1+length].to_vec()).unwrap();
 
         Ok(Self {
-            class,
-            ttl,
             cpu: Some(cpu),
             os: Some(os)
         })
     }
 
     fn to_bytes(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, String> {
-        let mut buf = vec![0u8; 8];
-
-        buf.splice(0..2, self.class.get_code().to_be_bytes());
-        buf.splice(2..6, self.ttl.to_be_bytes());
+        let mut buf = vec![0u8; 2];
 
         let cpu = self.cpu.as_ref().unwrap().as_bytes();
         buf.push(cpu.len() as u8);
@@ -63,7 +50,7 @@ impl RecordBase for HInfoRecord {
         buf.push(os.len() as u8);
         buf.extend_from_slice(os);
 
-        buf.splice(6..8, ((buf.len()-8) as u16).to_be_bytes());
+        buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
 
         Ok(buf)
     }
@@ -91,28 +78,10 @@ impl RecordBase for HInfoRecord {
 
 impl HInfoRecord {
 
-    pub fn new(ttl: u32, class: RRClasses) -> Self {
+    pub fn new() -> Self {
         Self {
-            class,
-            ttl,
             ..Self::default()
         }
-    }
-
-    pub fn set_class(&mut self, class: RRClasses) {
-        self.class = class;
-    }
-
-    pub fn get_class(&self) -> RRClasses {
-        self.class
-    }
-
-    pub fn set_ttl(&mut self, ttl: u32) {
-        self.ttl = ttl;
-    }
-
-    pub fn get_ttl(&self) -> u32 {
-        self.ttl
     }
 
     pub fn set_cpu(&mut self, cpu: &str) {
@@ -135,10 +104,15 @@ impl HInfoRecord {
 impl fmt::Display for HInfoRecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:<8}{:<8}{:<8}\"{}\" \"{}\"", self.ttl,
-               self.class.to_string(),
-               self.get_type().to_string(),
+        write!(f, "{:<8}\"{}\" \"{}\"", self.get_type().to_string(),
                self.cpu.as_ref().unwrap(),
                self.os.as_ref().unwrap())
     }
+}
+
+#[test]
+fn test() {
+    let buf = vec![  ];
+    let record = HInfoRecord::from_bytes(&buf, 0).unwrap();
+    assert_eq!(buf, record.to_bytes(&mut HashMap::new(), 0).unwrap());
 }

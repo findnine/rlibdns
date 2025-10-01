@@ -75,7 +75,7 @@ impl dyn RecordBase {
             RRTypes::CName  => CNameRecord::new().upcast(),
             RRTypes::Soa    => SoaRecord::new().upcast(),
             RRTypes::Ptr    => PtrRecord::new(ttl, class).upcast(),
-            RRTypes::HInfo  => HInfoRecord::new(ttl, class).upcast(),
+            RRTypes::HInfo  => HInfoRecord::new().upcast(),
             RRTypes::Mx     => MxRecord::new(ttl, class).upcast(),
             RRTypes::Txt    => TxtRecord::new().upcast(),
             RRTypes::Loc    => LocRecord::new().upcast(),
