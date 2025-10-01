@@ -90,8 +90,7 @@ impl fmt::Display for SvcParamKeys {
             Self::Port => "port",
             Self::Ipv4Hint => "ipv4hint",
             Self::Ech => "ech",
-            Self::Ipv6Hint => "ipv6hint",
-            _ => "unknown"
+            Self::Ipv6Hint => "ipv6hint"
         })
     }
 }
