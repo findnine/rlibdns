@@ -56,4 +56,8 @@ impl RRSet {
     pub fn get_records(&self) -> &Vec<Box<dyn RecordBase>> {
         &self.records
     }
+
+    pub fn total_records(&self) -> usize {
+        self.records.len()
+    }
 }

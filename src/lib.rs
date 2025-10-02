@@ -35,6 +35,9 @@ mod tests {
     //Check the same with each record to change the Result type
 
 
+    //REDO WIRE CHUNKS FUNCTIONS
+
+
     #[test]
     fn encode_and_decode() {
         ////JUST QUERY

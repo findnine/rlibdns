@@ -508,6 +508,7 @@ impl<'a> Iterator for WireIter<'a> {
         }
 
         if !truncated {
+            /*
             let mut total = 0;
             for (i, records) in self.message.sections.iter().enumerate() {
                 let before = total;
@@ -520,8 +521,22 @@ impl<'a> Iterator for WireIter<'a> {
                     self.position += count as usize;
 
                     if t {
+                        println!("BREAKING");
                         break;
                     }
+                }
+            }
+            */
+
+            for (i, section) in self.message.sections.iter().enumerate() {
+                let (records, count, t) = records_to_bytes(off, section, &mut compression_data, self.max_payload_len);
+                buf.extend_from_slice(&records);
+                buf.splice(i*2+6..i*2+8, count.to_be_bytes());
+
+                self.position = 100;
+
+                if t {
+                    break;
                 }
             }
         }
@@ -590,8 +605,6 @@ fn records_to_bytes(off: usize, section: &[RRName], compression_data: &mut HashM
     let mut buf = Vec::new();
     let mut i = 0;
     let mut off = off;
-
-    println!("{:?}", section);
 
     for name in section.iter() {
         let fqdn = pack_fqdn(name.get_fqdn(), compression_data, off, true);
