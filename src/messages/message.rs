@@ -591,6 +591,8 @@ fn records_to_bytes(off: usize, section: &[RRName], compression_data: &mut HashM
     let mut i = 0;
     let mut off = off;
 
+    println!("{:?}", section);
+
     for name in section.iter() {
         let fqdn = pack_fqdn(name.get_fqdn(), compression_data, off, true);
 
@@ -630,28 +632,26 @@ fn records_to_bytes(off: usize, section: &[RRName], compression_data: &mut HashM
 fn add_record(section: &mut Vec<RRName>, query: &RRQuery, ttl: u32, record: Box<dyn RecordBase>) {
     let fqdn = query.get_fqdn();
 
-    let index = match section.iter().position(|name: &RRName| fqdn.eq(name.get_fqdn())) {
-        Some(i) => i,
+    let name = match section.iter_mut().find(|name| fqdn.eq(name.get_fqdn())) {
+        Some(n) => n,
         None => {
             section.push(RRName::new(&fqdn));
-            section.len() - 1
+            section.last_mut().unwrap()
         }
     };
 
     let _type = query.get_type();
     let class = query.get_class();
 
-    match section[index]
-            .get_sets_mut() //I DONT LIKE HAVING TO MUT SEARCH BUT WHATEVER...
-            .iter_mut()
-            .find(|s| s.get_type().eq(&_type) && s.get_class().eq(&class)) {
-        Some(set) => {
-            set.add_record(ttl, record);
-        }
-        None => {
-            let mut set = RRSet::new(_type, class, ttl);
-            set.add_record(ttl, record);
-            section[index].add_set(set);
-        }
+    if let Some(set) = name
+        .get_sets_mut()
+        .iter_mut()
+        .find(|s| s.get_type().eq(&_type) && s.get_class().eq(&class))
+    {
+        set.add_record(ttl, record);
+    } else {
+        let mut set = RRSet::new(_type, class, ttl);
+        set.add_record(ttl, record);
+        name.add_set(set);
     }
 }
