@@ -60,7 +60,6 @@ impl Zone {
     pub fn add_record(&mut self, query: &RRQuery, ttl: u32, record: Box<dyn RecordBase>) {
         let key = encode_fqdn(query.get_fqdn());
         let _type = query.get_type();
-        let class = query.get_class();
 
         match self.rrmap.get_mut(&key) {
             Some(sets) => {
@@ -71,14 +70,14 @@ impl Zone {
                         set.add_record(ttl, record);
                     }
                     None => {
-                        let mut set = RRSet::new(_type, class, ttl);
+                        let mut set = RRSet::new(_type, query.get_class(), ttl);
                         set.add_record(ttl, record);
                         sets.push(set);
                     }
                 }
             }
             None => {
-                let mut set = RRSet::new(_type, class, ttl);
+                let mut set = RRSet::new(_type, query.get_class(), ttl);
                 set.add_record(ttl, record);
                 self.rrmap.insert(key, vec![set]);
             }
@@ -107,37 +106,19 @@ impl Zone {
     }
     */
 
-    pub fn get_records(&self, query: &RRQuery) -> Option<&RRSet> {//Option<&Vec<Box<dyn RecordBase>>> {
+    pub fn get_sets(&self, query: &RRQuery) -> Option<&RRSet> {
         self.rrmap.get(&encode_fqdn(query.get_fqdn()))?.iter().find(|s| s.get_type().eq(&query.get_type()))
-        //self.records.get(&encode_fqdn(name))?.get(_type)
     }
 
-    pub fn get_all_records(&self, name: &str) -> Option<&Vec<RRSet>> {
-        self.rrmap.get(&encode_fqdn(name))
+    pub fn get_all_sets(&self, query: &str) -> Option<&Vec<RRSet>> {
+        self.rrmap.get(&encode_fqdn(query))
+    }
+
+    pub fn get_all_sets_recursive(&self) -> impl Iterator<Item = (String, &Vec<RRSet>)> {
+        self.rrmap.iter().map(|(key, records)| (decode_fqdn(key), records))
     }
 
     /*
-    pub fn get_all_records(&self, name: &str) -> Option<&BTreeMap<RRTypes, Vec<Box<dyn RecordBase>>>> {
-        self.records.get(&encode_fqdn(name))
-    }
-
-    pub fn get_all_records_recursive(&self) -> impl Iterator<Item = (String, &BTreeMap<RRTypes, Vec<Box<dyn RecordBase>>>)> {
-        self.records.iter().map(|(key, records)| (decode_fqdn(key), records))
-    }
-
-    pub fn get_delegation_point(&self, name: &str) -> Option<(String, &BTreeMap<RRTypes, Vec<Box<dyn RecordBase>>>)> {
-        match self.records.get_shallowest(&encode_fqdn(name)) {
-            Some((name, rrmap)) => {
-                if rrmap.contains_key(&RRTypes::Ns) {
-                    return Some((decode_fqdn(name), rrmap));
-                }
-
-                None
-            }
-            None => None
-        }
-    }
-
 
     //METHOD 2
     pub fn get_delegation_point(&self, name: &str) -> Option<(String, &Vec<RRSet>)> {
@@ -154,8 +135,8 @@ impl Zone {
     }
 
     */
-    pub fn get_delegation_point(&self, name: &str) -> Option<(String, &RRSet)> {
-        match self.rrmap.get_shallowest(&encode_fqdn(name)) {
+    pub fn get_delegation_point(&self, query: &str) -> Option<(String, &RRSet)> {
+        match self.rrmap.get_shallowest(&encode_fqdn(query)) {
             Some((name, sets)) => {
                 sets
                     .iter()

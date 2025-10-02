@@ -34,4 +34,8 @@ impl RRName {
     pub fn get_sets_mut(&mut self) -> &mut Vec<RRSet> {
         &mut self.sets
     }
+
+    pub fn total_sets(&self) -> usize {
+        self.sets.len()
+    }
 }
