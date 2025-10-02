@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use crate::journal::journal_reader::JournalReader;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::messages::rr_query::RRQuery;
-use crate::messages::rr_set::RRSet;
+use crate::zone::rr_set::RRSet;
 use crate::records::inter::record_base::RecordBase;
 use crate::utils::fqdn_utils::{decode_fqdn, encode_fqdn};
 use crate::utils::trie::trie::Trie;
