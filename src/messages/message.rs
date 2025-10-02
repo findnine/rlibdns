@@ -519,31 +519,7 @@ fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> Result<Vec<Mes
                 let ttl = u32::from_be_bytes([buf[*off+4], buf[*off+5], buf[*off+6], buf[*off+7]]);
 
                 let record = <dyn RecordBase>::from_wire(_type, buf, *off+8).map_err(|e| MessageError::RecordError(e.to_string()))?;
-
                 section.push((fqdn, class, ttl, record));
-                /*
-                let index = match section.iter().position(|name: &RRName| fqdn.eq(name.get_fqdn())) {
-                    Some(i) => i,
-                    None => {
-                        section.push(RRName::new(&fqdn));
-                        section.len() - 1
-                    }
-                };
-
-                match section[index]
-                        .get_sets_mut() //I DONT LIKE HAVING TO MUT SEARCH BUT WHATEVER...
-                        .iter_mut()
-                        .find(|s| s.get_type().eq(&_type) && s.get_class().eq(&class)) {
-                    Some(set) => {
-                        set.add_record(ttl, record);
-                    }
-                    None => {
-                        let mut set = RRSet::new(_type, class, ttl);
-                        set.add_record(ttl, record);
-                        section[index].add_set(set);
-                    }
-                }
-                */
             }
         }
 
@@ -585,42 +561,6 @@ fn records_to_bytes(off: usize, section: &[MessageRecord], compression_data: &mu
             Err(_) => continue
         }
     }
-
-
-    /*
-    for name in section.iter() {
-        let fqdn = pack_fqdn(name.get_fqdn(), compression_data, off, true);
-
-        for set in name.get_sets() {
-            let class = set.get_class().get_code().to_be_bytes();
-            let ttl = set.get_ttl().to_be_bytes();
-
-            for record in set.get_records() {
-                off += fqdn.len()+8;
-
-                match record.to_bytes(compression_data, off) {
-                    Ok(r) => {
-                        if off+r.len() > max_payload_len {
-                            truncated = true;
-                            break;
-                        }
-
-                        buf.extend_from_slice(&fqdn);
-                        buf.extend_from_slice(&record.get_type().get_code().to_be_bytes());
-
-                        buf.extend_from_slice(&class);
-                        buf.extend_from_slice(&ttl);
-
-                        buf.extend_from_slice(&r);
-                        off += r.len();
-                        i += 1;
-                    }
-                    Err(_) => continue
-                }
-            }
-        }
-    }
-    */
 
     (buf, i, truncated)
 }
