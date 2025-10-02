@@ -1,3 +1,4 @@
+use std::array::from_fn;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
@@ -194,6 +195,7 @@ impl Message {
         WireIter {
             message: self,
             position: 0,
+            total: from_fn(|i| self.total_section(i)),
             max_payload_len
         }
     }
@@ -294,76 +296,51 @@ impl Message {
         self.queries.as_mut()
     }
 
-    pub fn has_answers(&self) -> bool {
-        !self.sections[0].is_empty()
+    pub fn has_section(&self, index: usize) -> bool {
+        !self.sections[index].is_empty()
     }
 
-    pub fn set_answers(&mut self, section: Vec<RRName>) {
-        self.sections[0] = section;
+    pub fn set_section(&mut self, index: usize, section: Vec<RRName>) {
+        self.sections[index] = section;
     }
 
-    pub fn add_answer(&mut self, query: &RRQuery, ttl: u32, record: Box<dyn RecordBase>) {
-        add_record(self.sections[0].as_mut(), query, ttl, record);
+    pub fn add_section(&mut self, index: usize, query: &RRQuery, ttl: u32, record: Box<dyn RecordBase>) {
+        let fqdn = query.get_fqdn();
+
+        let name = match self.sections[index].iter_mut().find(|name| fqdn.eq(name.get_fqdn())) {
+            Some(n) => n,
+            None => {
+                self.sections[index].push(RRName::new(&fqdn));
+                self.sections[index].last_mut().unwrap()
+            }
+        };
+
+        let _type = query.get_type();
+        let class = query.get_class();
+
+        if let Some(set) = name
+            .get_sets_mut()
+            .iter_mut()
+            .find(|s| s.get_type().eq(&_type) && s.get_class().eq(&class))
+        {
+            set.add_record(ttl, record);
+        } else {
+            let mut set = RRSet::new(_type, class, ttl);
+            set.add_record(ttl, record);
+            name.add_set(set);
+        }
     }
 
-    pub fn get_answers(&self) -> &Vec<RRName> {
-        self.sections[0].as_ref()
+    pub fn get_section(&self, index: usize) -> &Vec<RRName> {
+        self.sections[index].as_ref()
     }
 
-    pub fn get_answers_mut(&mut self) -> &mut Vec<RRName> {
-        self.sections[0].as_mut()
+    pub fn get_section_mut(&mut self, index: usize) -> &mut Vec<RRName> {
+        self.sections[index].as_mut()
     }
 
-    pub fn total_answers(&self) -> usize {
-        self.sections[0].len()
-    }
-
-    pub fn has_authority_records(&self) -> bool {
-        !self.sections[1].is_empty()
-    }
-
-    pub fn set_authority_records(&mut self, section: Vec<RRName>) {
-        self.sections[1] = section;
-    }
-
-    pub fn add_authority_record(&mut self, query: &RRQuery, ttl: u32, record: Box<dyn RecordBase>) {
-        add_record(self.sections[1].as_mut(), query, ttl, record);
-    }
-
-    pub fn get_authority_records(&self) -> &Vec<RRName> {
-        self.sections[1].as_ref()
-    }
-
-    pub fn get_authority_records_mut(&mut self) -> &mut Vec<RRName> {
-        self.sections[1].as_mut()
-    }
-
-    pub fn total_authority_records(&self) -> usize {
-        self.sections[1].len()
-    }
-
-    pub fn has_additional_records(&self) -> bool {
-        !self.sections[2].is_empty()
-    }
-
-    pub fn set_additional_records(&mut self, section: Vec<RRName>) {
-        self.sections[2] = section;
-    }
-
-    pub fn add_additional_record(&mut self, query: &RRQuery, ttl: u32, record: Box<dyn RecordBase>) {
-        add_record(self.sections[2].as_mut(), query, ttl, record);
-    }
-
-    pub fn get_additional_records(&self) -> &Vec<RRName> {
-        self.sections[2].as_ref()
-    }
-
-    pub fn get_additional_records_mut(&mut self) -> &mut Vec<RRName> {
-        self.sections[2].as_mut()
-    }
-
-    pub fn total_additional_records(&self) -> usize {
-        self.sections[2].len()
+    pub fn total_section(&self, index: usize) -> usize {
+        self.sections[index].iter().map(|n| n.get_sets().iter().map(|s| s.total_records()).sum::<usize>()).sum()
     }
 
     pub fn as_ref(&self) -> &Self {
@@ -461,6 +438,7 @@ impl fmt::Display for Message {
 pub struct WireIter<'a> {
     message: &'a Message,
     position: usize,
+    total: [usize; 3],
     max_payload_len: usize
 }
 
@@ -469,7 +447,7 @@ impl<'a> Iterator for WireIter<'a> {
     type Item = Vec<u8>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.position >= self.message.sections.iter().map(|r| r.len()).sum() {
+        if self.position >= self.total.iter().sum() {
             return None;
         }
 
@@ -508,11 +486,10 @@ impl<'a> Iterator for WireIter<'a> {
         }
 
         if !truncated {
-            /*
             let mut total = 0;
             for (i, records) in self.message.sections.iter().enumerate() {
                 let before = total;
-                total += self.message.sections[i].len();
+                total += self.total[i];
 
                 if self.position < total {
                     let (records, count, t) = records_to_bytes(off, &records[self.position - before..], &mut compression_data, self.max_payload_len);
@@ -521,23 +498,8 @@ impl<'a> Iterator for WireIter<'a> {
                     self.position += count as usize;
 
                     if t {
-                        println!("BREAKING");
                         break;
                     }
-                }
-            }
-            */
-
-            for (i, section) in self.message.sections.iter().enumerate() {
-                let (records, count, t) = records_to_bytes(off, section, &mut compression_data, self.max_payload_len);
-                buf.extend_from_slice(&records);
-                buf.splice(i*2+6..i*2+8, count.to_be_bytes());
-                self.position += count as usize;
-
-                //self.position = 100;
-
-                if t {
-                    break;
                 }
             }
         }
