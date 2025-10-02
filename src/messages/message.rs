@@ -532,8 +532,9 @@ impl<'a> Iterator for WireIter<'a> {
                 let (records, count, t) = records_to_bytes(off, section, &mut compression_data, self.max_payload_len);
                 buf.extend_from_slice(&records);
                 buf.splice(i*2+6..i*2+8, count.to_be_bytes());
+                self.position += count as usize;
 
-                self.position = 100;
+                //self.position = 100;
 
                 if t {
                     break;
