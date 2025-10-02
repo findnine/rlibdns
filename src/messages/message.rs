@@ -343,6 +343,18 @@ impl Message {
         self.sections[index].iter().map(|n| n.get_sets().iter().map(|s| s.total_records()).sum::<usize>()).sum()
     }
 
+    pub fn set_sections(&mut self, section: [Vec<RRName>; 3]) {
+        self.sections = section;
+    }
+
+    pub fn get_sections(&self) -> &[Vec<RRName>; 3] {
+        &self.sections
+    }
+
+    pub fn get_sections_mut(&mut self) -> &mut [Vec<RRName>; 3] {
+        &mut self.sections
+    }
+
     pub fn as_ref(&self) -> &Self {
         self
     }
