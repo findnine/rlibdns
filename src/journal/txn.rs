@@ -40,7 +40,7 @@ impl Txn {
         self.records[op_code as usize].push((query.to_string(), class, ttl, record));
     }
 
-    pub fn get_records(&self, op_code: TxnOpCodes) -> impl Iterator<Item = &MessageRecord> {
-        self.records[op_code as usize].iter()
+    pub fn get_records(&self, op_code: TxnOpCodes) -> &Vec<MessageRecord> {
+        &self.records[op_code as usize]
     }
 }
