@@ -55,8 +55,8 @@ impl Default for Message {
     fn default() -> Self {
         Self {
             id: 0,
-            op_code: OpCodes::Query,
-            response_code: ResponseCodes::NoError,
+            op_code: Default::default(),
+            response_code: Default::default(),
             qr: false,
             authoritative: false,
             truncated: false,
