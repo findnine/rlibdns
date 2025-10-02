@@ -92,13 +92,4 @@ mod tests {
         //println!("{:?}", store.get_zone_exact("find9.net").unwrap().get_all_records(""));
         //println!("{:?}", store.get_zone_exact("find9.net").unwrap().get_records(&RRQuery::new("", RRTypes::A, RRClasses::In)));
     }
-/*
-    #[test]
-    fn journal() {
-        let mut parser = JournalReader::open("/home/brad/Downloads/db.find9.net.jnl").unwrap();
-
-        for txn in parser.iter() {
-            println!("{:?}", txn);
-        }
-    }*/
 }

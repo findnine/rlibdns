@@ -4,7 +4,9 @@ use std::io::{BufReader, Read, Seek, SeekFrom};
 use std::path::PathBuf;
 use crate::journal::inter::txn_op_codes::TxnOpCodes;
 use crate::journal::txn::Txn;
+use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
+use crate::messages::message::MessageError;
 use crate::records::inter::record_base::RecordBase;
 use crate::utils::fqdn_utils::unpack_fqdn;
 
@@ -202,8 +204,13 @@ impl JournalReader {
                 continue;
             }
 
-            let record = <dyn RecordBase>::from_wire(_type, &buf, off+2).unwrap();
-            txn.add_record(phase, &name, record);
+            let class = u16::from_be_bytes([buf[off+2], buf[off+3]]);
+            //let cache_flush = (class & 0x8000) != 0;
+            let class = RRClasses::try_from(class & 0x7FFF).unwrap();//.map_err(|e| MessageError::RecordError(e.to_string()))?;
+            let ttl = u32::from_be_bytes([buf[off+4], buf[off+5], buf[off+6], buf[off+7]]);
+
+            let record = <dyn RecordBase>::from_wire(_type, &buf, off+8).unwrap();
+            txn.add_record(phase, &name, class, ttl, record);
         }
 
         Some(txn)
@@ -220,5 +227,14 @@ impl<'a> Iterator for JournalReaderIter<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         self.parser.parse_record()
+    }
+}
+
+#[test]
+fn test() {
+    let mut parser = JournalReader::open("/home/brad/Downloads/db.find9.net.jnl").unwrap();
+
+    for txn in parser.iter() {
+        println!("{:?}", txn);
     }
 }
