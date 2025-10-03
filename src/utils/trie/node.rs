@@ -31,13 +31,8 @@ impl<K, V> Branch<K, V> {
         }
     }
 
-    pub fn bit(n: usize) -> u32 {
-        debug_assert!(n < 32);
-        1u32 << n
-    }
-
     pub fn has_child(&self, n: usize) -> bool {
-        (self.bitmap & Self::bit(n)) != 0
+        (self.bitmap & bit(n)) != 0
     }
 
     pub fn rank(bitmap: u32, n: usize) -> usize {
@@ -60,7 +55,7 @@ impl<K, V> Branch<K, V> {
     pub fn insert_child(&mut self, n: usize, node: Node<K, V>) {
         let idx = Self::rank(self.bitmap, n);
         self.twigs.insert(idx, node);
-        self.bitmap |= Self::bit(n);
+        self.bitmap |= bit(n);
     }
 
     pub fn get_child_mut(&mut self, n: usize) -> Option<&mut Node<K, V>> {
@@ -86,4 +81,9 @@ impl<K, V> Leaf<K, V> {
             val
         }
     }
+}
+
+pub fn bit(n: usize) -> u32 {
+    debug_assert!(n < 32);
+    1u32 << n
 }

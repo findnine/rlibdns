@@ -92,6 +92,10 @@ impl Zone {
     pub fn remove_record(&mut self) {
         println!("REMOVE RECORD");
     }
+
+    pub fn remove_all_records(&mut self, query: &str) {
+        println!("REMOVE ALL RECORD");
+    }
     /*
     pub fn add_record(&mut self, name: &str, record: Box<dyn RecordBase>) {
         let key = encode_fqdn(name);
@@ -116,7 +120,9 @@ impl Zone {
     */
 
     pub fn get_sets(&self, query: &RRQuery) -> Option<&RRSet> {
-        self.rrmap.get(&encode_fqdn(query.get_fqdn()))?.iter().find(|s| s.get_type().eq(&query.get_type()))
+        let _type = query.get_type();
+        let class = query.get_class();
+        self.rrmap.get(&encode_fqdn(query.get_fqdn()))?.iter().find(|s| s.get_type().eq(&_type) && s.get_class().eq(&class))
     }
 
     pub fn get_all_sets(&self, query: &str) -> Option<&Vec<RRSet>> {

@@ -1,4 +1,4 @@
-use crate::utils::trie::node::{Branch, Leaf, Node};
+use crate::utils::trie::node::{bit, Branch, Leaf, Node};
 
 #[derive(Clone, Debug)]
 pub struct Trie<V> {
@@ -309,7 +309,7 @@ impl<V> Trie<V> {
 
                     None => {
                         br.twigs.remove(idx);
-                        br.bitmap &= !1u32 << n;
+                        br.bitmap &= !bit(n);
 
                         if br.bitmap == 0 {
                             *root = None;
