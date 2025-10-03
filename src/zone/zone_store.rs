@@ -89,6 +89,11 @@ impl ZoneStore {
         self.trie.insert(encode_fqdn(fqdn), zone);
     }
 
+    pub fn remove_zone(&mut self, fqdn: &str) {
+        println!("REMOVE ZONE");
+        self.trie.remove(&encode_fqdn(fqdn));
+    }
+
     pub fn get_zone_exact(&self, apex: &str) -> Option<&Zone> {
         self.trie.get(&encode_fqdn(apex))
     }
@@ -111,9 +116,5 @@ impl ZoneStore {
 
     pub fn get_deepest_zone_with_name_mut(&mut self, name: &str) -> Option<(String, &mut Zone)> {
         self.trie.get_deepest_mut(&encode_fqdn(name)).map(|(key, zone)| (decode_fqdn(&key), zone))
-    }
-
-    pub fn remove_zone(&mut self) {
-        println!("REMOVE ZONE");
     }
 }

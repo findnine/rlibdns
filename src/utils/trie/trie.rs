@@ -45,6 +45,10 @@ impl<V> Trie<V> {
         Self::insert_at(&mut self.root, key, val)
     }
 
+    pub fn remove(&mut self, key: &[u8]) -> Option<V> {
+        Self::remove_at(&mut self.root, key)
+    }
+
     pub fn get(&self, key: &[u8]) -> Option<&V> {
         let mut node = self.root.as_ref()?;
         let key = key;
@@ -114,9 +118,9 @@ impl<V> Trie<V> {
     }
 
     pub fn get_deepest_mut(&mut self, query: &[u8]) -> Option<(&[u8], &mut V)> {
-        let best_key: Option<Vec<u8>> = {
+        let best_key = {
             let mut node = self.root.as_mut()?;
-            let mut best_key: Option<Vec<u8>> = None;
+            let mut best_key = None;
 
             loop {
                 match node {
@@ -124,7 +128,7 @@ impl<V> Trie<V> {
                         if br.has_child(0) {
                             if let Some(Node::Leaf(leaf)) = br.get_child(0) {
                                 if is_prefix(leaf.key.as_slice(), query) {
-                                    best_key = Some(leaf.key.clone());
+                                    best_key = Some(leaf.key.to_vec());
                                 }
                             }
                         }
@@ -132,12 +136,12 @@ impl<V> Trie<V> {
                         let n = Self::nibble(query, br.offset);
                         match br.get_child_mut(n) {
                             Some(child) => node = child,
-                            None => break,
+                            None => break
                         }
                     }
                     Node::Leaf(leaf) => {
                         if is_prefix(leaf.key.as_slice(), query) {
-                            best_key = Some(leaf.key.clone());
+                            best_key = Some(leaf.key.to_vec());
                         }
                         break;
                     }
@@ -210,10 +214,10 @@ impl<V> Trie<V> {
         }
     }
 
-    fn insert_at(slot: &mut Option<Node<Vec<u8>, V>>, key: Vec<u8>, val: V) -> Option<V> {
-        match slot {
+    fn insert_at(root: &mut Option<Node<Vec<u8>, V>>, key: Vec<u8>, val: V) -> Option<V> {
+        match root {
             None => {
-                *slot = Some(Node::Leaf(Leaf::new(key, val)));
+                *root = Some(Node::Leaf(Leaf::new(key, val)));
                 None
             }
             Some(node) => {
@@ -256,6 +260,10 @@ impl<V> Trie<V> {
                 }
             }
         }
+    }
+
+    fn remove_at(root: &mut Option<Node<Vec<u8>, V>>, key: &[u8]) -> Option<V> {
+        todo!()
     }
 }
 
