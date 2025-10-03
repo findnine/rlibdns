@@ -1,6 +1,7 @@
 use std::io;
 use std::path::PathBuf;
 use crate::journal::journal_reader::JournalReader;
+use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::messages::rr_query::RRQuery;
 use crate::zone::rr_set::RRSet;
@@ -57,9 +58,9 @@ impl Zone {
         self._type.eq(&ZoneTypes::Master) || self._type.eq(&ZoneTypes::Slave)
     }
 
-    pub fn add_record(&mut self, query: &RRQuery, ttl: u32, record: Box<dyn RecordBase>) {
-        let key = encode_fqdn(query.get_fqdn());
-        let _type = query.get_type();
+    pub fn add_record(&mut self, query: &str, class: RRClasses, ttl: u32, record: Box<dyn RecordBase>) {
+        let key = encode_fqdn(query);
+        let _type = record.get_type();
 
         match self.rrmap.get_mut(&key) {
             Some(sets) => {
@@ -70,18 +71,26 @@ impl Zone {
                         set.add_record(ttl, record);
                     }
                     None => {
-                        let mut set = RRSet::new(_type, query.get_class(), ttl);
+                        let mut set = RRSet::new(_type, class, ttl);
                         set.add_record(ttl, record);
                         sets.push(set);
                     }
                 }
             }
             None => {
-                let mut set = RRSet::new(_type, query.get_class(), ttl);
+                let mut set = RRSet::new(_type, class, ttl);
                 set.add_record(ttl, record);
                 self.rrmap.insert(key, vec![set]);
             }
         }
+    }
+
+    pub fn remove_set(&mut self) {
+        println!("REMOVE SET");
+    }
+
+    pub fn remove_record(&mut self) {
+        println!("REMOVE RECORD");
     }
     /*
     pub fn add_record(&mut self, name: &str, record: Box<dyn RecordBase>) {

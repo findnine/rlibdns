@@ -6,7 +6,6 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
-use crate::messages::rr_query::RRQuery;
 use crate::records::{
     a_record::ARecord,
     aaaa_record::AaaaRecord,
@@ -65,7 +64,7 @@ impl ZoneReader {
         })
     }
 
-    fn parse_record(&mut self) -> Option<(RRQuery, u32, Box<dyn RecordBase>)> {
+    fn parse_record(&mut self) -> Option<(String, RRClasses, u32, Box<dyn RecordBase>)> {
         let mut state = ParserState::Init;
         let mut paren_count = 0;
 
@@ -75,7 +74,7 @@ impl ZoneReader {
 
         let mut directive_buf = String::new();
 
-        let mut record: Option<(RRQuery, u32, Box<dyn RecordBase>)> = None;
+        let mut record: Option<(String, RRClasses, u32, Box<dyn RecordBase>)> = None;
         let mut data_count = 0;
 
         loop {
@@ -139,7 +138,7 @@ impl ZoneReader {
                             _type = t;
                             state = ParserState::Data;
                             data_count = 0;
-                            record = Some((RRQuery::new(self.get_relative_name(&self.name), _type, class), ttl, <dyn RecordBase>::new(_type).unwrap()));
+                            record = Some((self.get_relative_name(&self.name).to_string(), class, ttl, <dyn RecordBase>::new(_type).unwrap()));
 
                         } else {
                             ttl = word.parse().unwrap();//.expect(&format!("Parse error on line {} pos {}", self.line_no, pos));
@@ -166,7 +165,7 @@ impl ZoneReader {
                     ParserState::Data => {
                         if part[0] == b'"' {
                             if part[word_len - 1] == b'"' {
-                                if let Some((_, _, ref mut record)) = record {
+                                if let Some((_, _, _, ref mut record)) = record {
                                     set_data(record.deref_mut(), data_count, &String::from_utf8(part[1..word_len - 1].to_vec()).unwrap());
                                 }
 
@@ -178,7 +177,7 @@ impl ZoneReader {
                             }
 
                         } else {
-                            if let Some((_, _, ref mut record)) = record {
+                            if let Some((_, _, _, ref mut record)) = record {
                                 set_data(record.deref_mut(), data_count, &String::from_utf8(part[0..word_len].to_vec()).unwrap());
                             }
 
@@ -189,7 +188,7 @@ impl ZoneReader {
                         if part[word_len - 1] == b'"' {
                             quoted_buf.push_str(&format!("{}", String::from_utf8(part[0..word_len - 1].to_vec()).unwrap()));
 
-                            if let Some((_, _, ref mut record)) = record {
+                            if let Some((_, _, _, ref mut record)) = record {
                                 set_data(record.deref_mut(), data_count, &quoted_buf);
                             }
 
@@ -254,7 +253,7 @@ pub struct ZoneReaderIter<'a> {
 
 impl<'a> Iterator for ZoneReaderIter<'a> {
 
-    type Item = (RRQuery, u32, Box<dyn RecordBase>);
+    type Item = (String, RRClasses, u32, Box<dyn RecordBase>);
 
     fn next(&mut self) -> Option<Self::Item> {
         self.parser.parse_record()

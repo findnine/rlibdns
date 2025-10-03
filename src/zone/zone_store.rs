@@ -23,15 +23,16 @@ impl ZoneStore {
         let mut zone = Zone::new(ZoneTypes::Master);
 
         let mut reader = ZoneReader::open(file_path, fqdn)?;
-        for (query, ttl, record) in reader.iter() {
-            let fqdn = query.get_fqdn();
-            match fqdn {
+        for (query, class, ttl, record) in reader.iter() {
+            //let fqdn = query.get_fqdn();
+            //match fqdn {
                 //"." => self.add_record(record), //BE CAREFUL WITH THIS ONE - DONT ALLOW MOST OF THE TIME
                 //"@" => {
                 //    query.set_fqdn("");
                 //    zone.add_record(&query, ttl, record)
                 //}
-                _ => zone.add_record(&query, ttl, record)/*{
+                //_ => zone.add_record(&query, ttl, record)
+                /*{
                     match self.trie.get_fqdn_mut(&name) {
                         Some(zone) => zone.add_record(record),
                         None => {
@@ -42,7 +43,8 @@ impl ZoneStore {
                     }
                 }*/
                 //_ => zone.add_record_to(&name, record, ZoneTypes::Master)
-            }
+            //}
+            zone.add_record(&query, class, ttl, record);
         }
 
         self.trie.insert(encode_fqdn(reader.get_origin()), zone);
@@ -54,15 +56,16 @@ impl ZoneStore {
         let mut zone = Zone::new_with_jnl(ZoneTypes::Master, journal_path);
 
         let mut reader = ZoneReader::open(file_path, fqdn)?;
-        for (query, ttl, record) in reader.iter() {
-            let fqdn = query.get_fqdn();
-            match fqdn {
+        for (query, class, ttl, record) in reader.iter() {
+            //let fqdn = query.get_fqdn();
+            //match fqdn {
                 //"." => self.add_record(record), //BE CAREFUL WITH THIS ONE - DONT ALLOW MOST OF THE TIME
                 //"@" => {
                 //    query.set_fqdn("");
                 //    zone.add_record(&query, ttl, record)
                 //}
-                _ => zone.add_record(&query, ttl, record)/*{
+                //_ => zone.add_record(&query, class, ttl, record)
+                /*{
                     match self.trie.get_fqdn_mut(&name) {
                         Some(zone) => zone.add_record(record),
                         None => {
@@ -73,7 +76,8 @@ impl ZoneStore {
                     }
                 }*/
                 //_ => zone.add_record_to(&name, record, ZoneTypes::Master)
-            }
+            //}
+            zone.add_record(&query, class, ttl, record);
         }
 
         self.trie.insert(encode_fqdn(reader.get_origin()), zone);
@@ -89,11 +93,29 @@ impl ZoneStore {
         self.trie.get(&encode_fqdn(apex))
     }
 
+    pub fn get_zone_exact_mut(&mut self, apex: &str) -> Option<&mut Zone> {
+        self.trie.get_mut(&encode_fqdn(apex))
+    }
+
     pub fn get_deepest_zone(&self, name: &str) -> Option<&Zone> {
         self.trie.get_deepest(&encode_fqdn(name)).map(|(_, zone)| zone)
     }
 
+    pub fn get_deepest_zone_mut(&mut self, name: &str) -> Option<&mut Zone> {
+        todo!()
+        //self.trie.get_deepest_mut(&encode_fqdn(name)).map(|(_, zone)| zone)
+    }
+
     pub fn get_deepest_zone_with_name(&self, name: &str) -> Option<(String, &Zone)> {
         self.trie.get_deepest(&encode_fqdn(name)).map(|(key, zone)| (decode_fqdn(&key), zone))
+    }
+
+    pub fn get_deepest_zone_with_name_mut(&mut self, name: &str) -> Option<(String, &mut Zone)> {
+        todo!()
+        //self.trie.get_deepest_mut(&encode_fqdn(name)).map(|(key, zone)| (decode_fqdn(&key), zone))
+    }
+
+    pub fn remove_zone(&mut self) {
+        println!("REMOVE ZONE");
     }
 }
