@@ -114,63 +114,34 @@ impl<V> Trie<V> {
     }
 
     pub fn get_deepest_mut(&mut self, query: &[u8]) -> Option<(&[u8], &mut V)> {
-        /*
-        let mut best_key = None;
-        {
-            let mut node = self.root.as_ref()?;
-            //let mut best: Option<(&[u8], &mut V)> = None;
+        let mut node = self.root.as_mut()?;
+        let mut best: Option<(&[u8], &mut V)> = None;
 
-            loop {
-                match node {
-                    Node::Branch(br) => {
-                        if br.has_child(0) {
-                            if let Some(Node::Leaf(leaf)) = br.get_child(0) {
-                                if is_prefix(leaf.key.as_slice(), query) {
-                                    best_key = Some(leaf.key.as_slice());//, &mut leaf.val));
-                                }
+        loop {
+            match node {
+                Node::Branch(br) => {
+                    if br.has_child(0) {
+                        if let Some(Node::Leaf(leaf)) = br.get_child_mut(0) {
+                            if is_prefix(leaf.key.as_slice(), query) {
+                                best = Some((leaf.key.as_slice(), &mut leaf.val));
                             }
                         }
+                    }
 
-                        let n = Self::nibble(query, br.offset);
-                        match br.get_child(n) {
-                            Some(child) => node = child,
-                            None => break
-                        }
+                    let n = Self::nibble(query, br.offset);
+                    match br.get_child_mut(n) {
+                        Some(child) => node = child,
+                        None => return best
                     }
-                    Node::Leaf(leaf) => {
-                        if is_prefix(leaf.key.as_slice(), query) {
-                            best_key = Some(leaf.key.as_slice());
-                        }
-                        break;
+                }
+                Node::Leaf(leaf) => {
+                    if is_prefix(leaf.key.as_slice(), query) {
+                        return Some((leaf.key.as_slice(), &mut leaf.val));
                     }
+                    return best;
                 }
             }
         }
-
-        let mut node = self.root.as_mut()?;
-        //let value = self.get_mut(best_key?)?;
-
-        //Some((best_key?, value))
-        match best_key {
-            Some(key) => {
-                loop {
-                    match node {
-                        Node::Leaf(leaf) => {
-                            if leaf.key.as_slice() == key {
-                                return Some((key, &mut leaf.val));
-                            }
-                            return None;
-                        }
-                        Node::Branch(br) => {
-                            let n = Self::nibble(key, br.offset);
-                            node = br.get_child_mut(n)?;
-                        }
-                    }
-                }
-            }
-            None => {}
-        }*/
-        None
     }
 
     pub fn get_shallowest(&self, query: &[u8]) -> Option<(&[u8], &V)> {
