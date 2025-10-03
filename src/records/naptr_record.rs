@@ -33,15 +33,18 @@ impl Default for NaptrRecord {
 impl RecordBase for NaptrRecord {
 
     fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> {
-        //let z = u16::from_be_bytes([buf[off], buf[off+1]]);
+        let length = u16::from_be_bytes([buf[off], buf[off+1]]);
+        if length == 0 {
+            return Ok(Default::default());
+        }
 
         let order = u16::from_be_bytes([buf[off+2], buf[off+3]]);
         let preference = u16::from_be_bytes([buf[off+4], buf[off+5]]);
 
-        let length = buf[off+6] as usize;
+        let data_length = buf[off+6] as usize;
         let mut flags = Vec::new();
 
-        for flag in String::from_utf8(buf[off + 7..off + 7 + length].to_vec())
+        for flag in String::from_utf8(buf[off + 7..off + 7 + data_length].to_vec())
                 .map_err(|e| RecordError(e.to_string()))?.split(",") {
             let tok = flag.trim();
             if tok.is_empty() {
@@ -53,22 +56,22 @@ impl RecordBase for NaptrRecord {
                 .ok_or_else(|| RecordError("empty NAPTR flag token".to_string()))?).map_err(|e| RecordError(e.to_string()))?);
         }
 
-        let mut off = off+7+length;
+        let mut off = off+7+data_length;
 
-        let length = buf[off] as usize;
-        let service = String::from_utf8(buf[off + 1..off + 1 + length].to_vec())
+        let data_length = buf[off] as usize;
+        let service = String::from_utf8(buf[off + 1..off + 1 + data_length].to_vec())
             .map_err(|e| RecordError(e.to_string()))?;
 
-        off += 1+length;
+        off += 1+data_length;
 
-        let length = buf[off] as usize;
-        let regex = String::from_utf8(buf[off + 1..off + 1 + length].to_vec())
+        let data_length = buf[off] as usize;
+        let regex = String::from_utf8(buf[off + 1..off + 1 + data_length].to_vec())
             .map_err(|e| RecordError(e.to_string()))?;
 
-        off += 1+length;
+        off += 1+data_length;
 
-        let length = buf[off] as usize;
-        let replacement = String::from_utf8(buf[off + 1..off + 1 + length].to_vec())
+        let data_length = buf[off] as usize;
+        let replacement = String::from_utf8(buf[off + 1..off + 1 + data_length].to_vec())
             .map_err(|e| RecordError(e.to_string()))?;
 
         Ok(Self {

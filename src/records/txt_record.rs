@@ -22,14 +22,16 @@ impl Default for TxtRecord {
 impl RecordBase for TxtRecord {
 
     fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> {
-        let mut off = off;
+        let mut length = u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
+        if length == 0 {
+            return Ok(Default::default());
+        }
 
-        let data_length = off+2+u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
-        off += 2;
-
+        length += off+2;
+        let mut off = off+2;
         let mut data = Vec::new();
 
-        while off < data_length {
+        while off < length {
             let length = buf[off] as usize;
             let record = String::from_utf8(buf[off + 1..off + 1 + length].to_vec())
                 .map_err(|e| RecordError(e.to_string()))?;

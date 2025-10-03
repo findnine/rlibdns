@@ -24,6 +24,9 @@ impl RecordBase for AaaaRecord {
 
     fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> {
         let length = u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
+        if length == 0 {
+            return Ok(Default::default());
+        }
 
         let address = match length {
             16 => {

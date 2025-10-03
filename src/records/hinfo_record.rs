@@ -24,14 +24,17 @@ impl Default for HInfoRecord {
 impl RecordBase for HInfoRecord {
 
     fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> {
-        //let z = u16::from_be_bytes([buf[off+6], buf[off+7]]);
+        let length = u16::from_be_bytes([buf[off], buf[off+1]]);
+        if length == 0 {
+            return Ok(Default::default());
+        }
 
-        let length = buf[off+2] as usize;
-        let cpu = String::from_utf8(buf[off+3..off+3+length].to_vec()).unwrap();
-        let off = off+3+length;
+        let data_length = buf[off+2] as usize;
+        let cpu = String::from_utf8(buf[off+3..off+3+data_length].to_vec()).unwrap();
+        let off = off+3+data_length;
 
-        let length = buf[off] as usize;
-        let os = String::from_utf8(buf[off+1..off+1+length].to_vec()).unwrap();
+        let data_length = buf[off] as usize;
+        let os = String::from_utf8(buf[off+1..off+1+data_length].to_vec()).unwrap();
 
         Ok(Self {
             cpu: Some(cpu),

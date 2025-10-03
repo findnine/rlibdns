@@ -41,7 +41,10 @@ impl Default for RRSigRecord {
 impl RecordBase for RRSigRecord {
 
     fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> {
-        let mut off = off;
+        let mut length = u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
+        if length == 0 {
+            return Ok(Default::default());
+        }
 
         let type_covered = RRTypes::try_from(u16::from_be_bytes([buf[off+2], buf[off+3]]))
             .map_err(|e| RecordError(e.to_string()))?;
@@ -54,12 +57,11 @@ impl RecordBase for RRSigRecord {
         let inception = u32::from_be_bytes([buf[off+14], buf[off+15], buf[off+16], buf[off+17]]);
         let key_tag = u16::from_be_bytes([buf[off+18], buf[off+19]]);
 
-        let (signer_name, length) = unpack_fqdn(buf, off+20);
+        let (signer_name, signer_name_length) = unpack_fqdn(buf, off+20);
 
-        let data_length = off+2+u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
-        off += length+20;
+        length += off+2;
 
-        let signature = buf[off..data_length].to_vec();
+        let signature = buf[off+20+signer_name_length..length].to_vec();
 
         Ok(Self {
             type_covered,

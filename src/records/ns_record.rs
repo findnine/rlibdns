@@ -23,7 +23,10 @@ impl Default for NsRecord {
 impl RecordBase for NsRecord {
 
     fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> {
-        //let z = u16::from_be_bytes([buf[off+6], buf[off+7]]);
+        let length = u16::from_be_bytes([buf[off], buf[off+1]]);
+        if length == 0 {
+            return Ok(Default::default());
+        }
 
         let (server, _) = unpack_fqdn(buf, off+2);
 

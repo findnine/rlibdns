@@ -29,7 +29,10 @@ impl Default for SrvRecord {
 impl RecordBase for SrvRecord {
 
     fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> {
-        //let z = u16::from_be_bytes([buf[off], buf[off+1]]);
+        let length = u16::from_be_bytes([buf[off], buf[off+1]]);
+        if length == 0 {
+            return Ok(Default::default());
+        }
 
         let priority = u16::from_be_bytes([buf[off+2], buf[off+3]]);
         let weight = u16::from_be_bytes([buf[off+4], buf[off+5]]);

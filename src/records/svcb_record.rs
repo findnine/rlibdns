@@ -29,16 +29,19 @@ impl Default for SvcbRecord {
 impl RecordBase for SvcbRecord {
 
     fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> {
-        let mut off = off;
+        let mut length = u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
+        if length == 0 {
+            return Ok(Default::default());
+        }
 
         let priority = u16::from_be_bytes([buf[off+2], buf[off+3]]);
 
         let (target, target_length) = unpack_fqdn(&buf, off+4);
 
-        let length = off+2+u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
-        off += 4+target_length;
-
+        length += off+2;
+        let mut off = off+4+target_length;
         let mut params = Vec::new();
+
         while off < length {
             let key = SvcParamKeys::try_from(u16::from_be_bytes([buf[off], buf[off+1]]))
                 .map_err(|e| RecordError(e.to_string()))?;

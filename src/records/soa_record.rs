@@ -35,13 +35,16 @@ impl Default for SoaRecord {
 impl RecordBase for SoaRecord {
 
     fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> {
-        //let z = u16::from_be_bytes([buf[off], buf[off+1]]);
+        let length = u16::from_be_bytes([buf[off], buf[off+1]]);
+        if length == 0 {
+            return Ok(Default::default());
+        }
 
-        let (fqdn, length) = unpack_fqdn(buf, off+2);
-        let mut off = off+length+2;
+        let (fqdn, data_length) = unpack_fqdn(buf, off+2);
+        let mut off = off+data_length+2;
 
-        let (mailbox, length) = unpack_fqdn(buf, off);
-        off += length;
+        let (mailbox, data_length) = unpack_fqdn(buf, off);
+        off += data_length;
 
         let serial = u32::from_be_bytes([buf[off], buf[off+1], buf[off+2], buf[off+3]]);
         let refresh = u32::from_be_bytes([buf[off+4], buf[off+5], buf[off+6], buf[off+7]]);

@@ -23,7 +23,10 @@ impl Default for CNameRecord {
 impl RecordBase for CNameRecord {
 
     fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> {
-        //let z = u16::from_be_bytes([buf[off], buf[off+1]]);
+        let length = u16::from_be_bytes([buf[off], buf[off+1]]);
+        if length == 0 {
+            return Ok(Default::default());
+        }
 
         let (target, _) = unpack_fqdn(buf, off+2);
 

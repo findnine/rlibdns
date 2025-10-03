@@ -35,7 +35,10 @@ impl Default for LocRecord {
 impl RecordBase for LocRecord {
 
     fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> {
-        //let z = u16::from_be_bytes([buf[off], buf[off+1]]);
+        let length = u16::from_be_bytes([buf[off], buf[off+1]]);
+        if length == 0 {
+            return Ok(Default::default());
+        }
 
         let version = buf[off+2];
         let size = buf[off+3];

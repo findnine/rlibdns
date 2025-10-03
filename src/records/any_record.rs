@@ -18,12 +18,11 @@ impl Default for AnyRecord {
 impl RecordBase for AnyRecord {
 
     fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> {
-        //let z = u16::from_be_bytes([buf[off], buf[off+1]]);
         Ok(Self)
     }
 
     fn to_bytes(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RecordError> {
-        Ok(2u16.to_be_bytes().to_vec())
+        Ok(0u16.to_be_bytes().to_vec())
     }
 
     fn get_type(&self) -> RRTypes {

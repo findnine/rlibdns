@@ -29,13 +29,18 @@ impl Default for SmimeaRecord {
 impl RecordBase for SmimeaRecord {
 
     fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> {
+        let mut length = u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
+        if length == 0 {
+            return Ok(Default::default());
+        }
+
         let usage = buf[off+2];
         let selector = buf[off+3];
         let matching_type = buf[off+4];
 
-        let data_length = off+2+u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
+        length += off+2;
 
-        let certificate = buf[off+5..data_length].to_vec();
+        let certificate = buf[off+5..length].to_vec();
 
         Ok(Self {
             usage,
