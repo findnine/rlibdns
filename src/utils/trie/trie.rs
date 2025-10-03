@@ -263,7 +263,71 @@ impl<V> Trie<V> {
     }
 
     fn remove_at(root: &mut Option<Node<Vec<u8>, V>>, key: &[u8]) -> Option<V> {
-        todo!()
+        let mut cur = root.take();
+
+        match cur.as_mut() {
+            None => None,
+            Some(Node::Leaf(leaf)) => {
+                if leaf.key.as_slice() == key {
+                    let Node::Leaf(Leaf { val, .. }) = cur.take().unwrap() else { unreachable!() };
+                    return Some(val);
+                }
+
+                *root = cur;
+                None
+            }
+            Some(Node::Branch(br)) => {
+                let n = Self::nibble(key, br.offset);
+                if !br.has_child(n) {
+                    *root = cur;
+                    return None;
+                }
+
+                let idx = br.idx_of(n).unwrap();
+                let child_slot: &mut Node<Vec<u8>, V> = &mut br.twigs[idx];
+
+                let mut tmp_child = Some(std::mem::replace(child_slot, Node::Branch(Branch {
+                    offset: 0,
+                    bitmap: 0,
+                    twigs: Vec::new()
+                })));
+
+                let removed = Self::remove_at(&mut tmp_child, key);
+
+                match tmp_child {
+                    Some(next_child) => {
+                        *child_slot = next_child;
+
+                        if br.bitmap.count_ones() == 1 {
+                            let only_child = br.twigs.remove(0);
+                            cur = Some(only_child);
+                        }
+
+                        *root = cur;
+                        removed
+                    }
+
+                    None => {
+                        br.twigs.remove(idx);
+                        br.bitmap &= !1u32 << n;
+
+                        if br.bitmap == 0 {
+                            *root = None;
+                            removed
+
+                        } else if br.bitmap.count_ones() == 1 {
+                            let only_child = br.twigs.remove(0);
+                            *root = Some(only_child);
+                            removed
+
+                        } else {
+                            *root = cur;
+                            removed
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
