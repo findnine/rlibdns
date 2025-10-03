@@ -6,7 +6,6 @@ use std::str::FromStr;
 pub enum RRClasses {
     #[default]
     In,
-    Cs,
     Ch,
     Hs,
     None,
@@ -18,7 +17,6 @@ impl RRClasses {
     pub fn get_code(&self) -> u16 {
         match self {
             Self::In => 1,
-            Self::Cs => 2,
             Self::Ch => 3,
             Self::Hs => 4,
             Self::None => 254,
@@ -50,7 +48,6 @@ impl TryFrom<u16> for RRClasses {
     fn try_from(v: u16) -> Result<Self, Self::Error> {
         Ok(match v {
             1 => Self::In,
-            2 => Self::Cs,
             3 => Self::Ch,
             4 => Self::Hs,
             254 => Self::None,
@@ -67,7 +64,6 @@ impl FromStr for RRClasses {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match s {
             "IN" => Self::In,
-            "CS" => Self::Cs,
             "CH" => Self::Ch,
             "HS" => Self::Hs,
             "NONE" => Self::None,
@@ -82,7 +78,6 @@ impl fmt::Display for RRClasses {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{}", match self {
             Self::In => "IN",
-            Self::Cs => "CS",
             Self::Ch => "CH",
             Self::Hs => "HS",
             Self::None => "NONE",
