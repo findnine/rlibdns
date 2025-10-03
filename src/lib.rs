@@ -6,6 +6,7 @@ pub mod journal;
 
 #[cfg(test)]
 mod tests {
+    use crate::messages::message::Message;
     use crate::zone::zone_store::ZoneStore;
 
 
