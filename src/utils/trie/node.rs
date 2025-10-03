@@ -1,23 +1,7 @@
 #[derive(Clone, Debug)]
 pub enum Node<K, V> {
-    Leaf(Leaf<K, V>),
-    Branch(Branch<K, V>)
-}
-
-#[derive(Clone, Debug, Default)]
-pub struct Leaf<K, V> {
-    pub(crate) key: K,
-    pub(crate) val: V
-}
-
-impl<K, V> Leaf<K, V> {
-
-    pub fn new(key: K, val: V) -> Self {
-        Self {
-            key,
-            val
-        }
-    }
+    Branch(Branch<K, V>),
+    Leaf(Leaf<K, V>)
 }
 
 #[derive(Clone, Debug)]
@@ -85,5 +69,21 @@ impl<K, V> Branch<K, V> {
 
     pub fn get_child(&self, n: usize) -> Option<&Node<K, V>> {
         self.idx_of(n).map(|i| &self.twigs[i])
+    }
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct Leaf<K, V> {
+    pub(crate) key: K,
+    pub(crate) val: V
+}
+
+impl<K, V> Leaf<K, V> {
+
+    pub fn new(key: K, val: V) -> Self {
+        Self {
+            key,
+            val
+        }
     }
 }

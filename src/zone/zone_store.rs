@@ -102,8 +102,7 @@ impl ZoneStore {
     }
 
     pub fn get_deepest_zone_mut(&mut self, name: &str) -> Option<&mut Zone> {
-        todo!()
-        //self.trie.get_deepest_mut(&encode_fqdn(name)).map(|(_, zone)| zone)
+        self.trie.get_deepest_mut(&encode_fqdn(name)).map(|(_, zone)| zone)
     }
 
     pub fn get_deepest_zone_with_name(&self, name: &str) -> Option<(String, &Zone)> {
@@ -111,8 +110,7 @@ impl ZoneStore {
     }
 
     pub fn get_deepest_zone_with_name_mut(&mut self, name: &str) -> Option<(String, &mut Zone)> {
-        todo!()
-        //self.trie.get_deepest_mut(&encode_fqdn(name)).map(|(key, zone)| (decode_fqdn(&key), zone))
+        self.trie.get_deepest_mut(&encode_fqdn(name)).map(|(key, zone)| (decode_fqdn(&key), zone))
     }
 
     pub fn remove_zone(&mut self) {
