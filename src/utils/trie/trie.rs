@@ -46,10 +46,10 @@ impl<V> Trie<V> {
     }
 
     pub fn get(&self, key: &[u8]) -> Option<&V> {
-        let mut cur = self.root.as_ref()?;
+        let mut node = self.root.as_ref()?;
         let key = key;
         loop {
-            match cur {
+            match node {
                 Node::Leaf(leaf) => {
                     if leaf.key.as_slice() == key {
                         return Some(&leaf.val);
@@ -58,16 +58,16 @@ impl<V> Trie<V> {
                 }
                 Node::Branch(br) => {
                     let n = Self::nibble(key, br.offset);
-                    cur = br.get_child(n)?;
+                    node = br.get_child(n)?;
                 }
             }
         }
     }
 
     pub fn get_mut(&mut self, key: &[u8]) -> Option<&mut V> {
-        let mut cur = self.root.as_mut()?;
+        let mut node = self.root.as_mut()?;
         loop {
-            match cur {
+            match node {
                 Node::Leaf(leaf) => {
                     if leaf.key.as_slice() == key {
                         return Some(&mut leaf.val);
@@ -76,7 +76,7 @@ impl<V> Trie<V> {
                 }
                 Node::Branch(br) => {
                     let n = Self::nibble(key, br.offset);
-                    cur = br.get_child_mut(n)?;
+                    node = br.get_child_mut(n)?;
                 }
             }
         }
@@ -114,36 +114,62 @@ impl<V> Trie<V> {
     }
 
     pub fn get_deepest_mut(&mut self, query: &[u8]) -> Option<(&[u8], &mut V)> {
-        let mut node = self.root.as_mut()?;
-        let mut best: Option<(&[u8], &mut V)> = None;
-
         /*
-        loop {
-            match node {
-                Node::Branch(br) => {
-                    if br.has_child(0) {
-                        if let Some(Node::Leaf(leaf)) = br.get_child_mut(0) {
-                            if is_prefix(leaf.key.as_slice(), query) {
-                                best = Some((leaf.key.as_slice(), &mut leaf.val));
+        let mut best_key = None;
+        {
+            let mut node = self.root.as_ref()?;
+            //let mut best: Option<(&[u8], &mut V)> = None;
+
+            loop {
+                match node {
+                    Node::Branch(br) => {
+                        if br.has_child(0) {
+                            if let Some(Node::Leaf(leaf)) = br.get_child(0) {
+                                if is_prefix(leaf.key.as_slice(), query) {
+                                    best_key = Some(leaf.key.as_slice());//, &mut leaf.val));
+                                }
                             }
                         }
-                    }
 
-                    let n = Self::nibble(query, br.offset);
-                    match br.get_child_mut(n) {
-                        Some(child) => node = child,
-                        None => return best
+                        let n = Self::nibble(query, br.offset);
+                        match br.get_child(n) {
+                            Some(child) => node = child,
+                            None => break
+                        }
                     }
-                }
-                Node::Leaf(leaf) => {
-                    if is_prefix(leaf.key.as_slice(), query) {
-                        return Some((leaf.key.as_slice(), &mut leaf.val));
+                    Node::Leaf(leaf) => {
+                        if is_prefix(leaf.key.as_slice(), query) {
+                            best_key = Some(leaf.key.as_slice());
+                        }
+                        break;
                     }
-                    return best;
                 }
             }
         }
-        */
+
+        let mut node = self.root.as_mut()?;
+        //let value = self.get_mut(best_key?)?;
+
+        //Some((best_key?, value))
+        match best_key {
+            Some(key) => {
+                loop {
+                    match node {
+                        Node::Leaf(leaf) => {
+                            if leaf.key.as_slice() == key {
+                                return Some((key, &mut leaf.val));
+                            }
+                            return None;
+                        }
+                        Node::Branch(br) => {
+                            let n = Self::nibble(key, br.offset);
+                            node = br.get_child_mut(n)?;
+                        }
+                    }
+                }
+            }
+            None => {}
+        }*/
         None
     }
 
