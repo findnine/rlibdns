@@ -102,19 +102,11 @@ impl ZoneStore {
         self.trie.get_mut(&encode_fqdn(apex))
     }
 
-    pub fn get_deepest_zone(&self, name: &str) -> Option<&Zone> {
-        self.trie.get_deepest(&encode_fqdn(name)).map(|(_, zone)| zone)
-    }
-
-    pub fn get_deepest_zone_mut(&mut self, name: &str) -> Option<&mut Zone> {
-        self.trie.get_deepest_mut(&encode_fqdn(name)).map(|(_, zone)| zone)
-    }
-
-    pub fn get_deepest_zone_with_name(&self, name: &str) -> Option<(String, &Zone)> {
+    pub fn get_deepest_zone(&self, name: &str) -> Option<(String, &Zone)> {
         self.trie.get_deepest(&encode_fqdn(name)).map(|(key, zone)| (decode_fqdn(&key), zone))
     }
 
-    pub fn get_deepest_zone_with_name_mut(&mut self, name: &str) -> Option<(String, &mut Zone)> {
+    pub fn get_deepest_zone_mut(&mut self, name: &str) -> Option<(String, &mut Zone)> {
         self.trie.get_deepest_mut(&encode_fqdn(name)).map(|(key, zone)| (decode_fqdn(&key), zone))
     }
 }
