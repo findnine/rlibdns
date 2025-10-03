@@ -45,9 +45,9 @@ impl TryFrom<u8> for OpCodes {
             0 => Self::Query,
             1 => Self::IQuery,
             2 => Self::Status,
-            3 => Self::Notify,
-            4 => Self::Update,
-            5 => Self::Dso,
+            4 => Self::Notify,
+            5 => Self::Update,
+            6 => Self::Dso,
             _  => return Err(OpCodeParseError(v))
         })
     }
