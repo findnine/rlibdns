@@ -494,7 +494,6 @@ fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> Result<Vec<Mes
             RRTypes::Opt => {
                 let record = <dyn RecordBase>::from_wire(_type, buf, *off+2).map_err(|e| MessageError::RecordError(e.to_string()))?;
             }
-            RRTypes::Any => {}
             _ => {
                 let class = u16::from_be_bytes([buf[*off+2], buf[*off+3]]);
                 let cache_flush = (class & 0x8000) != 0;

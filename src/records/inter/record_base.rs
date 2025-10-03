@@ -21,7 +21,8 @@ use crate::records::{
     svcb_record::SvcbRecord,
     txt_record::TxtRecord,
     opt_record::OptRecord,
-    uri_record::UriRecord
+    uri_record::UriRecord,
+    any_record::AnyRecord
 };
 
 use std::any::Any;
@@ -141,7 +142,8 @@ impl dyn RecordBase {
                 todo!()
             }
             */
-            RRTypes::Opt => OptRecord::from_bytes(buf, off)?.upcast(),
+            RRTypes::Opt    => OptRecord::from_bytes(buf, off)?.upcast(),
+            RRTypes::Any    => AnyRecord::from_bytes(buf, off)?.upcast(),
             _ => return Err(RecordError("rrtype could not produce a record".to_string()))
         })
     }
