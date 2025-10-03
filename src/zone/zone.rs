@@ -135,12 +135,6 @@ impl Zone {
     }
 
     */
-    pub fn is_delegation_point(&self, query: &str) -> bool {
-        match self.rrmap.get_shallowest(&encode_fqdn(query)) {
-            Some((_, sets)) => sets.iter().any(|s| s.get_type() == RRTypes::Ns),
-            None => false
-        }
-    }
 
     pub fn get_delegation_point(&self, query: &str) -> Option<(String, &RRSet)> {
         match self.rrmap.get_shallowest(&encode_fqdn(query)) {
