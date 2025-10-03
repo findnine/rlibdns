@@ -109,8 +109,8 @@ impl fmt::Display for HInfoRecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{:<8}\"{}\" \"{}\"", self.get_type().to_string(),
-               self.cpu.as_ref().unwrap(),
-               self.os.as_ref().unwrap())
+               self.cpu.as_ref().unwrap_or(&String::new()),
+               self.os.as_ref().unwrap_or(&String::new()))
     }
 }
 

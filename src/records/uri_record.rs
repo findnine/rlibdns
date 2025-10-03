@@ -119,7 +119,7 @@ impl fmt::Display for UriRecord {
         write!(f, "{:<8}{} {} \"{}\"", self.get_type().to_string(),
                self.priority,
                self.weight,
-               self.target.as_ref().unwrap())
+               self.target.as_ref().unwrap_or(&String::new()))
     }
 }
 

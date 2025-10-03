@@ -88,7 +88,7 @@ impl fmt::Display for NsRecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{:<8}{}", self.get_type().to_string(),
-               format!("{}.", self.server.as_ref().unwrap()))
+               format!("{}.", self.server.as_ref().unwrap_or(&String::new())))
     }
 }
 

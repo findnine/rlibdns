@@ -183,8 +183,8 @@ impl fmt::Display for SoaRecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{:<8}{} {} {} {} {} {} {}", self.get_type().to_string(),
-               format!("{}.", self.fqdn.as_ref().unwrap()),
-               format!("{}.", self.mailbox.as_ref().unwrap()),
+               format!("{}.", self.fqdn.as_ref().unwrap_or(&String::new())),
+               format!("{}.", self.mailbox.as_ref().unwrap_or(&String::new())),
                self.serial,
                self.refresh,
                self.retry,

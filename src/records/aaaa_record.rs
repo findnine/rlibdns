@@ -94,7 +94,7 @@ impl fmt::Display for AaaaRecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{:<8}{}", self.get_type().to_string(),
-               self.address.as_ref().unwrap())
+               self.address.map(|a| a.to_string()).unwrap_or_default())
     }
 }
 

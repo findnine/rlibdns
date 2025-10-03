@@ -220,7 +220,7 @@ impl fmt::Display for RRSigRecord {
                self.expiration.to_time_format(),
                self.inception.to_time_format(),
                self.key_tag,
-               format!("{}.", self.signer_name.as_ref().unwrap()),
+               format!("{}.", self.signer_name.as_ref().unwrap_or(&String::new())),
                base64::encode(&self.signature))
     }
 }

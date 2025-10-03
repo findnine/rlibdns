@@ -134,7 +134,7 @@ impl fmt::Display for SrvRecord {
                self.priority,
                self.weight,
                self.port,
-               format!("{}.", self.target.as_ref().unwrap()))
+               format!("{}.", self.target.as_ref().unwrap_or(&String::new())))
     }
 }
 

@@ -140,7 +140,7 @@ impl fmt::Display for SvcbRecord {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{:<8}{} {} {}", self.get_type().to_string(),
                self.priority,
-               format!("{}.", self.target.as_ref().unwrap()),
+               format!("{}.", self.target.as_ref().unwrap_or(&String::new())),
                self.params.iter()
                    .map(|s| s.to_string())
                    .collect::<Vec<_>>()

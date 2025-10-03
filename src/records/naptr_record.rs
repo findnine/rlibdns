@@ -210,9 +210,9 @@ impl fmt::Display for NaptrRecord {
                self.order,
                self.preference,
                self.flags,
-               self.service.as_ref().unwrap(),
-               self.regex.as_ref().unwrap(),
-               self.replacement.as_ref().unwrap())
+               self.service.as_ref().unwrap_or(&String::new()),
+               self.regex.as_ref().unwrap_or(&String::new()),
+               self.replacement.as_ref().unwrap_or(&String::new()))
     }
 }
 

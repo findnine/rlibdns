@@ -88,7 +88,7 @@ impl fmt::Display for CNameRecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{:<8}{}", self.get_type().to_string(),
-               format!("{}.", self.target.as_ref().unwrap()))
+               format!("{}.", self.target.as_ref().unwrap_or(&String::new())))
     }
 }
 
