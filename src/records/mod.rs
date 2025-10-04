@@ -1,5 +1,6 @@
 pub mod inter;
-pub mod a_record;
+pub mod in_a_record;
+pub mod ch_a_record;
 pub mod aaaa_record;
 pub mod cname_record;
 pub mod dnskey_record;

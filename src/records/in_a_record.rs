@@ -7,11 +7,11 @@ use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::{RecordBase, RecordError};
 
 #[derive(Clone, Debug)]
-pub struct ARecord {
+pub struct InARecord {
     pub(crate) address: Option<Ipv4Addr>
 }
 
-impl Default for ARecord {
+impl Default for InARecord {
 
     fn default() -> Self {
         Self {
@@ -20,7 +20,7 @@ impl Default for ARecord {
     }
 }
 
-impl RecordBase for ARecord {
+impl RecordBase for InARecord {
 
     fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> {
         let length = u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
@@ -69,7 +69,7 @@ impl RecordBase for ARecord {
     }
 }
 
-impl ARecord {
+impl InARecord {
 
     pub fn new(address: Ipv4Addr) -> Self {
         Self {
@@ -86,7 +86,7 @@ impl ARecord {
     }
 }
 
-impl fmt::Display for ARecord {
+impl fmt::Display for InARecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{:<8}{}", self.get_type().to_string(),
@@ -97,6 +97,6 @@ impl fmt::Display for ARecord {
 #[test]
 fn test() {
     let buf = vec![ 0x0, 0x4, 0x7f, 0x0, 0x0, 0x1 ];
-    let record = ARecord::from_bytes(&buf, 0).unwrap();
+    let record = InARecord::from_bytes(&buf, 0).unwrap();
     assert_eq!(buf, record.to_bytes(&mut HashMap::new(), 0).unwrap());
 }

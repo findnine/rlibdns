@@ -209,7 +209,7 @@ impl JournalReader {
             let class = RRClasses::try_from(class & 0x7FFF).unwrap();//.map_err(|e| MessageError::RecordError(e.to_string()))?;
             let ttl = u32::from_be_bytes([buf[off+4], buf[off+5], buf[off+6], buf[off+7]]);
 
-            let record = <dyn RecordBase>::from_wire(_type, &buf, off+8).unwrap();
+            let record = <dyn RecordBase>::from_wire(_type, class, &buf, off+8).unwrap();
             txn.add_record(phase, &name, class, ttl, record);
         }
 

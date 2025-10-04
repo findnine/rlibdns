@@ -7,7 +7,8 @@ use std::str::FromStr;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::{
-    a_record::ARecord,
+    in_a_record::InARecord,
+    ch_a_record::ChARecord,
     aaaa_record::AaaaRecord,
     cname_record::CNameRecord,
     dnskey_record::DnsKeyRecord,
@@ -138,7 +139,7 @@ impl ZoneReader {
                             _type = t;
                             state = ParserState::Data;
                             data_count = 0;
-                            record = Some((self.get_relative_name(&self.name).to_string(), class, ttl, <dyn RecordBase>::new(_type).unwrap()));
+                            record = Some((self.get_relative_name(&self.name).to_string(), class, ttl, <dyn RecordBase>::new(_type, class).unwrap()));
 
                         } else {
                             ttl = word.parse().unwrap();//.expect(&format!("Parse error on line {} pos {}", self.line_no, pos));
@@ -262,7 +263,7 @@ impl<'a> Iterator for ZoneReaderIter<'a> {
 
 fn set_data(record: &mut dyn RecordBase, pos: usize, value: &str) {
     match record.get_type() {
-        RRTypes::A => record.as_any_mut().downcast_mut::<ARecord>().unwrap().address = Some(value.parse().unwrap()),
+        //RRTypes::A => record.as_any_mut().downcast_mut::<ARecord>().unwrap().address = Some(value.parse().unwrap()),
         RRTypes::Aaaa => record.as_any_mut().downcast_mut::<AaaaRecord>().unwrap().address = Some(value.parse().unwrap()),
         RRTypes::Ns => record.as_any_mut().downcast_mut::<NsRecord>().unwrap().server = Some(match value.strip_suffix('.') {
             Some(base) => base.to_string(),

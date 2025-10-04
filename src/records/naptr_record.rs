@@ -182,24 +182,24 @@ impl NaptrRecord {
         self.service = Some(service.to_string());
     }
 
-    pub fn get_service(&self) -> Option<String> {
-        self.service.clone()
+    pub fn get_service(&self) -> Option<&String> {
+        self.service.as_ref()
     }
 
     pub fn set_regex(&mut self, regex: &str) {
         self.regex = Some(regex.to_string());
     }
 
-    pub fn get_regex(&self) -> Option<String> {
-        self.regex.clone()
+    pub fn get_regex(&self) -> Option<&String> {
+        self.regex.as_ref()
     }
 
     pub fn set_replacement(&mut self, replacement: &str) {
         self.replacement = Some(replacement.to_string());
     }
 
-    pub fn get_replacement(&self) -> Option<String> {
-        self.replacement.clone()
+    pub fn get_replacement(&self) -> Option<&String> {
+        self.replacement.as_ref()
     }
 }
 

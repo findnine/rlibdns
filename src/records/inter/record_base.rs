@@ -1,5 +1,6 @@
 use crate::records::{
-    a_record::ARecord,
+    in_a_record::InARecord,
+    ch_a_record::ChARecord,
     aaaa_record::AaaaRecord,
     cname_record::CNameRecord,
     dnskey_record::DnsKeyRecord,
@@ -29,6 +30,7 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::{Debug, Display, Formatter};
+use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -67,9 +69,14 @@ impl Clone for Box<dyn RecordBase> {
 
 impl dyn RecordBase {
 
-    pub fn new(_type: RRTypes) -> Option<Box<dyn RecordBase>> {
+    pub fn new(_type: RRTypes, class: RRClasses) -> Option<Box<dyn RecordBase>> {
         Some(match _type {
-            RRTypes::A      => ARecord::default().upcast(),
+            RRTypes::A      => {
+                match class {
+                    RRClasses::Ch => ChARecord::default().upcast(),
+                    _ => InARecord::default().upcast()
+                }
+            }
             RRTypes::Aaaa   => AaaaRecord::default().upcast(),
             RRTypes::Ns     => NsRecord::default().upcast(),
             RRTypes::CName  => CNameRecord::default().upcast(),
@@ -107,9 +114,14 @@ impl dyn RecordBase {
         })
     }
 
-    pub fn from_wire(_type: RRTypes, buf: &[u8], off: usize) -> Result<Box<dyn RecordBase>, RecordError> {
+    pub fn from_wire(_type: RRTypes, class: RRClasses, buf: &[u8], off: usize) -> Result<Box<dyn RecordBase>, RecordError> {
         Ok(match _type {
-            RRTypes::A      => ARecord::from_bytes(buf, off)?.upcast(),
+            RRTypes::A      => {
+                match class {
+                    RRClasses::Ch => ChARecord::from_bytes(buf, off)?.upcast(),
+                    _ => InARecord::from_bytes(buf, off)?.upcast()
+                }
+            }
             RRTypes::Aaaa   => AaaaRecord::from_bytes(buf, off)?.upcast(),
             RRTypes::Ns     => NsRecord::from_bytes(buf, off)?.upcast(),
             RRTypes::CName  => CNameRecord::from_bytes(buf, off)?.upcast(),

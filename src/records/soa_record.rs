@@ -126,16 +126,16 @@ impl SoaRecord {
         self.fqdn = Some(fqdn.to_string());
     }
 
-    pub fn get_fqdn(&self) -> Option<String> {
-        self.fqdn.clone()
+    pub fn get_fqdn(&self) -> Option<&String> {
+        self.fqdn.as_ref()
     }
 
     pub fn set_mailbox(&mut self, mailbox: &str) {
         self.mailbox = Some(mailbox.to_string());
     }
 
-    pub fn get_mailbox(&self) -> Option<String> {
-        self.mailbox.clone()
+    pub fn get_mailbox(&self) -> Option<&String> {
+        self.mailbox.as_ref()
     }
 
     pub fn set_serial(&mut self, serial: u32) {

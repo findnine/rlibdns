@@ -116,8 +116,8 @@ impl PtrRecord {
         self.fqdn = Some(fqdn.to_string());
     }
 
-    pub fn get_fqdn(&self) -> Option<String> {
-        self.fqdn.clone()
+    pub fn get_fqdn(&self) -> Option<&String> {
+        self.fqdn.as_ref()
     }
 }
 

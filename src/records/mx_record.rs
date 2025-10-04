@@ -95,8 +95,8 @@ impl MxRecord {
         self.server = Some(server.to_string());
     }
 
-    pub fn get_server(&self) -> Option<String> {
-        self.server.clone()
+    pub fn get_server(&self) -> Option<&String> {
+        self.server.as_ref()
     }
 }
 

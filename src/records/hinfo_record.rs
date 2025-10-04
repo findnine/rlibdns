@@ -92,16 +92,16 @@ impl HInfoRecord {
         self.cpu = Some(cpu.to_string());
     }
 
-    pub fn get_cpu(&self) -> Option<String> {
-        self.cpu.clone()
+    pub fn get_cpu(&self) -> Option<&String> {
+        self.cpu.as_ref()
     }
 
     pub fn set_os(&mut self, os: &str) {
         self.os = Some(os.to_string());
     }
 
-    pub fn get_os(&self) -> Option<String> {
-        self.os.clone()
+    pub fn get_os(&self) -> Option<&String> {
+        self.os.as_ref()
     }
 }
 

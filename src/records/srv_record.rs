@@ -122,8 +122,8 @@ impl SrvRecord {
         self.target = Some(target.to_string());
     }
 
-    pub fn get_target(&self) -> Option<String> {
-        self.target.clone()
+    pub fn get_target(&self) -> Option<&String> {
+        self.target.as_ref()
     }
 }
 
