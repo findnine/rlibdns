@@ -35,8 +35,10 @@ mod tests {
     //DONT USE UNWRAPS - MODIFY ALL ENUMS DOING IT - THEN CHANGE io::Result for from_bytes on Message to our own Result
     //Check the same with each record to change the Result type
 
+    //ZONES SHOULD BE STORED NOT JUST PER NAME BUT PER CLASS
+    //SO ZONE STORE SHOULD ASK FOR CLASS AS WELL NOT JUST THE NAME
+    //ON CREATION OF ZONE IT WILL NEED THE CLASS
 
-    //REDO WIRE CHUNKS FUNCTIONS
 
 
     #[test]
