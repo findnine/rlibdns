@@ -84,7 +84,7 @@ impl ZoneReader {
             let mut pos = 0;
             let mut quoted_buf = String::new();
 
-            for part in line.ok().unwrap().as_bytes().split_inclusive(|&b| b == b' ' || b == b'\t' || b == b'\n' || b == b'(' || b == b')') {
+            for part in line.ok()?.as_bytes().split_inclusive(|&b| b == b' ' || b == b'\t' || b == b'\n' || b == b'(' || b == b')') {
                 let part_len = part.len();
                 let mut word_len = part_len;
 
@@ -113,7 +113,7 @@ impl ZoneReader {
 
                 match state {
                     ParserState::Init => {
-                        let word = String::from_utf8(part[0..word_len].to_vec()).unwrap().to_lowercase();
+                        let word = String::from_utf8(part[0..word_len].to_vec()).ok()?.to_lowercase();
 
                         if pos == 0 && paren_count == 0 {
                             if word.starts_with('$') {
@@ -130,7 +130,7 @@ impl ZoneReader {
                         }
                     }
                     ParserState::Common => {
-                        let word = String::from_utf8(part[0..word_len].to_vec()).unwrap().to_uppercase();
+                        let word = String::from_utf8(part[0..word_len].to_vec()).ok()?.to_uppercase();
 
                         if let Ok(c) = RRClasses::from_str(&word) {
                             class = c;
@@ -139,17 +139,17 @@ impl ZoneReader {
                             _type = t;
                             state = ParserState::Data;
                             data_count = 0;
-                            record = Some((self.get_relative_name(&self.name).to_string(), class, ttl, <dyn RecordBase>::new(_type, class).unwrap()));
+                            record = Some((self.get_relative_name(&self.name).to_string(), class, ttl, <dyn RecordBase>::new(_type, class)?));
 
                         } else {
-                            ttl = word.parse().unwrap();//.expect(&format!("Parse error on line {} pos {}", self.line_no, pos));
+                            ttl = word.parse().ok()?;//.expect(&format!("Parse error on line {} pos {}", self.line_no, pos));
                         }
                     }
                     ParserState::Directive => {
-                        let value = String::from_utf8(part[0..word_len].to_vec()).unwrap().to_lowercase();
+                        let value = String::from_utf8(part[0..word_len].to_vec()).ok()?.to_lowercase();
 
                         if directive_buf == "$ttl" {
-                            self.default_ttl = value.parse().unwrap();//.expect(&format!("Parse error on line {} pos {}", self.line_no, pos));
+                            self.default_ttl = value.parse().ok()?;//.expect(&format!("Parse error on line {} pos {}", self.line_no, pos));
 
                         } else if directive_buf == "$origin" {
                             self.origin = match value.strip_suffix('.') {
@@ -167,19 +167,19 @@ impl ZoneReader {
                         if part[0] == b'"' {
                             if part[word_len - 1] == b'"' {
                                 if let Some((_, class, _, ref mut record)) = record {
-                                    set_data(&class, record.deref_mut(), data_count, &String::from_utf8(part[1..word_len - 1].to_vec()).unwrap());
+                                    set_data(&class, record.deref_mut(), data_count, &String::from_utf8(part[1..word_len - 1].to_vec()).ok()?);
                                 }
 
                                 data_count += 1;
 
                             } else {
                                 state = ParserState::QString;
-                                quoted_buf = format!("{}{}", String::from_utf8(part[1..word_len].to_vec()).unwrap(), part[word_len] as char);
+                                quoted_buf = format!("{}{}", String::from_utf8(part[1..word_len].to_vec()).ok()?, part[word_len] as char);
                             }
 
                         } else {
                             if let Some((_, class, _, ref mut record)) = record {
-                                set_data(&class, record.deref_mut(), data_count, &String::from_utf8(part[0..word_len].to_vec()).unwrap());
+                                set_data(&class, record.deref_mut(), data_count, &String::from_utf8(part[0..word_len].to_vec()).ok()?);
                             }
 
                             data_count += 1;
@@ -187,7 +187,7 @@ impl ZoneReader {
                     }
                     ParserState::QString => {
                         if part[word_len - 1] == b'"' {
-                            quoted_buf.push_str(&format!("{}", String::from_utf8(part[0..word_len - 1].to_vec()).unwrap()));
+                            quoted_buf.push_str(&format!("{}", String::from_utf8(part[0..word_len - 1].to_vec()).ok()?));
 
                             if let Some((_, class, _, ref mut record)) = record {
                                 set_data(&class, record.deref_mut(), data_count, &quoted_buf);
@@ -197,7 +197,7 @@ impl ZoneReader {
                             state = ParserState::Data;
 
                         } else {
-                            quoted_buf.push_str(&format!("{}{}", String::from_utf8(part[0..word_len].to_vec()).unwrap(), part[word_len] as char));
+                            quoted_buf.push_str(&format!("{}{}", String::from_utf8(part[0..word_len].to_vec()).ok()?, part[word_len] as char));
                         }
                     }
                 }
