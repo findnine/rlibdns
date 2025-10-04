@@ -154,11 +154,11 @@ impl ZoneReader {
                         } else if directive_buf == "$origin" {
                             self.origin = match value.strip_suffix('.') {
                                 Some(base) => base.to_string(),
-                                None => panic!("Domain is not fully qualified (missing trailing dot)")
+                                None => panic!("origin is not fully qualified (missing trailing dot)")
                             };
 
                         } else {
-                            panic!("Unknown directive {}", directive_buf);
+                            panic!("unknown directive {}", directive_buf);
                         }
 
                         state = ParserState::Init;
@@ -269,7 +269,10 @@ fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &
                     let record = record.as_any_mut().downcast_mut::<ChARecord>().unwrap();
 
                     match pos {
-                        0 => record.network = Some(value.parse().unwrap()),
+                        0 => record.network = Some(match value.strip_suffix('.') {
+                            Some(base) => base.to_string(),
+                            None => panic!("network param is not fully qualified (missing trailing dot)")
+                        }),
                         1 => record.address = value.parse().unwrap(),
                         _ => unimplemented!()
                     }
@@ -280,22 +283,22 @@ fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &
         RRTypes::Aaaa => record.as_any_mut().downcast_mut::<AaaaRecord>().unwrap().address = Some(value.parse().unwrap()),
         RRTypes::Ns => record.as_any_mut().downcast_mut::<NsRecord>().unwrap().server = Some(match value.strip_suffix('.') {
             Some(base) => base.to_string(),
-            None => panic!("Domain is not fully qualified (missing trailing dot)")
+            None => panic!("server param is not fully qualified (missing trailing dot)")
         }),
         RRTypes::CName => record.as_any_mut().downcast_mut::<CNameRecord>().unwrap().target = Some(match value.strip_suffix('.') {
             Some(base) => base.to_string(),
-            None => panic!("Domain is not fully qualified (missing trailing dot)")
+            None => panic!("target param is not fully qualified (missing trailing dot)")
         }),
         RRTypes::Soa => {
             let record = record.as_any_mut().downcast_mut::<SoaRecord>().unwrap();
             match pos {
                 0 => record.fqdn = Some(match value.strip_suffix('.') {
                     Some(base) => base.to_string(),
-                    None => panic!("Domain is not fully qualified (missing trailing dot)")
+                    None => panic!("fqdn param is not fully qualified (missing trailing dot)")
                 }),
                 1 => record.mailbox = Some(match value.strip_suffix('.') {
                     Some(base) => base.to_string(),
-                    None => panic!("Domain is not fully qualified (missing trailing dot)")
+                    None => panic!("mailbox param is not fully qualified (missing trailing dot)")
                 }),
                 2 => record.serial = value.parse().unwrap(),
                 3 => record.refresh = value.parse().unwrap(),
@@ -307,7 +310,7 @@ fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &
         }
         RRTypes::Ptr => record.as_any_mut().downcast_mut::<PtrRecord>().unwrap().fqdn = Some(match value.strip_suffix('.') {
             Some(base) => base.to_string(),
-            None => panic!("Domain is not fully qualified (missing trailing dot)")
+            None => panic!("fqdn param is not fully qualified (missing trailing dot)")
         }),
         RRTypes::HInfo => {
             let record = record.as_any_mut().downcast_mut::<HInfoRecord>().unwrap();
@@ -323,7 +326,7 @@ fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &
                 0 => record.priority = value.parse().unwrap(),
                 1 => record.server = Some(match value.strip_suffix('.') {
                     Some(base) => base.to_string(),
-                    None => panic!("Domain is not fully qualified (missing trailing dot)")
+                    None => panic!("server param is not fully qualified (missing trailing dot)")
                 }),
                 _ => unimplemented!()
             }
@@ -339,7 +342,7 @@ fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &
                     let sign = match value {
                         "S" | "W" => -1,
                         "N" | "E" => 1,
-                        _ => panic!("Invalid direction")
+                        _ => panic!("invalid direction")
                     };
 
                     let val = (sign * (record.latitude as i64)) + (1 << 31);
@@ -352,7 +355,7 @@ fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &
                     let sign = match value {
                         "S" | "W" => -1,
                         "N" | "E" => 1,
-                        _ => panic!("Invalid direction")
+                        _ => panic!("invalid direction")
                     };
 
                     let val = (sign * (record.longitude as i64)) + (1 << 31);
@@ -382,7 +385,7 @@ fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &
                 2 => record.port = value.parse().unwrap() ,
                 3 => record.target = Some(match value.strip_suffix('.') {
                     Some(base) => base.to_string(),
-                    None => panic!("Domain is not fully qualified (missing trailing dot)")
+                    None => panic!("target param is not fully qualified (missing trailing dot)")
                 }),
                 _ => unimplemented!()
             }
@@ -404,7 +407,7 @@ fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &
                 4 => record.regex = Some(value.to_string()),
                 5 => record.replacement = Some(match value.strip_suffix('.') {
                     Some(base) => base.to_string(),
-                    None => panic!("Domain is not fully qualified (missing trailing dot)")
+                    None => panic!("replacement param is not fully qualified (missing trailing dot)")
                 }),
                 _ => unimplemented!()
             }
@@ -430,7 +433,7 @@ fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &
                 6 => record.key_tag = value.parse().unwrap(),
                 7 => record.signer_name = Some(match value.strip_suffix('.') {
                     Some(base) => base.to_string(),
-                    None => panic!("Domain is not fully qualified (missing trailing dot)")
+                    None => panic!("signer_name param is not fully qualified (missing trailing dot)")
                 }),
                 8 => record.signature = base64::decode(value).unwrap(),
                 _ => record.signature.extend_from_slice(&base64::decode(value).unwrap())
@@ -454,7 +457,7 @@ fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &
                 0 => record.priority = value.parse().unwrap(),
                 1 => record.target = Some(match value.strip_suffix('.') {
                     Some(base) => base.to_string(),
-                    None => panic!("Domain is not fully qualified (missing trailing dot)")
+                    None => panic!("target param is not fully qualified (missing trailing dot)")
                 }),
                 _ => record.params.push(SvcParams::from_str(value).unwrap())
             }
@@ -465,7 +468,7 @@ fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &
                 0 => record.priority = value.parse().unwrap(),
                 1 => record.target = Some(match value.strip_suffix('.') {
                     Some(base) => base.to_string(),
-                    None => panic!("Domain is not fully qualified (missing trailing dot)")
+                    None => panic!("target param is not fully qualified (missing trailing dot)")
                 }),
                 _ => record.params.push(SvcParams::from_str(value).unwrap())
             }
@@ -495,5 +498,5 @@ fn encode_loc_precision(s: &str) -> u8 {
             }
         }
     }
-    panic!("Cannot encode LOC precision from value: {}", s);
+    panic!("cannot encode LOC precision from value: {}", s);
 }
