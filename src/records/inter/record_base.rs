@@ -114,7 +114,7 @@ impl dyn RecordBase {
         })
     }
 
-    pub fn from_wire(_type: RRTypes, class: RRClasses, buf: &[u8], off: usize) -> Result<Box<dyn RecordBase>, RecordError> {
+    pub fn from_wire(_type: RRTypes, class: &RRClasses, buf: &[u8], off: usize) -> Result<Box<dyn RecordBase>, RecordError> {
         Ok(match _type {
             RRTypes::A      => {
                 match class {
@@ -154,8 +154,8 @@ impl dyn RecordBase {
                 todo!()
             }
             */
-            RRTypes::Opt    => OptRecord::from_bytes(buf, off)?.upcast(),
             RRTypes::Any    => AnyRecord::from_bytes(buf, off)?.upcast(),
+            //RRTypes::Opt    => OptRecord::from_bytes(buf, off)?.upcast(),
             _ => return Err(RecordError("rrtype could not produce a record".to_string()))
         })
     }

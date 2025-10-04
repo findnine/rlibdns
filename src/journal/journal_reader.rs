@@ -6,7 +6,6 @@ use crate::journal::inter::txn_op_codes::TxnOpCodes;
 use crate::journal::txn::Txn;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
-use crate::messages::message::MessageError;
 use crate::records::inter::record_base::RecordBase;
 use crate::utils::fqdn_utils::unpack_fqdn;
 
@@ -104,49 +103,6 @@ impl JournalReader {
     }
 
     fn parse_record(&mut self) -> Option<Txn> {
-        /*
-        if self.header == None {
-            let mut buf = vec![0u8; 64];
-            self.reader.read_exact(&mut buf).unwrap();
-
-            // Magic (first 16 bytes): ";BIND LOG V9\n" or ";BIND LOG V9.2\n"
-            let magic = true;//&buf[0..16];
-            let v9 = b";BIND LOG V9\n";
-            let v92 = b";BIND LOG V9.2\n";
-            //if !(magic.starts_with(v9) || magic.starts_with(v92)) {
-            //    //return Err(io::Error::new(io::ErrorKind::InvalidData, "bad .jnl magic"));
-            //}
-
-            //let is_v92 = magic.starts_with(v92);
-
-            self.header = Some(JournalHeader {
-                begin_serial: u32::from_be_bytes([buf[16], buf[17], buf[18], buf[19]]),
-                begin_offset: u32::from_be_bytes([buf[20], buf[21], buf[22], buf[23]]),
-                end_serial: u32::from_be_bytes([buf[24], buf[25], buf[26], buf[27]]),
-                end_offset: u32::from_be_bytes([buf[28], buf[29], buf[30], buf[31]]),
-                index_size: u32::from_be_bytes([buf[32], buf[33], buf[34], buf[35]]),
-                source_serial: u32::from_be_bytes([buf[36], buf[37], buf[38], buf[39]]),
-                flags: buf[40]
-            });
-
-            //println!("V9 {}", is_v92);
-            println!("Begin Serial {}", self.header.as_ref()?.begin_serial);
-            println!("Begin Offset {}", self.header.as_ref()?.begin_offset);
-            println!("End Serial {}", self.header.as_ref()?.end_serial);
-            println!("End Offset {}", self.header.as_ref()?.end_offset);
-            println!("Index Size {}", self.header.as_ref()?.index_size);
-            println!("Source Serial {}", self.header.as_ref()?.source_serial);
-            println!("Flags {}", self.header.as_ref()?.flags);
-
-            // ===== 2) OPTIONAL INDEX =====
-            // Each index entry is 8 bytes: [serial(4) | offset(4)]
-            self.reader.seek(SeekFrom::Current((self.header.as_ref()?.index_size as i64) * 8)).unwrap();
-
-            // ===== 3) POSITION TO FIRST TRANSACTION =====
-            self.reader.seek(SeekFrom::Start(self.header.as_ref()?.begin_offset as u64)).unwrap();
-        }
-        */
-
         let magic = true;
 
         if self.reader.stream_position().unwrap() >= self.end_offset as u64 {
@@ -209,7 +165,7 @@ impl JournalReader {
             let class = RRClasses::try_from(class & 0x7FFF).unwrap();//.map_err(|e| MessageError::RecordError(e.to_string()))?;
             let ttl = u32::from_be_bytes([buf[off+4], buf[off+5], buf[off+6], buf[off+7]]);
 
-            let record = <dyn RecordBase>::from_wire(_type, class, &buf, off+8).unwrap();
+            let record = <dyn RecordBase>::from_wire(_type, &class, &buf, off+8).unwrap();
             txn.add_record(phase, &name, class, ttl, record);
         }
 

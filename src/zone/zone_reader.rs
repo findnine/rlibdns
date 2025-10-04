@@ -166,8 +166,8 @@ impl ZoneReader {
                     ParserState::Data => {
                         if part[0] == b'"' {
                             if part[word_len - 1] == b'"' {
-                                if let Some((_, _, _, ref mut record)) = record {
-                                    set_data(record.deref_mut(), data_count, &String::from_utf8(part[1..word_len - 1].to_vec()).unwrap());
+                                if let Some((_, class, _, ref mut record)) = record {
+                                    set_data(&class, record.deref_mut(), data_count, &String::from_utf8(part[1..word_len - 1].to_vec()).unwrap());
                                 }
 
                                 data_count += 1;
@@ -178,8 +178,8 @@ impl ZoneReader {
                             }
 
                         } else {
-                            if let Some((_, _, _, ref mut record)) = record {
-                                set_data(record.deref_mut(), data_count, &String::from_utf8(part[0..word_len].to_vec()).unwrap());
+                            if let Some((_, class, _, ref mut record)) = record {
+                                set_data(&class, record.deref_mut(), data_count, &String::from_utf8(part[0..word_len].to_vec()).unwrap());
                             }
 
                             data_count += 1;
@@ -189,8 +189,8 @@ impl ZoneReader {
                         if part[word_len - 1] == b'"' {
                             quoted_buf.push_str(&format!("{}", String::from_utf8(part[0..word_len - 1].to_vec()).unwrap()));
 
-                            if let Some((_, _, _, ref mut record)) = record {
-                                set_data(record.deref_mut(), data_count, &quoted_buf);
+                            if let Some((_, class, _, ref mut record)) = record {
+                                set_data(&class, record.deref_mut(), data_count, &quoted_buf);
                             }
 
                             data_count += 1;
@@ -261,9 +261,22 @@ impl<'a> Iterator for ZoneReaderIter<'a> {
     }
 }
 
-fn set_data(record: &mut dyn RecordBase, pos: usize, value: &str) {
+fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &str) {
     match record.get_type() {
-        //RRTypes::A => record.as_any_mut().downcast_mut::<ARecord>().unwrap().address = Some(value.parse().unwrap()),
+        RRTypes::A => {
+            match class {
+                RRClasses::Ch => {
+                    let record = record.as_any_mut().downcast_mut::<ChARecord>().unwrap();
+
+                    match pos {
+                        0 => record.network = Some(value.parse().unwrap()),
+                        1 => record.address = value.parse().unwrap(),
+                        _ => unimplemented!()
+                    }
+                }
+                _ => record.as_any_mut().downcast_mut::<InARecord>().unwrap().address = Some(value.parse().unwrap())
+            }
+        }
         RRTypes::Aaaa => record.as_any_mut().downcast_mut::<AaaaRecord>().unwrap().address = Some(value.parse().unwrap()),
         RRTypes::Ns => record.as_any_mut().downcast_mut::<NsRecord>().unwrap().server = Some(match value.strip_suffix('.') {
             Some(base) => base.to_string(),

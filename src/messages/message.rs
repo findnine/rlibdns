@@ -8,6 +8,7 @@ use crate::messages::inter::rr_classes::RRClasses;
 use crate::records::inter::record_base::RecordBase;
 use crate::messages::rr_query::RRQuery;
 use crate::messages::inter::rr_types::RRTypes;
+use crate::records::opt_record::OptRecord;
 use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 /*
                                1  1  1  1  1  1
@@ -492,7 +493,7 @@ fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> Result<Vec<Mes
             RRTypes::TKey => {}
             RRTypes::TSig => {}
             RRTypes::Opt => {
-                //let record = <dyn RecordBase>::from_wire(_type, buf, *off+2).map_err(|e| MessageError::RecordError(e.to_string()))?;
+                let record = OptRecord::from_bytes(buf, *off+2).map_err(|e| MessageError::RecordError(e.to_string()))?;
             }
             _ => {
                 let class = u16::from_be_bytes([buf[*off+2], buf[*off+3]]);
@@ -500,7 +501,7 @@ fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> Result<Vec<Mes
                 let class = RRClasses::try_from(class & 0x7FFF).map_err(|e| MessageError::RecordError(e.to_string()))?;
                 let ttl = u32::from_be_bytes([buf[*off+4], buf[*off+5], buf[*off+6], buf[*off+7]]);
 
-                let record = <dyn RecordBase>::from_wire(_type, class, buf, *off+8).map_err(|e| MessageError::RecordError(e.to_string()))?;
+                let record = <dyn RecordBase>::from_wire(_type, &class, buf, *off+8).map_err(|e| MessageError::RecordError(e.to_string()))?;
                 section.push((fqdn, class, ttl, record));
             }
         }
