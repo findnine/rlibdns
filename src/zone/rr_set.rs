@@ -5,16 +5,14 @@ use crate::records::inter::record_base::RecordBase;
 #[derive(Debug, Clone)]
 pub struct RRSet {
     _type: RRTypes,
-    class: RRClasses,
     ttl: u32,
     records: Vec<Box<dyn RecordBase>>
 }
 
 impl RRSet {
 
-    pub fn new(_type: RRTypes, class: RRClasses, ttl: u32) -> Self {
+    pub fn new(_type: RRTypes, ttl: u32) -> Self {
         Self {
-            class,
             _type,
             ttl,
             records: Vec::new()
@@ -27,14 +25,6 @@ impl RRSet {
 
     pub fn get_type(&self) -> RRTypes {
         self._type
-    }
-
-    pub fn set_class(&mut self, class: RRClasses) {
-        self.class = class;
-    }
-
-    pub fn get_class(&self) -> RRClasses {
-        self.class
     }
 
     pub fn set_ttl(&mut self, ttl: u32) {

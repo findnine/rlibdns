@@ -13,8 +13,8 @@ use crate::zone::inter::zone_types::ZoneTypes;
 #[derive(Debug, Clone)]
 pub struct Zone {
     _type: ZoneTypes,
+    class: RRClasses,
     rrmap: Trie<Vec<RRSet>>,
-    //records: Trie<BTreeMap<RRTypes, Vec<Box<dyn RecordBase>>>>,
     journal_path: Option<PathBuf>
 }
 
@@ -23,6 +23,7 @@ impl Default for Zone {
     fn default() -> Self {
         Self {
             _type: Default::default(),
+            class: Default::default(),
             rrmap: Trie::new(),
             journal_path: None
         }
@@ -31,16 +32,18 @@ impl Default for Zone {
 
 impl Zone {
 
-    pub fn new(_type: ZoneTypes) -> Self {
+    pub fn new(_type: ZoneTypes, class: RRClasses) -> Self {
         Self {
             _type,
+            class,
             ..Default::default()
         }
     }
 
-    pub fn new_with_jnl<P: Into<PathBuf>>(_type: ZoneTypes, journal_path: P) -> Self {
+    pub fn new_with_jnl<P: Into<PathBuf>>(_type: ZoneTypes, class: RRClasses, journal_path: P) -> Self {
         Self {
             _type,
+            class,
             journal_path: Some(journal_path.into()),
             ..Default::default()
         }
@@ -54,11 +57,15 @@ impl Zone {
         self._type
     }
 
+    pub fn get_class(&self) -> RRClasses {
+        self.class
+    }
+
     pub fn is_authority(&self) -> bool {
         self._type.eq(&ZoneTypes::Master) || self._type.eq(&ZoneTypes::Slave)
     }
 
-    pub fn add_record(&mut self, query: &str, class: RRClasses, ttl: u32, record: Box<dyn RecordBase>) {
+    pub fn add_record(&mut self, query: &str, ttl: u32, record: Box<dyn RecordBase>) {
         let key = encode_fqdn(query);
         let _type = record.get_type();
 
@@ -71,14 +78,14 @@ impl Zone {
                         set.add_record(ttl, record);
                     }
                     None => {
-                        let mut set = RRSet::new(_type, class, ttl);
+                        let mut set = RRSet::new(_type, ttl);
                         set.add_record(ttl, record);
                         sets.push(set);
                     }
                 }
             }
             None => {
-                let mut set = RRSet::new(_type, class, ttl);
+                let mut set = RRSet::new(_type, ttl);
                 set.add_record(ttl, record);
                 self.rrmap.insert(key, vec![set]);
             }
@@ -119,10 +126,8 @@ impl Zone {
     }
     */
 
-    pub fn get_sets(&self, query: &RRQuery) -> Option<&RRSet> {
-        let _type = query.get_type();
-        let class = query.get_class();
-        self.rrmap.get(&encode_fqdn(query.get_fqdn()))?.iter().find(|s| s.get_type().eq(&_type) && s.get_class().eq(&class))
+    pub fn get_sets(&self, query: &str, _type: &RRTypes) -> Option<&RRSet> {
+        self.rrmap.get(&encode_fqdn(query))?.iter().find(|s| s.get_type().eq(&_type))
     }
 
     pub fn get_all_sets(&self, query: &str) -> Option<&Vec<RRSet>> {

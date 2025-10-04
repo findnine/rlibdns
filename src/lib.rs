@@ -89,8 +89,8 @@ mod tests {
     #[test]
     fn parsing() {
         let mut store = ZoneStore::new();
-        store.open("/home/brad/Downloads/find9.net.test.zone", "find9.net").unwrap();
-        println!("{:?}", store.get_deepest_zone("x1.find9.net"));
+        //store.open("/home/brad/Downloads/find9.net.test.zone", "find9.net").unwrap();
+        //println!("{:?}", store.get_deepest_zone("x1.find9.net"));
         //println!("{:?}", store.get_deepest_zone_with_name("find9.net"));
         //println!("{:?}", store.get_zone_exact("find9.net").unwrap().get_all_records(""));
         //println!("{:?}", store.get_zone_exact("find9.net").unwrap().get_records(&RRQuery::new("", RRTypes::A, RRClasses::In)));
