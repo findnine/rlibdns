@@ -494,6 +494,7 @@ fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> Result<Vec<Mes
             RRTypes::TSig => {}
             RRTypes::Opt => {
                 let record = OptRecord::from_bytes(buf, *off+2).map_err(|e| MessageError::RecordError(e.to_string()))?;
+                *off += 5+u16::from_be_bytes([buf[*off+3], buf[*off+4]]) as usize;
             }
             _ => {
                 let class = u16::from_be_bytes([buf[*off+2], buf[*off+3]]);
@@ -503,10 +504,9 @@ fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> Result<Vec<Mes
 
                 let record = <dyn RecordBase>::from_wire(_type, &class, buf, *off+8).map_err(|e| MessageError::RecordError(e.to_string()))?;
                 section.push((fqdn, class, ttl, record));
+                *off += 10+u16::from_be_bytes([buf[*off+8], buf[*off+9]]) as usize;
             }
         }
-
-        *off += 10+u16::from_be_bytes([buf[*off+8], buf[*off+9]]) as usize;
     }
 
     Ok(section)
