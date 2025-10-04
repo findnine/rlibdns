@@ -3,6 +3,7 @@ use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
+use crate::messages::message::MessageError;
 use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 
 #[derive(Debug, Clone)]
@@ -22,19 +23,19 @@ impl RRQuery {
         }
     }
 
-    pub fn from_bytes(buf: &[u8], off: &mut usize) -> Self {
+    pub fn from_bytes(buf: &[u8], off: &mut usize) -> Result<Self, MessageError> {
         let (fqdn, len) = unpack_fqdn(buf, *off);
         *off += len;
 
-        let _type = RRTypes::try_from(u16::from_be_bytes([buf[*off], buf[*off+1]])).unwrap();
-        let class = RRClasses::try_from(u16::from_be_bytes([buf[*off+2], buf[*off+3]])).unwrap();
+        let _type = RRTypes::try_from(u16::from_be_bytes([buf[*off], buf[*off+1]])).map_err(|e| MessageError::RecordError(e.to_string()))?;
+        let class = RRClasses::try_from(u16::from_be_bytes([buf[*off+2], buf[*off+3]])).map_err(|e| MessageError::RecordError(e.to_string()))?;
         *off += 4;
 
-        Self {
+        Ok(Self {
             fqdn,
             _type,
             class
-        }
+        })
     }
 
     pub fn to_bytes(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Vec<u8> {

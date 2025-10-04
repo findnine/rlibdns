@@ -29,7 +29,7 @@ impl JournalReader {
 
 
         let mut buf = vec![0u8; 64];
-        reader.read_exact(&mut buf).unwrap();
+        reader.read_exact(&mut buf)?;
 
         // Magic (first 16 bytes): ";BIND LOG V9\n" or ";BIND LOG V9.2\n"
         let magic = true;//&buf[0..16];
@@ -51,10 +51,10 @@ impl JournalReader {
 
         // ===== 2) OPTIONAL INDEX =====
         // Each index entry is 8 bytes: [serial(4) | offset(4)]
-        reader.seek(SeekFrom::Current((index_size as i64) * 8)).unwrap();
+        reader.seek(SeekFrom::Current((index_size as i64) * 8))?;
 
         // ===== 3) POSITION TO FIRST TRANSACTION =====
-        reader.seek(SeekFrom::Start(begin_offset as u64)).unwrap();
+        reader.seek(SeekFrom::Start(begin_offset as u64))?;
 
         Ok(Self {
             reader,
@@ -105,14 +105,16 @@ impl JournalReader {
     fn parse_record(&mut self) -> Option<Txn> {
         let magic = true;
 
-        if self.reader.stream_position().unwrap() >= self.end_offset as u64 {
+        let f = self.reader.stream_position().ok()?;
+
+        if self.reader.stream_position().ok()? >= self.end_offset as u64 {
             return None;
         }
 
         let (size, rr_count, serial_0, serial_1) = match magic {
             true => {
                 let mut buf = vec![0u8; 16];
-                self.reader.read_exact(&mut buf).unwrap();
+                self.reader.read_exact(&mut buf).ok()?;
                 let size = u32::from_be_bytes([buf[0], buf[1], buf[2], buf[3]]);
                 let rr_count = u32::from_be_bytes([buf[4], buf[5], buf[6], buf[7]]);
                 let serial_0 = u32::from_be_bytes([buf[8], buf[9], buf[10], buf[11]]);
@@ -121,7 +123,7 @@ impl JournalReader {
             }
             false => {
                 let mut buf = vec![0u8; 12];
-                self.reader.read_exact(&mut buf).unwrap();
+                self.reader.read_exact(&mut buf).ok()?;
                 let size = u32::from_be_bytes([buf[0], buf[1], buf[2], buf[3]]);
                 let serial_0 = u32::from_be_bytes([buf[4], buf[5], buf[6], buf[7]]);
                 let serial_1 = u32::from_be_bytes([buf[8], buf[9], buf[10], buf[11]]);
@@ -136,19 +138,19 @@ impl JournalReader {
 
         while remaining > 0 {
             let mut buf = vec![0u8; 4];
-            self.reader.read_exact(&mut buf).unwrap();
+            self.reader.read_exact(&mut buf).ok()?;
             let rr_len = u32::from_be_bytes([buf[0], buf[1], buf[2], buf[3]]);
             remaining -= 4 + rr_len;
 
             buf = vec![0u8; rr_len as usize];
-            self.reader.read_exact(&mut buf).unwrap();
+            self.reader.read_exact(&mut buf).ok()?;
 
             let mut off = 0;
 
             let (name, length) = unpack_fqdn(&buf, off);
             off += length;
 
-            let _type = RRTypes::try_from(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
+            let _type = RRTypes::try_from(u16::from_be_bytes([buf[off], buf[off+1]])).ok()?;
 
             if _type == RRTypes::Soa {
                 seen_soa += 1;
@@ -162,10 +164,10 @@ impl JournalReader {
 
             let class = u16::from_be_bytes([buf[off+2], buf[off+3]]);
             //let cache_flush = (class & 0x8000) != 0;
-            let class = RRClasses::try_from(class & 0x7FFF).unwrap();//.map_err(|e| MessageError::RecordError(e.to_string()))?;
+            let class = RRClasses::try_from(class & 0x7FFF).ok()?;//.map_err(|e| MessageError::RecordError(e.to_string()))?;
             let ttl = u32::from_be_bytes([buf[off+4], buf[off+5], buf[off+6], buf[off+7]]);
 
-            let record = <dyn RecordBase>::from_wire(_type, &class, &buf, off+8).unwrap();
+            let record = <dyn RecordBase>::from_wire(_type, &class, &buf, off+8).ok()?;
             txn.add_record(phase, &name, class, ttl, record);
         }
 

@@ -111,7 +111,7 @@ impl Message {
         let mut off = DNS_HEADER_LEN;
 
         for _ in 0..qd_count {
-            queries.push(RRQuery::from_bytes(buf, &mut off));
+            queries.push(RRQuery::from_bytes(buf, &mut off)?);
         }
 
         let sections = [
