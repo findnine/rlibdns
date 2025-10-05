@@ -1,7 +1,5 @@
-use std::io;
 use std::path::PathBuf;
 use crate::messages::inter::rr_classes::RRClasses;
-use crate::records::inter::record_base::RecordBase;
 use crate::utils::fqdn_utils::{encode_fqdn, decode_fqdn};
 use crate::utils::trie::trie::Trie;
 use crate::zone::inter::zone_types::ZoneTypes;
@@ -21,7 +19,7 @@ impl ZoneStore {
         }
     }
 
-    pub fn open<P: Into<PathBuf>>(&mut self, file_path: P, fqdn: &str, class: RRClasses) -> io::Result<()> {
+    pub fn open<P: Into<PathBuf>>(&mut self, file_path: P, fqdn: &str, class: RRClasses) -> Result<(), ZoneReaderError> {
         let mut zone = Zone::new(ZoneTypes::Master, class);
 
         let mut reader = ZoneReader::open(file_path, fqdn, class)?;
@@ -29,36 +27,14 @@ impl ZoneStore {
         for record in reader.records() {
             match record {
                 Ok((query, ttl, record)) => {
-                    println!("query: {}, ttl: {}, record: {:?}", query, ttl, record);
+                    zone.add_record(&query, ttl, record);
                 }
                 Err(e) => {
                     println!("{:?}", e);
                 }
             }
         }
-        /*
-        loop {
-            match reader.read() {
-                Ok(record) => {
-                    match record {
-                        Some((query, ttl, record)) => {
-                            println!("query: {}, ttl: {}, record: {:?}", query, ttl, record);
-                        }
-                        None => {
-                            println!("None");
-                            break;
-                        }
-                    }
-                }
-                Err(e) => {
-                    println!("{:?}", e);
-                    break;
-                }
-            }
-        }
-        */
 
-        /*
         let key = encode_fqdn(reader.get_origin());
         match self.trie.get_mut(&key) {
             Some(zones) => zones.push(zone),
@@ -66,37 +42,23 @@ impl ZoneStore {
                 self.trie.insert(key, vec![zone]);
             }
         }
-        */
 
         Ok(())
     }
 
-    pub fn open_with_jnl<P: Into<PathBuf>>(&mut self, file_path: P, fqdn: &str, class: RRClasses, journal_path: P) -> io::Result<()> {
+    pub fn open_with_jnl<P: Into<PathBuf>>(&mut self, file_path: P, fqdn: &str, class: RRClasses, journal_path: P) -> Result<(), ZoneReaderError> {
         let mut zone = Zone::new_with_jnl(ZoneTypes::Master, class, journal_path);
 
         let mut reader = ZoneReader::open(file_path, fqdn, class)?;
-        /*
-        loop {
-            match reader.read() {
-                Ok(record) => {
-                    match record {
-                        Some((query, ttl, record)) => {
-                            println!("query: {}, ttl: {}, record: {:?}", query, ttl, record);
-                        }
-                        None => {
-                            println!("None");
-                        }
-                    }
+        for record in reader.records() {
+            match record {
+                Ok((query, ttl, record)) => {
+                    zone.add_record(&query, ttl, record);
                 }
                 Err(e) => {
                     println!("{:?}", e);
                 }
             }
-        }
-        */
-        /*
-        for (query, ttl, record) in reader.read() {
-            zone.add_record(&query, ttl, record);
         }
 
         let key = encode_fqdn(reader.get_origin());
@@ -106,7 +68,6 @@ impl ZoneStore {
                 self.trie.insert(key, vec![zone]);
             }
         }
-        */
 
         Ok(())
     }

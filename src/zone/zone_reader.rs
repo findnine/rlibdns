@@ -1,6 +1,5 @@
 use std::fs::File;
-use std::io;
-use std::io::{BufRead, BufReader, Read};
+use std::io::{BufRead, BufReader};
 use std::ops::DerefMut;
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -80,8 +79,8 @@ impl ZoneReaderError {
 
 impl ZoneReader {
 
-    pub fn open<P: Into<PathBuf>>(file_path: P, origin: &str, class: RRClasses) -> io::Result<Self> {
-        let file = File::open(file_path.into())?;
+    pub fn open<P: Into<PathBuf>>(file_path: P, origin: &str, class: RRClasses) -> Result<Self, ZoneReaderError> {
+        let file = File::open(file_path.into()).map_err(|e| ZoneReaderError::new(ErrorKind::UnexpectedEof, &e.to_string()))?;
         let reader = BufReader::new(file);
 
         Ok(Self {
@@ -93,7 +92,7 @@ impl ZoneReader {
         })
     }
 
-    pub fn read_record(&mut self, record: &mut Option<(String, u32, Box<dyn RecordBase>)>) -> Result<(), ZoneReaderError> {
+    pub fn read_record(&mut self, record: &mut Option<(String, u32, Box<dyn RecordBase>)>) -> Result<usize, ZoneReaderError> {
         let mut state = ParserState::Init;
         let mut paren_count: u8 = 0;
 
@@ -104,9 +103,20 @@ impl ZoneReader {
 
         let mut data_count = 0;
 
+        let mut line = String::new();
+        let mut total_length = 0;
+
         loop {
-            match self.reader.by_ref().lines().next() {
-                Some(Ok(line)) => {
+            line.clear();
+
+            match self.reader.read_line(&mut line) {
+                Ok(length) => {
+                    if length == 0 {
+                        break;
+                    }
+
+                    total_length += length;
+
                     let mut pos = 0;
                     let mut quoted_buf = String::new();
 
@@ -158,7 +168,7 @@ impl ZoneReader {
                             }
                             ParserState::Common => {
                                 let word = String::from_utf8(part[0..word_len].to_vec())
-                                    .map_err(|e| ZoneReaderError::new(ErrorKind::ParseErr, "unable to parse string"))?.to_uppercase();
+                                    .map_err(|_| ZoneReaderError::new(ErrorKind::ParseErr, "unable to parse string"))?.to_uppercase();
 
                                 if let Ok(t) = RRTypes::from_str(&word) {
                                     _type = t;
@@ -196,7 +206,7 @@ impl ZoneReader {
                                     } else {
                                         state = ParserState::QString;
                                         quoted_buf = format!("{}{}", String::from_utf8(part[1..word_len].to_vec())
-                                            .map_err(|e| ZoneReaderError::new(ErrorKind::ParseErr, "unable to parse string"))?, part[word_len] as char);
+                                            .map_err(|_| ZoneReaderError::new(ErrorKind::ParseErr, "unable to parse string"))?, part[word_len] as char);
                                     }
 
                                 } else {
@@ -209,7 +219,7 @@ impl ZoneReader {
                             ParserState::QString => {
                                 if part[word_len - 1] == b'"' {
                                     quoted_buf.push_str(&format!("{}", String::from_utf8(part[0..word_len - 1].to_vec())
-                                        .map_err(|e| ZoneReaderError::new(ErrorKind::ParseErr, "unable to parse string"))?));
+                                        .map_err(|_| ZoneReaderError::new(ErrorKind::ParseErr, "unable to parse string"))?));
 
                                     set_data(&self.class, record.as_mut().unwrap().2.deref_mut(), data_count, &quoted_buf)?;
 
@@ -218,7 +228,7 @@ impl ZoneReader {
 
                                 } else {
                                     quoted_buf.push_str(&format!("{}{}", String::from_utf8(part[0..word_len].to_vec())
-                                        .map_err(|e| ZoneReaderError::new(ErrorKind::ParseErr, "unable to parse string"))?, part[word_len] as char));
+                                        .map_err(|_| ZoneReaderError::new(ErrorKind::ParseErr, "unable to parse string"))?, part[word_len] as char));
                                 }
                             }
                         }
@@ -227,15 +237,14 @@ impl ZoneReader {
                     }
 
                     if record.is_some() && paren_count == 0 {
-                        return Ok(());
+                        return Ok(total_length);
                     }
                 }
-                Some(Err(e)) => return Err(ZoneReaderError::new(ErrorKind::UnexpectedEof, "end of file")),
-                None => break
+                Err(e) => return Err(ZoneReaderError::new(ErrorKind::UnexpectedEof, &e.to_string()))
             }
         }
 
-        Ok(())
+        Ok(total_length)
     }
 
     pub fn get_origin(&self) -> &str {
@@ -285,12 +294,14 @@ impl<'a> Iterator for ZoneReaderIter<'a> {
         let mut record = None;
 
         match self.reader.read_record(&mut record) {
-            Ok(_) => {
+            Ok(length) => {
+                if length == 0 {
+                    return None;
+                }
+
                 match record {
-                    Some(record) => {
-                        Some(Ok(record))
-                    }
-                    None => None
+                    Some(record) => Some(Ok(record)),
+                    None => self.next()
                 }
             }
             Err(e) => Some(Err(e))
