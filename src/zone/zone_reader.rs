@@ -53,12 +53,29 @@ pub struct ZoneReader {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub enum ZoneReaderParseError {
-    NotFound(String),
-    ParseErr(String),
-    FormErr(String),
-    ExtraRRData(String),
-    UnknownParse(String)
+pub struct ZoneReaderError {
+    _type: ErrorKind,
+    message: String
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub enum ErrorKind {
+    NotFound,
+    ParseErr,
+    FormErr,
+    ExtraRRData,
+    UnknownParse,
+    UnexpectedEof
+}
+
+impl ZoneReaderError {
+
+    pub fn new(_type: ErrorKind, message: &str) -> Self {
+        Self {
+            _type,
+            message: message.to_string()
+        }
+    }
 }
 
 impl ZoneReader {
@@ -76,157 +93,149 @@ impl ZoneReader {
         })
     }
 
-    fn parse_record(&mut self) -> Result<Option<(String, u32, Box<dyn RecordBase>)>, ZoneReaderParseError> {
+    pub fn read_record(&mut self, record: &mut Option<(String, u32, Box<dyn RecordBase>)>) -> Result<(), ZoneReaderError> {
         let mut state = ParserState::Init;
-        let mut paren_count = 0;
+        let mut paren_count: u8 = 0;
 
-        let mut _type = RRTypes::default();
+        let mut _type;
         let mut ttl = self.default_ttl;
 
         let mut directive_buf = String::new();
 
-        let mut record: Option<(String, u32, Box<dyn RecordBase>)> = None;
         let mut data_count = 0;
 
         loop {
-            let Some(line) = self.reader.by_ref().lines().next() else { break };
+            match self.reader.by_ref().lines().next() {
+                Some(Ok(line)) => {
+                    let mut pos = 0;
+                    let mut quoted_buf = String::new();
 
-            let mut pos = 0;
-            let mut quoted_buf = String::new();
+                    for part in line.as_bytes().split_inclusive(|&b| b == b' ' || b == b'\t' || b == b'\n' || b == b'(' || b == b')') {
+                        let part_len = part.len();
+                        let mut word_len = part_len;
 
-            for part in line.map_err(|e| ZoneReaderParseError::FormErr("end of file".to_string()))?
-                    .as_bytes().split_inclusive(|&b| b == b' ' || b == b'\t' || b == b'\n' || b == b'(' || b == b')') {
-                let part_len = part.len();
-                let mut word_len = part_len;
+                        if part[0] == b';' && state != ParserState::QString {
+                            break;
+                        }
 
-                if part[0] == b';' && state != ParserState::QString {
-                    break;
-                }
+                        match part[part_len - 1] {
+                            b' ' | b'\t' | b'\n' => {
+                                word_len -= 1;
+                            }
+                            b'(' => {
+                                paren_count += 1;
+                                word_len -= 1;
+                            }
+                            b')' => {
+                                paren_count -= 1;
+                                word_len -= 1;
+                            }
+                            _ => {}
+                        }
 
-                match part[part_len - 1] {
-                    b' ' | b'\t' | b'\n' => {
-                        word_len -= 1;
-                    }
-                    b'(' => {
-                        paren_count += 1;
-                        word_len -= 1;
-                    }
-                    b')' => {
-                        paren_count -= 1;
-                        word_len -= 1;
-                    }
-                    _ => {}
-                }
+                        if word_len == 0 && (part[0] == b'\n' || state != ParserState::Init) {
+                            continue;
+                        }
 
-                if word_len == 0 && (part[0] == b'\n' || state != ParserState::Init) {
-                    continue;
-                }
+                        match state {
+                            ParserState::Init => {
+                                let word = String::from_utf8(part[0..word_len].to_vec())
+                                    .map_err(|_| ZoneReaderError::new(ErrorKind::ParseErr, "unable to parse string"))?.to_lowercase();
 
-                match state {
-                    ParserState::Init => {
-                        let word = String::from_utf8(part[0..word_len].to_vec())
-                            .map_err(|e| ZoneReaderParseError::ParseErr(e.to_string()))?.to_lowercase();
+                                if pos == 0 && paren_count == 0 {
+                                    if word.starts_with('$') {
+                                        directive_buf = word;
+                                        state = ParserState::Directive;
 
-                        if pos == 0 && paren_count == 0 {
-                            if word.starts_with('$') {
-                                directive_buf = word;
-                                state = ParserState::Directive;
+                                    } else {
+                                        if word_len > 0 {
+                                            self.name = word;
+                                        }
 
-                            } else {
-                                if word_len > 0 {
-                                    self.name = word;
+                                        state = ParserState::Common;
+                                    }
+                                }
+                            }
+                            ParserState::Common => {
+                                let word = String::from_utf8(part[0..word_len].to_vec())
+                                    .map_err(|e| ZoneReaderError::new(ErrorKind::ParseErr, "unable to parse string"))?.to_uppercase();
+
+                                if let Ok(t) = RRTypes::from_str(&word) {
+                                    _type = t;
+                                    state = ParserState::Data;
+                                    data_count = 0;
+                                    *record = Some((self.get_relative_name(&self.name).to_string(), ttl, <dyn RecordBase>::new(_type, self.class)
+                                        .ok_or_else(|| ZoneReaderError::new(ErrorKind::NotFound, "record type not found"))?));
+
+                                } else if RRClasses::from_str(&word).is_err() {
+                                    ttl = word.parse().map_err(|_| ZoneReaderError::new(ErrorKind::ParseErr, "unable to parse number"))?;
+                                }
+                            }
+                            ParserState::Directive => {
+                                let value = String::from_utf8(part[0..word_len].to_vec())
+                                    .map_err(|_| ZoneReaderError::new(ErrorKind::ParseErr, "unable to parse string"))?.to_lowercase();
+
+                                match directive_buf.as_str() {
+                                    "$ttl" => self.default_ttl = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::ParseErr, "unable to parse number"))?,
+                                    "$origin" => {
+                                        self.origin = value.strip_suffix('.').ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "origin is not fully qualified (missing trailing dot)"))?.to_string();
+                                    }
+                                    _ => return Err(ZoneReaderError::new(ErrorKind::FormErr, &format!("unknown directive {}", directive_buf)))
                                 }
 
-                                state = ParserState::Common;
+                                state = ParserState::Init;
                             }
-                        }
-                    }
-                    ParserState::Common => {
-                        let word = String::from_utf8(part[0..word_len].to_vec())
-                            .map_err(|e| ZoneReaderParseError::ParseErr(e.to_string()))?.to_uppercase();
+                            ParserState::Data => {
+                                if part[0] == b'"' {
+                                    if part[word_len - 1] == b'"' {
+                                        set_data(&self.class, record.as_mut().unwrap().2.deref_mut(), data_count, &String::from_utf8(part[1..word_len - 1].to_vec())
+                                            .map_err(|_| ZoneReaderError::new(ErrorKind::ParseErr, "unable to parse string"))?)?;
 
-                        if let Ok(t) = RRTypes::from_str(&word) {
-                            _type = t;
-                            state = ParserState::Data;
-                            data_count = 0;
-                            record = Some((self.get_relative_name(&self.name).to_string(), ttl, <dyn RecordBase>::new(_type, self.class)
-                                .ok_or_else(|| ZoneReaderParseError::NotFound("record type is unknown".to_string()))?));
+                                        data_count += 1;
 
-                        } else if RRClasses::from_str(&word).is_err() {
-                            ttl = word.parse()
-                                .map_err(|_| ZoneReaderParseError::ParseErr("ttl was unparsable".to_string()))?;
-                        }
-                    }
-                    ParserState::Directive => {
-                        let value = String::from_utf8(part[0..word_len].to_vec())
-                            .map_err(|e| ZoneReaderParseError::ParseErr(e.to_string()))?.to_lowercase();
+                                    } else {
+                                        state = ParserState::QString;
+                                        quoted_buf = format!("{}{}", String::from_utf8(part[1..word_len].to_vec())
+                                            .map_err(|e| ZoneReaderError::new(ErrorKind::ParseErr, "unable to parse string"))?, part[word_len] as char);
+                                    }
 
-                        match directive_buf.as_str() {
-                            "$ttl" => self.default_ttl = value.parse().map_err(|_| ZoneReaderParseError::ParseErr("default ttl was unparsable".to_string()))?,
-                            "$origin" => {
-                                self.origin = match value.strip_suffix('.') {
-                                    Some(base) => base.to_string(),
-                                    None => return Err(ZoneReaderParseError::FormErr("origin is not fully qualified (missing trailing dot)".to_string()))
-                                };
-                            }
-                            _ => return Err(ZoneReaderParseError::FormErr(format!("unknown directive {}", directive_buf)))
-                        }
+                                } else {
+                                    set_data(&self.class, record.as_mut().unwrap().2.deref_mut(), data_count, &String::from_utf8(part[0..word_len].to_vec())
+                                        .map_err(|_| ZoneReaderError::new(ErrorKind::ParseErr, "unable to parse string"))?)?;
 
-                        state = ParserState::Init;
-                    }
-                    ParserState::Data => {
-                        if part[0] == b'"' {
-                            if part[word_len - 1] == b'"' {
-                                if let Some((_, _, ref mut record)) = record {
-                                    set_data(&self.class, record.deref_mut(), data_count, &String::from_utf8(part[1..word_len - 1].to_vec())
-                                        .map_err(|e| ZoneReaderParseError::ParseErr(e.to_string()))?)?;
+                                    data_count += 1;
                                 }
-
-                                data_count += 1;
-
-                            } else {
-                                state = ParserState::QString;
-                                quoted_buf = format!("{}{}", String::from_utf8(part[1..word_len].to_vec())
-                                    .map_err(|e| ZoneReaderParseError::ParseErr(e.to_string()))?, part[word_len] as char);
                             }
+                            ParserState::QString => {
+                                if part[word_len - 1] == b'"' {
+                                    quoted_buf.push_str(&format!("{}", String::from_utf8(part[0..word_len - 1].to_vec())
+                                        .map_err(|e| ZoneReaderError::new(ErrorKind::ParseErr, "unable to parse string"))?));
 
-                        } else {
-                            if let Some((_, _, ref mut record)) = record {
-                                set_data(&self.class, record.deref_mut(), data_count, &String::from_utf8(part[0..word_len].to_vec())
-                                    .map_err(|e| ZoneReaderParseError::ParseErr(e.to_string()))?)?;
+                                    set_data(&self.class, record.as_mut().unwrap().2.deref_mut(), data_count, &quoted_buf)?;
+
+                                    data_count += 1;
+                                    state = ParserState::Data;
+
+                                } else {
+                                    quoted_buf.push_str(&format!("{}{}", String::from_utf8(part[0..word_len].to_vec())
+                                        .map_err(|e| ZoneReaderError::new(ErrorKind::ParseErr, "unable to parse string"))?, part[word_len] as char));
+                                }
                             }
-
-                            data_count += 1;
                         }
+
+                        pos += part_len;
                     }
-                    ParserState::QString => {
-                        if part[word_len - 1] == b'"' {
-                            quoted_buf.push_str(&format!("{}", String::from_utf8(part[0..word_len - 1].to_vec())
-                                .map_err(|e| ZoneReaderParseError::ParseErr(e.to_string()))?));
 
-                            if let Some((_, _, ref mut record)) = record {
-                                set_data(&self.class, record.deref_mut(), data_count, &quoted_buf)?;
-                            }
-
-                            data_count += 1;
-                            state = ParserState::Data;
-
-                        } else {
-                            quoted_buf.push_str(&format!("{}{}", String::from_utf8(part[0..word_len].to_vec())
-                                .map_err(|e| ZoneReaderParseError::ParseErr(e.to_string()))?, part[word_len] as char));
-                        }
+                    if record.is_some() && paren_count == 0 {
+                        return Ok(());
                     }
                 }
-
-                pos += part_len;
-            }
-
-            if record.is_some() && paren_count == 0 {
-                return Ok(record);
+                Some(Err(e)) => return Err(ZoneReaderError::new(ErrorKind::UnexpectedEof, "end of file")),
+                None => break
             }
         }
 
-        Ok(record)
+        Ok(())
     }
 
     pub fn get_origin(&self) -> &str {
@@ -257,38 +266,50 @@ impl ZoneReader {
     }
     */
 
-    pub fn iter(&mut self) -> ZoneReaderIter {
+    pub fn records(&mut self) -> ZoneReaderIter {
         ZoneReaderIter {
-            parser: self
+            reader: self
         }
     }
 }
 
 pub struct ZoneReaderIter<'a> {
-    parser: &'a mut ZoneReader
+    reader: &'a mut ZoneReader
 }
 
 impl<'a> Iterator for ZoneReaderIter<'a> {
 
-    type Item = Result<Option<(String, u32, Box<dyn RecordBase>)>, ZoneReaderParseError>;
+    type Item = Result<(String, u32, Box<dyn RecordBase>), ZoneReaderError>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.parser.parse_record()
+        let mut record = None;
+
+        match self.reader.read_record(&mut record) {
+            Ok(_) => {
+                match record {
+                    Some(record) => {
+                        Some(Ok(record))
+                    }
+                    None => None
+                }
+            }
+            Err(e) => Some(Err(e))
+        }
     }
 }
 
-fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &str) -> Result<(), ZoneReaderParseError> {
+fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &str) -> Result<(), ZoneReaderError> {
     match record.get_type() {
         RRTypes::A => {
             match class {
                 RRClasses::Ch => {
                     let record = record.as_any_mut().downcast_mut::<ChARecord>()
-                        .ok_or(ZoneReaderParseError::ExtraRRData(value.to_string()))?;
+                        .ok_or(ZoneReaderError::new(ErrorKind::ExtraRRData, value))?;
 
                     match pos {
                         0 => record.network = Some(match value.strip_suffix('.') {
                             Some(base) => base.to_string(),
-                            None => panic!("network param is not fully qualified (missing trailing dot)")
+                            None => return Err(ZoneReaderError::new(ErrorKind::FormErr, "network param is not fully qualified (missing trailing dot)"))
                         }),
                         1 => record.address = value.parse().unwrap(),
                         _ => unimplemented!()
@@ -300,22 +321,22 @@ fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &
         RRTypes::Aaaa => record.as_any_mut().downcast_mut::<AaaaRecord>().unwrap().address = Some(value.parse().unwrap()),
         RRTypes::Ns => record.as_any_mut().downcast_mut::<NsRecord>().unwrap().server = Some(match value.strip_suffix('.') {
             Some(base) => base.to_string(),
-            None => panic!("server param is not fully qualified (missing trailing dot)")
+            None => return Err(ZoneReaderError::new(ErrorKind::FormErr, "server param is not fully qualified (missing trailing dot)"))
         }),
         RRTypes::CName => record.as_any_mut().downcast_mut::<CNameRecord>().unwrap().target = Some(match value.strip_suffix('.') {
             Some(base) => base.to_string(),
-            None => panic!("target param is not fully qualified (missing trailing dot)")
+            None => return Err(ZoneReaderError::new(ErrorKind::FormErr, "target param is not fully qualified (missing trailing dot)"))
         }),
         RRTypes::Soa => {
             let record = record.as_any_mut().downcast_mut::<SoaRecord>().unwrap();
             match pos {
                 0 => record.fqdn = Some(match value.strip_suffix('.') {
                     Some(base) => base.to_string(),
-                    None => panic!("fqdn param is not fully qualified (missing trailing dot)")
+                    None => return Err(ZoneReaderError::new(ErrorKind::FormErr, "fqdn param is not fully qualified (missing trailing dot)"))
                 }),
                 1 => record.mailbox = Some(match value.strip_suffix('.') {
                     Some(base) => base.to_string(),
-                    None => panic!("mailbox param is not fully qualified (missing trailing dot)")
+                    None => return Err(ZoneReaderError::new(ErrorKind::FormErr, "mailbox param is not fully qualified (missing trailing dot)"))
                 }),
                 2 => record.serial = value.parse().unwrap(),
                 3 => record.refresh = value.parse().unwrap(),
@@ -327,7 +348,7 @@ fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &
         }
         RRTypes::Ptr => record.as_any_mut().downcast_mut::<PtrRecord>().unwrap().fqdn = Some(match value.strip_suffix('.') {
             Some(base) => base.to_string(),
-            None => panic!("fqdn param is not fully qualified (missing trailing dot)")
+            None => return Err(ZoneReaderError::new(ErrorKind::FormErr, "fqdn param is not fully qualified (missing trailing dot)"))
         }),
         RRTypes::HInfo => {
             let record = record.as_any_mut().downcast_mut::<HInfoRecord>().unwrap();
@@ -343,7 +364,7 @@ fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &
                 0 => record.priority = value.parse().unwrap(),
                 1 => record.server = Some(match value.strip_suffix('.') {
                     Some(base) => base.to_string(),
-                    None => panic!("server param is not fully qualified (missing trailing dot)")
+                    None => return Err(ZoneReaderError::new(ErrorKind::FormErr, "server param is not fully qualified (missing trailing dot)"))
                 }),
                 _ => unimplemented!()
             }
@@ -359,7 +380,7 @@ fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &
                     let sign = match value {
                         "S" | "W" => -1,
                         "N" | "E" => 1,
-                        _ => panic!("invalid direction")
+                        _ => return Err(ZoneReaderError::new(ErrorKind::FormErr, "invalid direction"))
                     };
 
                     let val = (sign * (record.latitude as i64)) + (1 << 31);
@@ -372,7 +393,7 @@ fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &
                     let sign = match value {
                         "S" | "W" => -1,
                         "N" | "E" => 1,
-                        _ => panic!("invalid direction")
+                        _ => return Err(ZoneReaderError::new(ErrorKind::FormErr, "invalid direction"))
                     };
 
                     let val = (sign * (record.longitude as i64)) + (1 << 31);
@@ -402,7 +423,7 @@ fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &
                 2 => record.port = value.parse().unwrap() ,
                 3 => record.target = Some(match value.strip_suffix('.') {
                     Some(base) => base.to_string(),
-                    None => panic!("target param is not fully qualified (missing trailing dot)")
+                    None => return Err(ZoneReaderError::new(ErrorKind::FormErr, "target param is not fully qualified (missing trailing dot)"))
                 }),
                 _ => unimplemented!()
             }
@@ -424,7 +445,7 @@ fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &
                 4 => record.regex = Some(value.to_string()),
                 5 => record.replacement = Some(match value.strip_suffix('.') {
                     Some(base) => base.to_string(),
-                    None => panic!("replacement param is not fully qualified (missing trailing dot)")
+                    None => return Err(ZoneReaderError::new(ErrorKind::FormErr, "replacement param is not fully qualified (missing trailing dot)"))
                 }),
                 _ => unimplemented!()
             }
@@ -450,7 +471,7 @@ fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &
                 6 => record.key_tag = value.parse().unwrap(),
                 7 => record.signer_name = Some(match value.strip_suffix('.') {
                     Some(base) => base.to_string(),
-                    None => panic!("signer_name param is not fully qualified (missing trailing dot)")
+                    None => return Err(ZoneReaderError::new(ErrorKind::FormErr, "signer_name param is not fully qualified (missing trailing dot)"))
                 }),
                 8 => record.signature = base64::decode(value).unwrap(),
                 _ => record.signature.extend_from_slice(&base64::decode(value).unwrap())
@@ -474,7 +495,7 @@ fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &
                 0 => record.priority = value.parse().unwrap(),
                 1 => record.target = Some(match value.strip_suffix('.') {
                     Some(base) => base.to_string(),
-                    None => panic!("target param is not fully qualified (missing trailing dot)")
+                    None => return Err(ZoneReaderError::new(ErrorKind::FormErr, "target param is not fully qualified (missing trailing dot)"))
                 }),
                 _ => record.params.push(SvcParams::from_str(value).unwrap())
             }
@@ -485,7 +506,7 @@ fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &
                 0 => record.priority = value.parse().unwrap(),
                 1 => record.target = Some(match value.strip_suffix('.') {
                     Some(base) => base.to_string(),
-                    None => panic!("target param is not fully qualified (missing trailing dot)")
+                    None => return Err(ZoneReaderError::new(ErrorKind::FormErr, "target param is not fully qualified (missing trailing dot)"))
                 }),
                 _ => record.params.push(SvcParams::from_str(value).unwrap())
             }

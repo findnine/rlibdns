@@ -6,6 +6,7 @@ pub mod journal;
 
 #[cfg(test)]
 mod tests {
+    use crate::messages::inter::rr_classes::RRClasses;
     use crate::messages::message::Message;
     use crate::zone::zone_store::ZoneStore;
 
@@ -89,7 +90,7 @@ mod tests {
     #[test]
     fn parsing() {
         let mut store = ZoneStore::new();
-        //store.open("/home/brad/Downloads/find9.net.test.zone", "find9.net").unwrap();
+        store.open("/home/brad/Downloads/find9.net.test.zone", "find9.net", RRClasses::In).unwrap();
         //println!("{:?}", store.get_deepest_zone("x1.find9.net"));
         //println!("{:?}", store.get_deepest_zone_with_name("find9.net"));
         //println!("{:?}", store.get_zone_exact("find9.net").unwrap().get_all_records(""));
