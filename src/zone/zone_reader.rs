@@ -32,6 +32,7 @@ use crate::records::inter::naptr_flags::NaptrFlags;
 use crate::records::inter::record_base::RecordBase;
 use crate::records::inter::svc_param::SvcParams;
 use crate::utils::{base64, hex};
+use crate::utils::coord_utils::encode_loc_precision;
 use crate::utils::time_utils::TimeUtils;
 
 #[derive(Debug, PartialEq, Eq)]
@@ -59,11 +60,11 @@ pub struct ZoneReaderError {
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum ErrorKind {
-    NotFound,
+    TypeNotFound,
     ParseErr,
+    WrongClass,
     FormErr,
     ExtraRRData,
-    UnknownParse,
     UnexpectedEof
 }
 
@@ -170,14 +171,19 @@ impl ZoneReader {
                                 let word = String::from_utf8(part[0..word_len].to_vec())
                                     .map_err(|_| ZoneReaderError::new(ErrorKind::ParseErr, "unable to parse string"))?.to_uppercase();
 
-                                if let Ok(t) = RRTypes::from_str(&word) {
+                                if let Ok(c) = RRClasses::from_str(&word) {
+                                    if !c.eq(&self.class) {
+                                        return Err(ZoneReaderError::new(ErrorKind::WrongClass, "invalid class found"));
+                                    }
+
+                                } else if let Ok(t) = RRTypes::from_str(&word) {
                                     _type = t;
                                     state = ParserState::Data;
                                     data_count = 0;
                                     *record = Some((self.get_relative_name(&self.name).to_string(), ttl, <dyn RecordBase>::new(_type, self.class)
-                                        .ok_or_else(|| ZoneReaderError::new(ErrorKind::NotFound, "record type not found"))?));
+                                        .ok_or_else(|| ZoneReaderError::new(ErrorKind::TypeNotFound, "record type not found"))?));
 
-                                } else if RRClasses::from_str(&word).is_err() {
+                                } else {
                                     ttl = word.parse().map_err(|_| ZoneReaderError::new(ErrorKind::ParseErr, "unable to parse number"))?;
                                 }
                             }
@@ -314,70 +320,55 @@ fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &
         RRTypes::A => {
             match class {
                 RRClasses::Ch => {
-                    let record = record.as_any_mut().downcast_mut::<ChARecord>()
-                        .ok_or(ZoneReaderError::new(ErrorKind::ExtraRRData, value))?;
+                    let record = record.as_any_mut().downcast_mut::<ChARecord>().unwrap();
 
                     match pos {
-                        0 => record.network = Some(match value.strip_suffix('.') {
-                            Some(base) => base.to_string(),
-                            None => return Err(ZoneReaderError::new(ErrorKind::FormErr, "network param is not fully qualified (missing trailing dot)"))
-                        }),
+                        0 => record.network = Some(value.strip_suffix('.')
+                            .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "network param is not fully qualified (missing trailing dot)"))?.to_string()),
                         1 => record.address = value.parse().unwrap(),
-                        _ => unimplemented!()
+                        _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found"))
                     }
                 }
                 _ => record.as_any_mut().downcast_mut::<InARecord>().unwrap().address = Some(value.parse().unwrap())
             }
         }
         RRTypes::Aaaa => record.as_any_mut().downcast_mut::<AaaaRecord>().unwrap().address = Some(value.parse().unwrap()),
-        RRTypes::Ns => record.as_any_mut().downcast_mut::<NsRecord>().unwrap().server = Some(match value.strip_suffix('.') {
-            Some(base) => base.to_string(),
-            None => return Err(ZoneReaderError::new(ErrorKind::FormErr, "server param is not fully qualified (missing trailing dot)"))
-        }),
-        RRTypes::CName => record.as_any_mut().downcast_mut::<CNameRecord>().unwrap().target = Some(match value.strip_suffix('.') {
-            Some(base) => base.to_string(),
-            None => return Err(ZoneReaderError::new(ErrorKind::FormErr, "target param is not fully qualified (missing trailing dot)"))
-        }),
+        RRTypes::Ns => record.as_any_mut().downcast_mut::<NsRecord>().unwrap().server = Some(value.strip_suffix('.')
+            .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "server param is not fully qualified (missing trailing dot)"))?.to_string()),
+        RRTypes::CName => record.as_any_mut().downcast_mut::<CNameRecord>().unwrap().target = Some(value.strip_suffix('.')
+            .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "target param is not fully qualified (missing trailing dot)"))?.to_string()),
         RRTypes::Soa => {
             let record = record.as_any_mut().downcast_mut::<SoaRecord>().unwrap();
             match pos {
-                0 => record.fqdn = Some(match value.strip_suffix('.') {
-                    Some(base) => base.to_string(),
-                    None => return Err(ZoneReaderError::new(ErrorKind::FormErr, "fqdn param is not fully qualified (missing trailing dot)"))
-                }),
-                1 => record.mailbox = Some(match value.strip_suffix('.') {
-                    Some(base) => base.to_string(),
-                    None => return Err(ZoneReaderError::new(ErrorKind::FormErr, "mailbox param is not fully qualified (missing trailing dot)"))
-                }),
+                0 => record.fqdn = Some(value.strip_suffix('.')
+                    .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "fqdn param is not fully qualified (missing trailing dot)"))?.to_string()),
+                1 => record.mailbox = Some(value.strip_suffix('.')
+                    .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "mailbox param is not fully qualified (missing trailing dot)"))?.to_string()),
                 2 => record.serial = value.parse().unwrap(),
                 3 => record.refresh = value.parse().unwrap(),
                 4 => record.retry = value.parse().unwrap(),
                 5 => record.expire = value.parse().unwrap(),
                 6 => record.minimum_ttl = value.parse().unwrap(),
-                _ => unimplemented!()
+                _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found"))
             }
         }
-        RRTypes::Ptr => record.as_any_mut().downcast_mut::<PtrRecord>().unwrap().fqdn = Some(match value.strip_suffix('.') {
-            Some(base) => base.to_string(),
-            None => return Err(ZoneReaderError::new(ErrorKind::FormErr, "fqdn param is not fully qualified (missing trailing dot)"))
-        }),
+        RRTypes::Ptr => record.as_any_mut().downcast_mut::<PtrRecord>().unwrap().fqdn = Some(value.strip_suffix('.')
+            .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "fqdn param is not fully qualified (missing trailing dot)"))?.to_string()),
         RRTypes::HInfo => {
             let record = record.as_any_mut().downcast_mut::<HInfoRecord>().unwrap();
             match pos {
                 0 => record.cpu = Some(value.to_string()),
                 1 => record.os = Some(value.to_string()),
-                _ => unimplemented!()
+                _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found"))
             }
         }
         RRTypes::Mx => {
             let record = record.as_any_mut().downcast_mut::<MxRecord>().unwrap();
             match pos {
                 0 => record.priority = value.parse().unwrap(),
-                1 => record.server = Some(match value.strip_suffix('.') {
-                    Some(base) => base.to_string(),
-                    None => return Err(ZoneReaderError::new(ErrorKind::FormErr, "server param is not fully qualified (missing trailing dot)"))
-                }),
-                _ => unimplemented!()
+                1 => record.server = Some(value.strip_suffix('.')
+                    .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "server param is not fully qualified (missing trailing dot)"))?.to_string()),
+                _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found"))
             }
         }
         RRTypes::Txt => record.as_any_mut().downcast_mut::<TxtRecord>().unwrap().data.push(value.to_string()),
@@ -414,16 +405,10 @@ fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &
                     let clean = value.trim_end_matches('m');
                     record.altitude = (clean.parse::<f64>().unwrap() * 100.0).round() as u32;
                 }
-                9 => {
-                    record.size = encode_loc_precision(value);
-                }
-                10 => {
-                    record.h_precision = encode_loc_precision(value);
-                }
-                11 => {
-                    record.v_precision = encode_loc_precision(value);
-                }
-                _ => unimplemented!()
+                9 => record.size = encode_loc_precision(value).map_err(|e| ZoneReaderError::new(ErrorKind::FormErr, &e.to_string()))?,
+                10 => record.h_precision = encode_loc_precision(value).map_err(|e| ZoneReaderError::new(ErrorKind::FormErr, &e.to_string()))?,
+                11 => record.v_precision = encode_loc_precision(value).map_err(|e| ZoneReaderError::new(ErrorKind::FormErr, &e.to_string()))?,
+                _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found"))
             }
         }
         RRTypes::Srv => {
@@ -432,11 +417,9 @@ fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &
                 0 => record.priority = value.parse().unwrap(),
                 1 => record.weight = value.parse().unwrap(),
                 2 => record.port = value.parse().unwrap() ,
-                3 => record.target = Some(match value.strip_suffix('.') {
-                    Some(base) => base.to_string(),
-                    None => return Err(ZoneReaderError::new(ErrorKind::FormErr, "target param is not fully qualified (missing trailing dot)"))
-                }),
-                _ => unimplemented!()
+                3 => record.target = Some(value.strip_suffix('.')
+                    .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "target param is not fully qualified (missing trailing dot)"))?.to_string()),
+                _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found"))
             }
         }
         RRTypes::Naptr => {
@@ -454,11 +437,9 @@ fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &
                     }).collect::<Vec<_>>(),
                 3 => record.service = Some(value.to_string()),
                 4 => record.regex = Some(value.to_string()),
-                5 => record.replacement = Some(match value.strip_suffix('.') {
-                    Some(base) => base.to_string(),
-                    None => return Err(ZoneReaderError::new(ErrorKind::FormErr, "replacement param is not fully qualified (missing trailing dot)"))
-                }),
-                _ => unimplemented!()
+                5 => record.replacement = Some(value.strip_suffix('.')
+                    .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "replacement param is not fully qualified (missing trailing dot)"))?.to_string()),
+                _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found"))
             }
         }
         RRTypes::SshFp => {
@@ -467,7 +448,7 @@ fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &
                 0 => record.algorithm = value.parse().unwrap(),
                 1 => record.fingerprint_type = value.parse().unwrap(),
                 2 => record.fingerprint = hex::decode(value).unwrap(),
-                _ => unimplemented!()
+                _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found"))
             }
         }
         RRTypes::RRSig => {
@@ -480,10 +461,8 @@ fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &
                 4 => record.expiration = u32::from_time_format(value),
                 5 => record.inception = u32::from_time_format(value),
                 6 => record.key_tag = value.parse().unwrap(),
-                7 => record.signer_name = Some(match value.strip_suffix('.') {
-                    Some(base) => base.to_string(),
-                    None => return Err(ZoneReaderError::new(ErrorKind::FormErr, "signer_name param is not fully qualified (missing trailing dot)"))
-                }),
+                7 => record.signer_name = Some(value.strip_suffix('.')
+                    .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "signer_name param is not fully qualified (missing trailing dot)"))?.to_string()),
                 8 => record.signature = base64::decode(value).unwrap(),
                 _ => record.signature.extend_from_slice(&base64::decode(value).unwrap())
             }
@@ -497,17 +476,15 @@ fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &
                 1 => record.selector = value.parse().unwrap(),
                 2 => record.matching_type = value.parse().unwrap(),
                 3 => record.certificate = hex::decode(value).unwrap(),
-                _ => unimplemented!()
+                _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found"))
             }
         }
         RRTypes::Svcb => {
             let record = record.as_any_mut().downcast_mut::<SvcbRecord>().unwrap();
             match pos {
                 0 => record.priority = value.parse().unwrap(),
-                1 => record.target = Some(match value.strip_suffix('.') {
-                    Some(base) => base.to_string(),
-                    None => return Err(ZoneReaderError::new(ErrorKind::FormErr, "target param is not fully qualified (missing trailing dot)"))
-                }),
+                1 => record.target = Some(value.strip_suffix('.')
+                    .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "target param is not fully qualified (missing trailing dot)"))?.to_string()),
                 _ => record.params.push(SvcParams::from_str(value).unwrap())
             }
         }
@@ -515,10 +492,8 @@ fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &
             let record = record.as_any_mut().downcast_mut::<HttpsRecord>().unwrap();
             match pos {
                 0 => record.priority = value.parse().unwrap(),
-                1 => record.target = Some(match value.strip_suffix('.') {
-                    Some(base) => base.to_string(),
-                    None => return Err(ZoneReaderError::new(ErrorKind::FormErr, "target param is not fully qualified (missing trailing dot)"))
-                }),
+                1 => record.target = Some(value.strip_suffix('.')
+                    .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "target param is not fully qualified (missing trailing dot)"))?.to_string()),
                 _ => record.params.push(SvcParams::from_str(value).unwrap())
             }
         }
@@ -529,7 +504,7 @@ fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &
                 0 => record.priority = value.parse().unwrap(),
                 1 => record.weight = value.parse().unwrap(),
                 2 => record.target = Some(value.to_string()),
-                _ => unimplemented!()
+                _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found"))
             }
         }
         RRTypes::Caa => {}//CAA     <flags> <tag> <value>
@@ -537,17 +512,4 @@ fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &
     }
 
     Ok(())
-}
-
-fn encode_loc_precision(s: &str) -> u8 {
-    let val = s.strip_suffix('m').unwrap_or(s).parse::<f64>().unwrap();
-    for exp in 0..=9 {
-        for base in 0..=9 {
-            let encoded = (base as f64) * 10f64.powi(exp);
-            if (val - encoded).abs() < 0.5 {
-                return ((base << 4) | exp).try_into().unwrap();
-            }
-        }
-    }
-    panic!("cannot encode LOC precision from value: {}", s);
 }
