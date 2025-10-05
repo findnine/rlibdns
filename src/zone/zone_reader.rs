@@ -29,7 +29,7 @@ use crate::records::{
     uri_record::UriRecord,
 };
 use crate::records::inter::naptr_flags::NaptrFlags;
-use crate::records::inter::record_base::RecordBase;
+use crate::records::inter::record_base::{RecordBase, RecordError};
 use crate::records::inter::svc_param::SvcParams;
 use crate::utils::{base64, hex};
 use crate::utils::coord_utils::encode_loc_precision;
@@ -325,14 +325,16 @@ fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &
                     match pos {
                         0 => record.network = Some(value.strip_suffix('.')
                             .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "network param is not fully qualified (missing trailing dot)"))?.to_string()),
-                        1 => record.address = value.parse().unwrap(),
+                        1 => record.address = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse address param"))?,
                         _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found"))
                     }
                 }
-                _ => record.as_any_mut().downcast_mut::<InARecord>().unwrap().address = Some(value.parse().unwrap())
+                _ => record.as_any_mut().downcast_mut::<InARecord>().unwrap().address = Some(value.parse()
+                    .map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse address param"))?)
             }
         }
-        RRTypes::Aaaa => record.as_any_mut().downcast_mut::<AaaaRecord>().unwrap().address = Some(value.parse().unwrap()),
+        RRTypes::Aaaa => record.as_any_mut().downcast_mut::<AaaaRecord>().unwrap().address = Some(value.parse()
+            .map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse address param"))?,),
         RRTypes::Ns => record.as_any_mut().downcast_mut::<NsRecord>().unwrap().server = Some(value.strip_suffix('.')
             .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "server param is not fully qualified (missing trailing dot)"))?.to_string()),
         RRTypes::CName => record.as_any_mut().downcast_mut::<CNameRecord>().unwrap().target = Some(value.strip_suffix('.')
@@ -344,11 +346,11 @@ fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &
                     .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "fqdn param is not fully qualified (missing trailing dot)"))?.to_string()),
                 1 => record.mailbox = Some(value.strip_suffix('.')
                     .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "mailbox param is not fully qualified (missing trailing dot)"))?.to_string()),
-                2 => record.serial = value.parse().unwrap(),
-                3 => record.refresh = value.parse().unwrap(),
-                4 => record.retry = value.parse().unwrap(),
-                5 => record.expire = value.parse().unwrap(),
-                6 => record.minimum_ttl = value.parse().unwrap(),
+                2 => record.serial = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse serial param"))?,
+                3 => record.refresh = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse refresh param"))?,
+                4 => record.retry = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse retry param"))?,
+                5 => record.expire = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse expire param"))?,
+                6 => record.minimum_ttl = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse minimum_ttl param"))?,
                 _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found"))
             }
         }
@@ -365,7 +367,7 @@ fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &
         RRTypes::Mx => {
             let record = record.as_any_mut().downcast_mut::<MxRecord>().unwrap();
             match pos {
-                0 => record.priority = value.parse().unwrap(),
+                0 => record.priority = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse priority param"))?,
                 1 => record.server = Some(value.strip_suffix('.')
                     .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "server param is not fully qualified (missing trailing dot)"))?.to_string()),
                 _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found"))
@@ -375,9 +377,12 @@ fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &
         RRTypes::Loc => {
             let record = record.as_any_mut().downcast_mut::<LocRecord>().unwrap();
             match pos {
-                0 => record.latitude = value.parse::<u32>().unwrap() * 3_600_000,
-                1 => record.latitude = record.latitude + value.parse::<u32>().unwrap() * 60_000,
-                2 => record.latitude += (value.parse::<f64>().unwrap() * 1000.0).round() as u32,
+                0 => record.latitude = value.parse::<u32>()
+                    .map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse latitude 1 param"))? * 3_600_000,
+                1 => record.latitude = record.latitude + value.parse::<u32>()
+                    .map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse latitude 2 param"))? * 60_000,
+                2 => record.latitude += (value.parse::<f64>()
+                    .map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse latitude 3 param"))? * 1000.0).round() as u32,
                 3 => {
                     let sign = match value {
                         "S" | "W" => -1,
@@ -388,9 +393,12 @@ fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &
                     let val = (sign * (record.latitude as i64)) + (1 << 31);
                     record.latitude = val as u32
                 }
-                4 => record.longitude = value.parse::<u32>().unwrap() * 3_600_000,
-                5 => record.longitude = record.longitude + value.parse::<u32>().unwrap() * 60_000,
-                6 => record.longitude += (value.parse::<f64>().unwrap() * 1000.0).round() as u32,
+                4 => record.longitude = value.parse::<u32>()
+                    .map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse longitude 1 param"))? * 3_600_000,
+                5 => record.longitude = record.longitude + value.parse::<u32>()
+                    .map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse longitude 2 param"))? * 60_000,
+                6 => record.longitude += (value.parse::<f64>()
+                    .map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse longitude 3 param"))? * 1000.0).round() as u32,
                 7 => {
                     let sign = match value {
                         "S" | "W" => -1,
@@ -403,7 +411,8 @@ fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &
                 }
                 8 => {
                     let clean = value.trim_end_matches('m');
-                    record.altitude = (clean.parse::<f64>().unwrap() * 100.0).round() as u32;
+                    record.altitude = (clean.parse::<f64>()
+                        .map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse altitude param"))? * 100.0).round() as u32;
                 }
                 9 => record.size = encode_loc_precision(value).map_err(|e| ZoneReaderError::new(ErrorKind::FormErr, &e.to_string()))?,
                 10 => record.h_precision = encode_loc_precision(value).map_err(|e| ZoneReaderError::new(ErrorKind::FormErr, &e.to_string()))?,
@@ -414,9 +423,9 @@ fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &
         RRTypes::Srv => {
             let record = record.as_any_mut().downcast_mut::<SrvRecord>().unwrap();
             match pos {
-                0 => record.priority = value.parse().unwrap(),
-                1 => record.weight = value.parse().unwrap(),
-                2 => record.port = value.parse().unwrap() ,
+                0 => record.priority = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse priority param"))?,
+                1 => record.weight = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to weight port param"))?,
+                2 => record.port = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse port param"))?,
                 3 => record.target = Some(value.strip_suffix('.')
                     .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "target param is not fully qualified (missing trailing dot)"))?.to_string()),
                 _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found"))
@@ -425,16 +434,25 @@ fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &
         RRTypes::Naptr => {
             let record = record.as_any_mut().downcast_mut::<NaptrRecord>().unwrap();
             match pos {
-                0 => record.order = value.parse().unwrap(),
-                1 => record.preference = value.parse().unwrap(),
-                2 => record.flags = value.split(",")
-                    .filter_map(|tok| {
-                        let tok = tok.trim();
+                0 => record.order = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse order param"))?,
+                1 => record.preference = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse preference param"))?,
+                2 => {
+                    let mut flags = Vec::new();
+
+                    for flag in value.split(",") {
+                        let tok = flag.trim();
                         if tok.is_empty() {
-                            return None;
+                            continue;
                         }
-                        tok.chars().next().map(|c| NaptrFlags::try_from(c).unwrap())
-                    }).collect::<Vec<_>>(),
+
+                        flags.push(NaptrFlags::try_from(flag.chars()
+                            .next()
+                            .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "empty NAPTR flag token"))?)
+                            .map_err(|e|ZoneReaderError::new(ErrorKind::FormErr, &e.to_string()))?);
+                    }
+
+                    record.flags = flags;
+                }
                 3 => record.service = Some(value.to_string()),
                 4 => record.regex = Some(value.to_string()),
                 5 => record.replacement = Some(value.strip_suffix('.')
@@ -445,26 +463,26 @@ fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &
         RRTypes::SshFp => {
             let record = record.as_any_mut().downcast_mut::<SshFpRecord>().unwrap();
             match pos {
-                0 => record.algorithm = value.parse().unwrap(),
-                1 => record.fingerprint_type = value.parse().unwrap(),
-                2 => record.fingerprint = hex::decode(value).unwrap(),
+                0 => record.algorithm = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse algorithm param"))?,
+                1 => record.fingerprint_type = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse fingerprint_type param"))?,
+                2 => record.fingerprint = hex::decode(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse fingerprint param"))?,
                 _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found"))
             }
         }
         RRTypes::RRSig => {
             let record = record.as_any_mut().downcast_mut::<RRSigRecord>().unwrap();
             match pos {
-                0 => record.type_covered = RRTypes::from_str(value).unwrap(),
-                1 => record.algorithm = value.parse().unwrap(),
-                2 => record.labels = value.parse().unwrap(),
-                3 => record.original_ttl = value.parse().unwrap(),
+                0 => record.type_covered = RRTypes::from_str(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse type_covered param"))?,
+                1 => record.algorithm = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse algorithm param"))?,
+                2 => record.labels = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse labels param"))?,
+                3 => record.original_ttl = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse original_ttl param"))?,
                 4 => record.expiration = u32::from_time_format(value),
                 5 => record.inception = u32::from_time_format(value),
-                6 => record.key_tag = value.parse().unwrap(),
+                6 => record.key_tag = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse key_tag param"))?,
                 7 => record.signer_name = Some(value.strip_suffix('.')
                     .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "signer_name param is not fully qualified (missing trailing dot)"))?.to_string()),
-                8 => record.signature = base64::decode(value).unwrap(),
-                _ => record.signature.extend_from_slice(&base64::decode(value).unwrap())
+                8 => record.signature = base64::decode(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse signature param"))?,
+                _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found"))
             }
         }
         RRTypes::Nsec => {}//example.com.  NSEC  next.example.com. A MX RRSIG NSEC
@@ -472,26 +490,26 @@ fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &
         RRTypes::Smimea => {
             let record = record.as_any_mut().downcast_mut::<SmimeaRecord>().unwrap();
             match pos {
-                0 => record.usage = value.parse().unwrap(),
-                1 => record.selector = value.parse().unwrap(),
-                2 => record.matching_type = value.parse().unwrap(),
-                3 => record.certificate = hex::decode(value).unwrap(),
+                0 => record.usage = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse usage param"))?,
+                1 => record.selector = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse selector param"))?,
+                2 => record.matching_type = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse matching_type param"))?,
+                3 => record.certificate = hex::decode(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse ceritificate param"))?,
                 _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found"))
             }
         }
         RRTypes::Svcb => {
             let record = record.as_any_mut().downcast_mut::<SvcbRecord>().unwrap();
             match pos {
-                0 => record.priority = value.parse().unwrap(),
+                0 => record.priority = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse priority param"))?,
                 1 => record.target = Some(value.strip_suffix('.')
                     .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "target param is not fully qualified (missing trailing dot)"))?.to_string()),
-                _ => record.params.push(SvcParams::from_str(value).unwrap())
+                _ => record.params.push(SvcParams::from_str(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse params param"))?)
             }
         }
         RRTypes::Https => {
             let record = record.as_any_mut().downcast_mut::<HttpsRecord>().unwrap();
             match pos {
-                0 => record.priority = value.parse().unwrap(),
+                0 => record.priority = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse priority param"))?,
                 1 => record.target = Some(value.strip_suffix('.')
                     .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "target param is not fully qualified (missing trailing dot)"))?.to_string()),
                 _ => record.params.push(SvcParams::from_str(value).unwrap())
@@ -501,8 +519,8 @@ fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &
         RRTypes::Uri => {
             let record = record.as_any_mut().downcast_mut::<UriRecord>().unwrap();
             match pos {
-                0 => record.priority = value.parse().unwrap(),
-                1 => record.weight = value.parse().unwrap(),
+                0 => record.priority = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse priority param"))?,
+                1 => record.weight = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse weight param"))?,
                 2 => record.target = Some(value.to_string()),
                 _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found"))
             }
