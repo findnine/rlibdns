@@ -1,6 +1,7 @@
+use std::fmt;
+use std::fmt::Formatter;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use std::ops::DerefMut;
 use std::path::PathBuf;
 use std::str::FromStr;
 use crate::messages::inter::rr_classes::RRClasses;
@@ -76,6 +77,13 @@ impl ZoneReaderError {
             _type,
             message: message.to_string()
         }
+    }
+}
+
+impl fmt::Display for ZoneReaderError {
+
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}: {}", self._type, self.message)
     }
 }
 
