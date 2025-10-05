@@ -48,12 +48,22 @@ pub struct ZoneReader {
     reader: BufReader<File>,
     origin: String,
     name: String,
+    class: RRClasses,
     default_ttl: u32
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub enum ZoneReaderParseError {
+    NotFound(String),
+    ParseErr(String),
+    FormErr(String),
+    ExtraRRData(String),
+    UnknownParse(String)
 }
 
 impl ZoneReader {
 
-    pub fn open<P: Into<PathBuf>>(file_path: P, origin: &str) -> io::Result<Self> {
+    pub fn open<P: Into<PathBuf>>(file_path: P, origin: &str, class: RRClasses) -> io::Result<Self> {
         let file = File::open(file_path.into())?;
         let reader = BufReader::new(file);
 
@@ -61,21 +71,21 @@ impl ZoneReader {
             reader,
             origin: origin.to_string(),
             name: String::new(),
+            class,
             default_ttl: 300
         })
     }
 
-    fn parse_record(&mut self) -> Option<(String, RRClasses, u32, Box<dyn RecordBase>)> {
+    fn parse_record(&mut self) -> Result<(String, u32, Box<dyn RecordBase>), ZoneReaderParseError> {
         let mut state = ParserState::Init;
         let mut paren_count = 0;
 
         let mut _type = RRTypes::default();
-        let mut class = RRClasses::default();
         let mut ttl = self.default_ttl;
 
         let mut directive_buf = String::new();
 
-        let mut record: Option<(String, RRClasses, u32, Box<dyn RecordBase>)> = None;
+        let mut record: Option<(String, u32, Box<dyn RecordBase>)> = None;
         let mut data_count = 0;
 
         loop {
@@ -84,7 +94,8 @@ impl ZoneReader {
             let mut pos = 0;
             let mut quoted_buf = String::new();
 
-            for part in line.ok()?.as_bytes().split_inclusive(|&b| b == b' ' || b == b'\t' || b == b'\n' || b == b'(' || b == b')') {
+            for part in line.map_err(|e| ZoneReaderParseError::FormErr("end of file".to_string()))?
+                    .as_bytes().split_inclusive(|&b| b == b' ' || b == b'\t' || b == b'\n' || b == b'(' || b == b')') {
                 let part_len = part.len();
                 let mut word_len = part_len;
 
@@ -113,7 +124,8 @@ impl ZoneReader {
 
                 match state {
                     ParserState::Init => {
-                        let word = String::from_utf8(part[0..word_len].to_vec()).ok()?.to_lowercase();
+                        let word = String::from_utf8(part[0..word_len].to_vec())
+                            .map_err(|e| ZoneReaderParseError::ParseErr(e.to_string()))?.to_lowercase();
 
                         if pos == 0 && paren_count == 0 {
                             if word.starts_with('$') {
@@ -130,35 +142,34 @@ impl ZoneReader {
                         }
                     }
                     ParserState::Common => {
-                        let word = String::from_utf8(part[0..word_len].to_vec()).ok()?.to_uppercase();
+                        let word = String::from_utf8(part[0..word_len].to_vec())
+                            .map_err(|e| ZoneReaderParseError::ParseErr(e.to_string()))?.to_uppercase();
 
-                        if let Ok(c) = RRClasses::from_str(&word) {
-                            class = c;
-
-                        } else if let Ok(t) = RRTypes::from_str(&word) {
+                        if let Ok(t) = RRTypes::from_str(&word) {
                             _type = t;
                             state = ParserState::Data;
                             data_count = 0;
-                            record = Some((self.get_relative_name(&self.name).to_string(), class, ttl, <dyn RecordBase>::new(_type, class)?));
+                            record = Some((self.get_relative_name(&self.name).to_string(), ttl, <dyn RecordBase>::new(_type, self.class)
+                                .ok_or_else(|| ZoneReaderParseError::NotFound("record type is unknown".to_string()))?));
 
-                        } else {
-                            ttl = word.parse().ok()?;//.expect(&format!("Parse error on line {} pos {}", self.line_no, pos));
+                        } else if RRClasses::from_str(&word).is_err() {
+                            ttl = word.parse()
+                                .map_err(|_| ZoneReaderParseError::ParseErr("ttl was unparsable".to_string()))?;
                         }
                     }
                     ParserState::Directive => {
-                        let value = String::from_utf8(part[0..word_len].to_vec()).ok()?.to_lowercase();
+                        let value = String::from_utf8(part[0..word_len].to_vec())
+                            .map_err(|e| ZoneReaderParseError::ParseErr(e.to_string()))?.to_lowercase();
 
-                        if directive_buf == "$ttl" {
-                            self.default_ttl = value.parse().ok()?;//.expect(&format!("Parse error on line {} pos {}", self.line_no, pos));
-
-                        } else if directive_buf == "$origin" {
-                            self.origin = match value.strip_suffix('.') {
-                                Some(base) => base.to_string(),
-                                None => panic!("origin is not fully qualified (missing trailing dot)")
-                            };
-
-                        } else {
-                            panic!("unknown directive {}", directive_buf);
+                        match directive_buf.as_str() {
+                            "$ttl" => self.default_ttl = value.parse().map_err(|_| ZoneReaderParseError::ParseErr("default ttl was unparsable".to_string()))?,
+                            "$origin" => {
+                                self.origin = match value.strip_suffix('.') {
+                                    Some(base) => base.to_string(),
+                                    None => return Err(ZoneReaderParseError::FormErr("origin is not fully qualified (missing trailing dot)".to_string()))
+                                };
+                            }
+                            _ => return Err(ZoneReaderParseError::FormErr(format!("unknown directive {}", directive_buf)))
                         }
 
                         state = ParserState::Init;
@@ -166,20 +177,23 @@ impl ZoneReader {
                     ParserState::Data => {
                         if part[0] == b'"' {
                             if part[word_len - 1] == b'"' {
-                                if let Some((_, class, _, ref mut record)) = record {
-                                    set_data(&class, record.deref_mut(), data_count, &String::from_utf8(part[1..word_len - 1].to_vec()).ok()?);
+                                if let Some((_, _, ref mut record)) = record {
+                                    set_data(&class, record.deref_mut(), data_count, &String::from_utf8(part[1..word_len - 1].to_vec())
+                                        .map_err(|e| ZoneReaderParseError::ParseErr(e.to_string()))?)?;
                                 }
 
                                 data_count += 1;
 
                             } else {
                                 state = ParserState::QString;
-                                quoted_buf = format!("{}{}", String::from_utf8(part[1..word_len].to_vec()).ok()?, part[word_len] as char);
+                                quoted_buf = format!("{}{}", String::from_utf8(part[1..word_len].to_vec())
+                                    .map_err(|e| ZoneReaderParseError::ParseErr(e.to_string()))?, part[word_len] as char);
                             }
 
                         } else {
-                            if let Some((_, class, _, ref mut record)) = record {
-                                set_data(&class, record.deref_mut(), data_count, &String::from_utf8(part[0..word_len].to_vec()).ok()?);
+                            if let Some((_, _, ref mut record)) = record {
+                                set_data(&class, record.deref_mut(), data_count, &String::from_utf8(part[0..word_len].to_vec())
+                                    .map_err(|e| ZoneReaderParseError::ParseErr(e.to_string()))?)?;
                             }
 
                             data_count += 1;
@@ -187,17 +201,19 @@ impl ZoneReader {
                     }
                     ParserState::QString => {
                         if part[word_len - 1] == b'"' {
-                            quoted_buf.push_str(&format!("{}", String::from_utf8(part[0..word_len - 1].to_vec()).ok()?));
+                            quoted_buf.push_str(&format!("{}", String::from_utf8(part[0..word_len - 1].to_vec())
+                                .map_err(|e| ZoneReaderParseError::ParseErr(e.to_string()))?));
 
-                            if let Some((_, class, _, ref mut record)) = record {
-                                set_data(&class, record.deref_mut(), data_count, &quoted_buf);
+                            if let Some((_, _, ref mut record)) = record {
+                                set_data(&class, record.deref_mut(), data_count, &quoted_buf)?;
                             }
 
                             data_count += 1;
                             state = ParserState::Data;
 
                         } else {
-                            quoted_buf.push_str(&format!("{}{}", String::from_utf8(part[0..word_len].to_vec()).ok()?, part[word_len] as char));
+                            quoted_buf.push_str(&format!("{}{}", String::from_utf8(part[0..word_len].to_vec())
+                                .map_err(|e| ZoneReaderParseError::ParseErr(e.to_string()))?, part[word_len] as char));
                         }
                     }
                 }
@@ -254,19 +270,20 @@ pub struct ZoneReaderIter<'a> {
 
 impl<'a> Iterator for ZoneReaderIter<'a> {
 
-    type Item = (String, RRClasses, u32, Box<dyn RecordBase>);
+    type Item = Result<(String, u32, Box<dyn RecordBase>), ZoneReaderParseError>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.parser.parse_record()
     }
 }
 
-fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &str) {
+fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &str) -> Result<(), ZoneReaderParseError> {
     match record.get_type() {
         RRTypes::A => {
             match class {
                 RRClasses::Ch => {
-                    let record = record.as_any_mut().downcast_mut::<ChARecord>().unwrap();
+                    let record = record.as_any_mut().downcast_mut::<ChARecord>()
+                        .ok_or(ZoneReaderParseError::ExtraRRData(value.to_string()))?;
 
                     match pos {
                         0 => record.network = Some(match value.strip_suffix('.') {
@@ -486,6 +503,8 @@ fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &
         RRTypes::Caa => {}//CAA     <flags> <tag> <value>
         _ => unimplemented!()
     }
+
+    Ok(())
 }
 
 fn encode_loc_precision(s: &str) -> u8 {

@@ -23,8 +23,8 @@ impl ZoneStore {
     pub fn open<P: Into<PathBuf>>(&mut self, file_path: P, fqdn: &str, class: RRClasses) -> io::Result<()> {
         let mut zone = Zone::new(ZoneTypes::Master, class);
 
-        let mut reader = ZoneReader::open(file_path, fqdn)?;
-        for (query, _, ttl, record) in reader.iter() {
+        let mut reader = ZoneReader::open(file_path, fqdn, class)?;
+        for (query, ttl, record) in reader.iter() {
             zone.add_record(&query, ttl, record);
         }
 
@@ -42,8 +42,8 @@ impl ZoneStore {
     pub fn open_with_jnl<P: Into<PathBuf>>(&mut self, file_path: P, fqdn: &str, class: RRClasses, journal_path: P) -> io::Result<()> {
         let mut zone = Zone::new_with_jnl(ZoneTypes::Master, class, journal_path);
 
-        let mut reader = ZoneReader::open(file_path, fqdn)?;
-        for (query, _, ttl, record) in reader.iter() {
+        let mut reader = ZoneReader::open(file_path, fqdn, class)?;
+        for (query, ttl, record) in reader.iter() {
             zone.add_record(&query, ttl, record);
         }
 
