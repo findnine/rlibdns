@@ -76,7 +76,7 @@ impl ZoneReader {
         })
     }
 
-    fn parse_record(&mut self) -> Result<(String, u32, Box<dyn RecordBase>), ZoneReaderParseError> {
+    fn parse_record(&mut self) -> Result<Option<(String, u32, Box<dyn RecordBase>)>, ZoneReaderParseError> {
         let mut state = ParserState::Init;
         let mut paren_count = 0;
 
@@ -178,7 +178,7 @@ impl ZoneReader {
                         if part[0] == b'"' {
                             if part[word_len - 1] == b'"' {
                                 if let Some((_, _, ref mut record)) = record {
-                                    set_data(&class, record.deref_mut(), data_count, &String::from_utf8(part[1..word_len - 1].to_vec())
+                                    set_data(&self.class, record.deref_mut(), data_count, &String::from_utf8(part[1..word_len - 1].to_vec())
                                         .map_err(|e| ZoneReaderParseError::ParseErr(e.to_string()))?)?;
                                 }
 
@@ -192,7 +192,7 @@ impl ZoneReader {
 
                         } else {
                             if let Some((_, _, ref mut record)) = record {
-                                set_data(&class, record.deref_mut(), data_count, &String::from_utf8(part[0..word_len].to_vec())
+                                set_data(&self.class, record.deref_mut(), data_count, &String::from_utf8(part[0..word_len].to_vec())
                                     .map_err(|e| ZoneReaderParseError::ParseErr(e.to_string()))?)?;
                             }
 
@@ -205,7 +205,7 @@ impl ZoneReader {
                                 .map_err(|e| ZoneReaderParseError::ParseErr(e.to_string()))?));
 
                             if let Some((_, _, ref mut record)) = record {
-                                set_data(&class, record.deref_mut(), data_count, &quoted_buf)?;
+                                set_data(&self.class, record.deref_mut(), data_count, &quoted_buf)?;
                             }
 
                             data_count += 1;
@@ -222,11 +222,11 @@ impl ZoneReader {
             }
 
             if record.is_some() && paren_count == 0 {
-                return record;
+                return Ok(record);
             }
         }
 
-        record
+        Ok(record)
     }
 
     pub fn get_origin(&self) -> &str {
@@ -270,7 +270,7 @@ pub struct ZoneReaderIter<'a> {
 
 impl<'a> Iterator for ZoneReaderIter<'a> {
 
-    type Item = Result<(String, u32, Box<dyn RecordBase>), ZoneReaderParseError>;
+    type Item = Result<Option<(String, u32, Box<dyn RecordBase>)>, ZoneReaderParseError>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.parser.parse_record()
