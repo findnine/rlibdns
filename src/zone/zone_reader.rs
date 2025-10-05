@@ -34,6 +34,7 @@ use crate::records::inter::svc_param::SvcParams;
 use crate::utils::{base64, hex};
 use crate::utils::coord_utils::encode_loc_precision;
 use crate::utils::time_utils::TimeUtils;
+use crate::zone::inter::zone_record_data::ZoneRecordData;
 
 #[derive(Debug, PartialEq, Eq)]
 enum ParserState {
@@ -93,7 +94,7 @@ impl ZoneReader {
         })
     }
 
-    pub fn read_record(&mut self, record: &mut Option<(String, u32, Box<dyn RecordBase>)>) -> Result<usize, ZoneReaderError> {
+    pub fn read_record(&mut self, record: &mut Option<(String, u32, Box<dyn ZoneRecordData>)>) -> Result<usize, ZoneReaderError> {
         let mut state = ParserState::Init;
         let mut paren_count: u8 = 0;
 
@@ -180,7 +181,7 @@ impl ZoneReader {
                                     _type = t;
                                     state = ParserState::Data;
                                     data_count = 0;
-                                    *record = Some((self.get_relative_name(&self.name).to_string(), ttl, <dyn RecordBase>::new(_type, self.class)
+                                    *record = Some((self.get_relative_name(&self.name).to_string(), ttl, <dyn ZoneRecordData>::new(_type, &self.class)
                                         .ok_or_else(|| ZoneReaderError::new(ErrorKind::TypeNotFound, "record type not found"))?));
 
                                 } else {
@@ -204,7 +205,7 @@ impl ZoneReader {
                             ParserState::Data => {
                                 if part[0] == b'"' {
                                     if part[word_len - 1] == b'"' {
-                                        set_data(&self.class, record.as_mut().unwrap().2.deref_mut(), data_count, &String::from_utf8(part[1..word_len - 1].to_vec())
+                                        record.as_mut().unwrap().2.set_data(data_count, &String::from_utf8(part[1..word_len - 1].to_vec())
                                             .map_err(|_| ZoneReaderError::new(ErrorKind::ParseErr, "unable to parse string"))?)?;
 
                                         data_count += 1;
@@ -216,7 +217,7 @@ impl ZoneReader {
                                     }
 
                                 } else {
-                                    set_data(&self.class, record.as_mut().unwrap().2.deref_mut(), data_count, &String::from_utf8(part[0..word_len].to_vec())
+                                    record.as_mut().unwrap().2.set_data(data_count, &String::from_utf8(part[0..word_len].to_vec())
                                         .map_err(|_| ZoneReaderError::new(ErrorKind::ParseErr, "unable to parse string"))?)?;
 
                                     data_count += 1;
@@ -227,7 +228,7 @@ impl ZoneReader {
                                     quoted_buf.push_str(&format!("{}", String::from_utf8(part[0..word_len - 1].to_vec())
                                         .map_err(|_| ZoneReaderError::new(ErrorKind::ParseErr, "unable to parse string"))?));
 
-                                    set_data(&self.class, record.as_mut().unwrap().2.deref_mut(), data_count, &quoted_buf)?;
+                                    record.as_mut().unwrap().2.set_data(data_count, &quoted_buf)?;
 
                                     data_count += 1;
                                     state = ParserState::Data;
@@ -294,7 +295,7 @@ pub struct ZoneReaderIter<'a> {
 
 impl<'a> Iterator for ZoneReaderIter<'a> {
 
-    type Item = Result<(String, u32, Box<dyn RecordBase>), ZoneReaderError>;
+    type Item = Result<(String, u32, Box<dyn ZoneRecordData>), ZoneReaderError>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let mut record = None;
@@ -315,7 +316,8 @@ impl<'a> Iterator for ZoneReaderIter<'a> {
     }
 }
 
-fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &str) -> Result<(), ZoneReaderError> {
+fn set_data1(class: &RRClasses, record: &mut dyn ZoneRecordData, pos: usize, value: &str) -> Result<(), ZoneReaderError> {
+    /*
     match record.get_type() {
         RRTypes::A => {
             match class {
@@ -528,6 +530,7 @@ fn set_data(class: &RRClasses, record: &mut dyn RecordBase, pos: usize, value: &
         RRTypes::Caa => {}//CAA     <flags> <tag> <value>
         _ => unimplemented!()
     }
+    */
 
     Ok(())
 }

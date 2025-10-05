@@ -69,7 +69,7 @@ impl Clone for Box<dyn RecordBase> {
 
 impl dyn RecordBase {
 
-    pub fn new(_type: RRTypes, class: RRClasses) -> Option<Box<dyn RecordBase>> {
+    pub fn new(_type: RRTypes, class: &RRClasses) -> Option<Box<dyn RecordBase>> {
         Some(match _type {
             RRTypes::A      => {
                 match class {

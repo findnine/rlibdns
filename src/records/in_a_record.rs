@@ -5,6 +5,8 @@ use std::fmt::Formatter;
 use std::net::Ipv4Addr;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::{RecordBase, RecordError};
+use crate::zone::inter::zone_record_data::ZoneRecordData;
+use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
 
 #[derive(Clone, Debug)]
 pub struct InARecord {
@@ -83,6 +85,22 @@ impl InARecord {
 
     pub fn get_address(&self) -> Option<Ipv4Addr> {
         self.address
+    }
+}
+
+impl ZoneRecordData for InARecord {
+
+    fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
+        match index {
+            0 => self.address = Some(value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse address param"))?),
+            _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found"))
+        }
+
+        Ok(())
+    }
+
+    fn upcast(self) -> Box<dyn ZoneRecordData> {
+        Box::new(self)
     }
 }
 

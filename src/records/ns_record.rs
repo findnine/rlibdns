@@ -5,6 +5,8 @@ use std::fmt::Formatter;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::{RecordBase, RecordError};
 use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
+use crate::zone::inter::zone_record_data::ZoneRecordData;
+use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
 
 #[derive(Clone, Debug)]
 pub struct NsRecord {
@@ -81,6 +83,23 @@ impl NsRecord {
 
     pub fn get_server(&self) -> Option<&String> {
         self.server.as_ref()
+    }
+}
+
+impl ZoneRecordData for NsRecord {
+
+    fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
+        match index {
+            0 => self.server = Some(value.strip_suffix('.')
+                .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "server param is not fully qualified (missing trailing dot)"))?.to_string()),
+            _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found"))
+        }
+
+        Ok(())
+    }
+
+    fn upcast(self) -> Box<dyn ZoneRecordData> {
+        Box::new(self)
     }
 }
 

@@ -5,6 +5,8 @@ use std::fmt::Formatter;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::{RecordBase, RecordError};
 use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
+use crate::zone::inter::zone_record_data::ZoneRecordData;
+use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
 
 #[derive(Clone, Debug)]
 pub struct SoaRecord {
@@ -176,6 +178,30 @@ impl SoaRecord {
 
     pub fn get_minimum_ttl(&self) -> u32 {
         self.minimum_ttl
+    }
+}
+
+impl ZoneRecordData for SoaRecord {
+
+    fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
+        match index {
+            0 => self.fqdn = Some(value.strip_suffix('.')
+                .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "fqdn param is not fully qualified (missing trailing dot)"))?.to_string()),
+            1 => self.mailbox = Some(value.strip_suffix('.')
+                .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "mailbox param is not fully qualified (missing trailing dot)"))?.to_string()),
+            2 => self.serial = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse serial param"))?,
+            3 => self.refresh = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse refresh param"))?,
+            4 => self.retry = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse retry param"))?,
+            5 => self.expire = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse expire param"))?,
+            6 => self.minimum_ttl = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse minimum_ttl param"))?,
+            _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found"))
+        }
+
+        Ok(())
+    }
+
+    fn upcast(self) -> Box<dyn ZoneRecordData> {
+        Box::new(self)
     }
 }
 

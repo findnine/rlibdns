@@ -5,6 +5,8 @@ use std::fmt::Formatter;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::{RecordBase, RecordError};
 use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
+use crate::zone::inter::zone_record_data::ZoneRecordData;
+use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
 
 #[derive(Clone, Debug)]
 pub struct ChARecord {
@@ -97,6 +99,24 @@ impl ChARecord {
 
     pub fn get_address(&self) -> u16 {
         self.address
+    }
+}
+
+impl ZoneRecordData for ChARecord {
+
+    fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
+        match index {
+            0 => self.network = Some(value.strip_suffix('.')
+                .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "network param is not fully qualified (missing trailing dot)"))?.to_string()),
+            1 => self.address = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse address param"))?,
+            _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found"))
+        }
+
+        Ok(())
+    }
+
+    fn upcast(self) -> Box<dyn ZoneRecordData> {
+        Box::new(self)
     }
 }
 
