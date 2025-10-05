@@ -358,6 +358,11 @@ fn set_data1(class: &RRClasses, record: &mut dyn ZoneRecordData, pos: usize, val
         }
         RRTypes::Ptr => record.as_any_mut().downcast_mut::<PtrRecord>().unwrap().fqdn = Some(value.strip_suffix('.')
             .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "fqdn param is not fully qualified (missing trailing dot)"))?.to_string()),
+
+
+
+
+
         RRTypes::HInfo => {
             let record = record.as_any_mut().downcast_mut::<HInfoRecord>().unwrap();
             match pos {
