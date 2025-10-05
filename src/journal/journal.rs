@@ -20,7 +20,7 @@ impl Journal {
         let mut txns = IndexMap::new();
 
         let mut reader = JournalReader::open(file_path)?;
-        for txn in reader.iter() {
+        for txn in reader.txns() {
             txns.insert(txn.get_serial_0(), txn);
         }
 

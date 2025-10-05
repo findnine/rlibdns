@@ -68,12 +68,6 @@ impl JournalReader {
         })
     }
 
-    pub fn iter(&mut self) -> JournalReaderIter {
-        JournalReaderIter {
-            parser: self
-        }
-    }
-
     pub fn get_begin_serial(&self) -> u32 {
         self.begin_serial
     }
@@ -102,7 +96,7 @@ impl JournalReader {
         self.flags
     }
 
-    fn parse_record(&mut self) -> Option<Txn> {
+    fn read_txn(&mut self/*, txn: &mut Txn*/) -> Option<Txn> {
         let magic = true;
 
         let f = self.reader.stream_position().ok()?;
@@ -173,6 +167,12 @@ impl JournalReader {
 
         Some(txn)
     }
+
+    pub fn txns(&mut self) -> JournalReaderIter {
+        JournalReaderIter {
+            parser: self
+        }
+    }
 }
 
 pub struct JournalReaderIter<'a> {
@@ -184,7 +184,7 @@ impl<'a> Iterator for JournalReaderIter<'a> {
     type Item = Txn;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.parser.parse_record()
+        self.parser.read_txn()
     }
 }
 
@@ -192,7 +192,7 @@ impl<'a> Iterator for JournalReaderIter<'a> {
 fn test() {
     let mut parser = JournalReader::open("/home/brad/Downloads/db.find9.net.jnl").unwrap();
 
-    for txn in parser.iter() {
+    for txn in parser.txns() {
         println!("{:?}", txn);
     }
 }
