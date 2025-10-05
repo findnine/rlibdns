@@ -29,7 +29,7 @@ use crate::records::{
     uri_record::UriRecord,
 };
 use crate::records::inter::naptr_flags::NaptrFlags;
-use crate::records::inter::record_base::{RecordBase, RecordError};
+use crate::records::inter::record_base::RecordBase;
 use crate::records::inter::svc_param::SvcParams;
 use crate::utils::{base64, hex};
 use crate::utils::coord_utils::encode_loc_precision;
