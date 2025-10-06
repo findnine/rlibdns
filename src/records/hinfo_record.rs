@@ -113,7 +113,7 @@ impl ZoneRecord for HInfoRecord {
         match index {
             0 => self.cpu = Some(value.to_string()),
             1 => self.os = Some(value.to_string()),
-            _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found"))
+            _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, &format!("extra record data found for record type {}", self.get_type())))
         }
 
         Ok(())

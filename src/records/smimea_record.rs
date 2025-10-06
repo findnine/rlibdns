@@ -139,7 +139,7 @@ impl ZoneRecord for SmimeaRecord {
             1 => self.selector = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse selector param"))?,
             2 => self.matching_type = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse matching_type param"))?,
             3 => self.certificate = hex::decode(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse certificate param"))?,
-            _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found"))
+            _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, &format!("extra record data found for record type {}", self.get_type())))
         }
 
         Ok(())

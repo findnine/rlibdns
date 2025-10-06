@@ -148,7 +148,7 @@ impl ZoneRecord for HttpsRecord {
             0 => self.priority = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse priority param"))?,
             1 => self.target = Some(value.strip_suffix('.')
                 .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "target param is not fully qualified (missing trailing dot)"))?.to_string()),
-            _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found"))
+            _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, &format!("extra record data found for record type {}", self.get_type())))
         }
 
         Ok(())

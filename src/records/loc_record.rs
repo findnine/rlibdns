@@ -213,7 +213,7 @@ impl ZoneRecord for LocRecord {
             9 => self.size = encode_loc_precision(value).map_err(|e| ZoneReaderError::new(ErrorKind::FormErr, &e.to_string()))?,
             10 => self.h_precision = encode_loc_precision(value).map_err(|e| ZoneReaderError::new(ErrorKind::FormErr, &e.to_string()))?,
             11 => self.v_precision = encode_loc_precision(value).map_err(|e| ZoneReaderError::new(ErrorKind::FormErr, &e.to_string()))?,
-            _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found"))
+            _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, &format!("extra record data found for record type {}", self.get_type())))
         }
 
         Ok(())

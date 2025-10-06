@@ -148,7 +148,7 @@ impl ZoneRecord for SshFpRecord {
             0 => self.algorithm = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse algorithm param"))?,
             1 => self.fingerprint_type = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse fingerprint_type param"))?,
             2 => self.fingerprint = hex::decode(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse fingerprint param"))?,
-            _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found"))
+            _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, &format!("extra record data found for record type {}", self.get_type())))
         }
 
         Ok(())

@@ -110,7 +110,7 @@ impl ZoneRecord for ChARecord {
             0 => self.network = Some(value.strip_suffix('.')
                 .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "network param is not fully qualified (missing trailing dot)"))?.to_string()),
             1 => self.address = octal::from_octal(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse address param"))?,
-            _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found"))
+            _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, &format!("extra record data found for record type {}", self.get_type())))
         }
 
         Ok(())
