@@ -30,6 +30,9 @@ pub struct JournalReaderError {
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum ErrorKind {
     ParseErr,
+    ReadErr,
+    ClassNotFound,
+    TypeNotFound,
     UnexpectedEof
 }
 
@@ -119,10 +122,12 @@ impl JournalReader {
         self.flags
     }
 
-    pub fn read_txn(&mut self) -> Result<Option<Txn>, JournalReaderError> {
+    pub fn read_txn(&mut self) -> Result<Txn, JournalReaderError> {
         let magic = true;
 
+        /*
         let f = self.reader.stream_position().ok()?;
+        */
 
         if self.reader.stream_position().ok()? >= self.end_offset as u64 {
             return Ok(None);
@@ -131,7 +136,8 @@ impl JournalReader {
         let (size, _rr_count, serial_0, serial_1) = match magic {
             true => {
                 let mut buf = vec![0u8; 16];
-                self.reader.read_exact(&mut buf).ok()?;
+                self.reader.read_exact(&mut buf)
+                    .map_err(|e| JournalReaderError::new(ErrorKind::ReadErr, &format!("unable to read next {} bytes", buf.len())))?;
                 let size = u32::from_be_bytes([buf[0], buf[1], buf[2], buf[3]]);
                 let rr_count = u32::from_be_bytes([buf[4], buf[5], buf[6], buf[7]]);
                 let serial_0 = u32::from_be_bytes([buf[8], buf[9], buf[10], buf[11]]);
@@ -140,7 +146,8 @@ impl JournalReader {
             }
             false => {
                 let mut buf = vec![0u8; 12];
-                self.reader.read_exact(&mut buf).ok()?;
+                self.reader.read_exact(&mut buf)
+                    .map_err(|e| JournalReaderError::new(ErrorKind::ReadErr, &format!("unable to read next {} bytes", buf.len())))?;
                 let size = u32::from_be_bytes([buf[0], buf[1], buf[2], buf[3]]);
                 let serial_0 = u32::from_be_bytes([buf[4], buf[5], buf[6], buf[7]]);
                 let serial_1 = u32::from_be_bytes([buf[8], buf[9], buf[10], buf[11]]);
@@ -155,19 +162,22 @@ impl JournalReader {
 
         while remaining > 0 {
             let mut buf = vec![0u8; 4];
-            self.reader.read_exact(&mut buf).ok()?;
+            self.reader.read_exact(&mut buf)
+                .map_err(|e| JournalReaderError::new(ErrorKind::ReadErr, &format!("unable to read next {} bytes", buf.len())))?;
             let rr_len = u32::from_be_bytes([buf[0], buf[1], buf[2], buf[3]]);
             remaining -= 4 + rr_len;
 
             buf = vec![0u8; rr_len as usize];
-            self.reader.read_exact(&mut buf).ok()?;
+            self.reader.read_exact(&mut buf)
+                .map_err(|e| JournalReaderError::new(ErrorKind::ReadErr, &format!("unable to read next {} bytes", buf.len())))?;
 
             let mut off = 0;
 
             let (name, length) = unpack_fqdn(&buf, off);
             off += length;
 
-            let _type = RRTypes::try_from(u16::from_be_bytes([buf[off], buf[off+1]])).ok()?;
+            let _type = RRTypes::try_from(u16::from_be_bytes([buf[off], buf[off+1]]))
+                .map_err(|e| JournalReaderError::new(ErrorKind::TypeNotFound, &e.to_string()))?;
 
             if _type == RRTypes::Soa {
                 seen_soa += 1;
@@ -181,25 +191,27 @@ impl JournalReader {
 
             let class = u16::from_be_bytes([buf[off+2], buf[off+3]]);
             //let cache_flush = (class & 0x8000) != 0;
-            let class = RRClasses::try_from(class & 0x7FFF).ok()?;//.map_err(|e| MessageError::RecordError(e.to_string()))?;
+            let class = RRClasses::try_from(class & 0x7FFF)
+                .map_err(|e| JournalReaderError::new(ErrorKind::ClassNotFound, &e.to_string()))?;
             let ttl = u32::from_be_bytes([buf[off+4], buf[off+5], buf[off+6], buf[off+7]]);
 
-            let record = <dyn RecordBase>::from_wire(_type, &class, &buf, off+8).ok()?;
+            let record = <dyn RecordBase>::from_wire(_type, &class, &buf, off+8)
+                .map_err(|_| JournalReaderError::new(ErrorKind::TypeNotFound, &format!("record type {} not found", _type)))?;
             txn.add_record(phase, &name, class, ttl, record);
         }
 
-        Some(txn)
+        Ok(txn)
     }
 
     pub fn txns(&mut self) -> JournalReaderIter {
         JournalReaderIter {
-            parser: self
+            reader: self
         }
     }
 }
 
 pub struct JournalReaderIter<'a> {
-    parser: &'a mut JournalReader
+    reader: &'a mut JournalReader
 }
 
 impl<'a> Iterator for JournalReaderIter<'a> {
@@ -207,7 +219,7 @@ impl<'a> Iterator for JournalReaderIter<'a> {
     type Item = Result<Txn, JournalReaderError>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.parser.read_txn()
+        self.reader.read_txn()
     }
 }
 
