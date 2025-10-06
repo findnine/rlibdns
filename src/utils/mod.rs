@@ -4,5 +4,6 @@ pub mod trie;
 pub mod random;
 pub mod base64;
 pub mod hex;
+pub mod octal;
 pub mod coord_utils;
 pub mod time_utils;

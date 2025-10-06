@@ -5,6 +5,7 @@ use std::fmt::Formatter;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::{RecordBase, RecordError};
 use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
+use crate::utils::octal;
 use crate::zone::inter::zone_record::ZoneRecord;
 use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
 
@@ -108,7 +109,7 @@ impl ZoneRecord for ChARecord {
         match index {
             0 => self.network = Some(value.strip_suffix('.')
                 .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "network param is not fully qualified (missing trailing dot)"))?.to_string()),
-            1 => self.address = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse address param"))?,
+            1 => self.address = octal::from_octal(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse address param"))?,
             _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found"))
         }
 
@@ -123,9 +124,9 @@ impl ZoneRecord for ChARecord {
 impl fmt::Display for ChARecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:<8}{} {:0>5o}", self.get_type().to_string(),
+        write!(f, "{:<8}{} {}", self.get_type().to_string(),
                format!("{}.", self.network.as_ref().unwrap_or(&String::new())),
-               self.address)
+               octal::to_octal(self.address))
     }
 }
 
