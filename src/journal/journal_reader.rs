@@ -1,3 +1,5 @@
+use std::fmt;
+use std::fmt::Formatter;
 use std::fs::File;
 use std::io::{BufReader, Read, Seek, SeekFrom};
 use std::path::PathBuf;
@@ -59,6 +61,13 @@ pub struct JournalReader {
 pub struct JournalReaderError {
     _type: ErrorKind,
     message: String
+}
+
+impl fmt::Display for JournalReaderError {
+
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}: {}", self._type, self.message)
+    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -238,11 +247,12 @@ impl JournalReader {
             }
         }
 
-        if serial <= self.headers.as_ref().unwrap().begin_serial {
+        if serial == self.headers.as_ref().unwrap().begin_serial {
             return Ok(());
         }
 
-        if serial >= self.headers.as_ref().unwrap().end_serial {
+        if serial < self.headers.as_ref().unwrap().begin_serial ||
+                serial >= self.headers.as_ref().unwrap().end_serial {
             return Err(JournalReaderError::new(ErrorKind::ReadErr, "serial out of bounds"));
         }
 
@@ -271,8 +281,10 @@ impl JournalReader {
                 }
             };
 
-            self.reader.seek(SeekFrom::Current(size as i64))
-                .map_err(|_| JournalReaderError::new(ErrorKind::ReadErr, "unable to seek to position"))?;
+            if serial_0 <= serial {
+                self.reader.seek(SeekFrom::Current(size as i64))
+                    .map_err(|_| JournalReaderError::new(ErrorKind::ReadErr, "unable to seek to position"))?;
+            }
 
             if serial_1 >= serial {
                 break;
