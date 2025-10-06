@@ -1,7 +1,7 @@
 use std::fmt;
 use std::fmt::Formatter;
 use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Read};
 use std::path::PathBuf;
 use std::str::FromStr;
 use crate::messages::inter::rr_classes::RRClasses;
@@ -73,7 +73,7 @@ impl ZoneReader {
         })
     }
 
-    pub fn read_record(&mut self, record: &mut Option<(String, u32, Box<dyn ZoneRecord>)>) -> Result<usize, ZoneReaderError> {
+    pub fn read_record(&mut self) -> Result<Option<(String, u32, Box<dyn ZoneRecord>)>, ZoneReaderError> {
         let mut state = ParserState::Init;
         let mut paren_count: u8 = 0;
 
@@ -82,22 +82,12 @@ impl ZoneReader {
 
         let mut directive_buf = String::new();
 
+        let mut record: Option<(String, u32, Box<dyn ZoneRecord>)> = None;
         let mut data_count = 0;
 
-        let mut line = String::new();
-        let mut total_length = 0;
-
         loop {
-            line.clear();
-
-            match self.reader.read_line(&mut line) {
-                Ok(length) => {
-                    if length == 0 {
-                        break;
-                    }
-
-                    total_length += length;
-
+            match self.reader.by_ref().lines().next() {
+                Some(Ok(line)) => {
                     let mut pos = 0;
                     let mut quoted_buf = String::new();
 
@@ -160,7 +150,7 @@ impl ZoneReader {
                                     _type = t;
                                     state = ParserState::Data;
                                     data_count = 0;
-                                    *record = Some((self.get_relative_name(&self.name).to_string(), ttl, <dyn ZoneRecord>::new(_type, &self.class)
+                                    record = Some((self.get_relative_name(&self.name).to_string(), ttl, <dyn ZoneRecord>::new(_type, &self.class)
                                         .ok_or_else(|| ZoneReaderError::new(ErrorKind::TypeNotFound, &format!("record type {} not found", _type)))?));
 
                                 } else {
@@ -223,14 +213,15 @@ impl ZoneReader {
                     }
 
                     if record.is_some() && paren_count == 0 {
-                        return Ok(total_length);
+                        return Ok(record);
                     }
                 }
-                Err(e) => return Err(ZoneReaderError::new(ErrorKind::UnexpectedEof, &e.to_string()))
+                Some(Err(e)) => return Err(ZoneReaderError::new(ErrorKind::UnexpectedEof, &e.to_string())),
+                None => break
             }
         }
 
-        Ok(total_length)
+        Ok(record)
     }
 
     pub fn get_origin(&self) -> &str {
@@ -277,17 +268,11 @@ impl<'a> Iterator for ZoneReaderIter<'a> {
     type Item = Result<(String, u32, Box<dyn ZoneRecord>), ZoneReaderError>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let mut record = None;
-
-        match self.reader.read_record(&mut record) {
-            Ok(length) => {
-                if length == 0 {
-                    return None;
-                }
-
+        match self.reader.read_record() {
+            Ok(record) => {
                 match record {
                     Some(record) => Some(Ok(record)),
-                    None => self.next()
+                    None => None
                 }
             }
             Err(e) => Some(Err(e))
