@@ -10,7 +10,7 @@ use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
 
 #[derive(Clone, Debug)]
 pub struct AaaaRecord {
-    pub(crate) address: Option<Ipv6Addr>
+    address: Option<Ipv6Addr>
 }
 
 impl Default for AaaaRecord {

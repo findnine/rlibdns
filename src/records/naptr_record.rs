@@ -5,15 +5,17 @@ use std::fmt::Formatter;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::naptr_flags::NaptrFlags;
 use crate::records::inter::record_base::{RecordBase, RecordError};
+use crate::zone::inter::zone_record_data::ZoneRecordData;
+use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
 
 #[derive(Clone, Debug)]
 pub struct NaptrRecord {
-    pub(crate) order: u16,
-    pub(crate) preference: u16,
-    pub(crate) flags: Vec<NaptrFlags>,
-    pub(crate) service: Option<String>,
-    pub(crate) regex: Option<String>,
-    pub(crate) replacement: Option<String>
+    order: u16,
+    preference: u16,
+    flags: Vec<NaptrFlags>,
+    service: Option<String>,
+    regex: Option<String>,
+    replacement: Option<String>
 }
 
 impl Default for NaptrRecord {
@@ -200,6 +202,44 @@ impl NaptrRecord {
 
     pub fn get_replacement(&self) -> Option<&String> {
         self.replacement.as_ref()
+    }
+}
+
+impl ZoneRecordData for NaptrRecord {
+
+    fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
+        match index {
+            0 => self.order = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse order param"))?,
+            1 => self.preference = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse preference param"))?,
+            2 => {
+                let mut flags = Vec::new();
+
+                for flag in value.split(",") {
+                    let tok = flag.trim();
+                    if tok.is_empty() {
+                        continue;
+                    }
+
+                    flags.push(NaptrFlags::try_from(flag.chars()
+                        .next()
+                        .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "empty NAPTR flag token"))?)
+                        .map_err(|e|ZoneReaderError::new(ErrorKind::FormErr, &e.to_string()))?);
+                }
+
+                self.flags = flags;
+            }
+            3 => self.service = Some(value.to_string()),
+            4 => self.regex = Some(value.to_string()),
+            5 => self.replacement = Some(value.strip_suffix('.')
+                .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "replacement param is not fully qualified (missing trailing dot)"))?.to_string()),
+            _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found"))
+        }
+
+        Ok(())
+    }
+
+    fn upcast(self) -> Box<dyn ZoneRecordData> {
+        Box::new(self)
     }
 }
 

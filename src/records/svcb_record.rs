@@ -7,12 +7,14 @@ use crate::records::inter::record_base::{RecordBase, RecordError};
 use crate::records::inter::svc_param::SvcParams;
 use crate::records::inter::svc_param_keys::SvcParamKeys;
 use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
+use crate::zone::inter::zone_record_data::ZoneRecordData;
+use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
 
 #[derive(Clone, Debug)]
 pub struct SvcbRecord {
-    pub(crate) priority: u16,
-    pub(crate) target: Option<String>,
-    pub(crate) params: Vec<SvcParams>
+    priority: u16,
+    target: Option<String>,
+    params: Vec<SvcParams>
 }
 
 impl Default for SvcbRecord {
@@ -132,6 +134,24 @@ impl SvcbRecord {
 
     pub fn get_params_mut(&mut self) -> &mut Vec<SvcParams> {
         self.params.as_mut()
+    }
+}
+
+impl ZoneRecordData for SvcbRecord {
+
+    fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
+        match index {
+            0 => self.priority = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse priority param"))?,
+            1 => self.target = Some(value.strip_suffix('.')
+                .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "target param is not fully qualified (missing trailing dot)"))?.to_string()),
+            _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found"))
+        }
+
+        Ok(())
+    }
+
+    fn upcast(self) -> Box<dyn ZoneRecordData> {
+        Box::new(self)
     }
 }
 

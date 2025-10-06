@@ -4,10 +4,12 @@ use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::{RecordBase, RecordError};
+use crate::zone::inter::zone_record_data::ZoneRecordData;
+use crate::zone::zone_reader::ZoneReaderError;
 
 #[derive(Clone, Debug)]
 pub struct TxtRecord {
-    pub(crate) data: Vec<String>
+    data: Vec<String>
 }
 
 impl Default for TxtRecord {
@@ -96,6 +98,18 @@ impl TxtRecord {
 
     pub fn get_data_mut(&mut self) -> &mut Vec<String> {
         self.data.as_mut()
+    }
+}
+
+impl ZoneRecordData for TxtRecord {
+
+    fn set_data(&mut self, _index: usize, value: &str) -> Result<(), ZoneReaderError> {
+        self.data.push(value.to_string());
+        Ok(())
+    }
+
+    fn upcast(self) -> Box<dyn ZoneRecordData> {
+        Box::new(self)
     }
 }
 

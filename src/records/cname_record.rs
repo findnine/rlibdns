@@ -10,7 +10,7 @@ use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
 
 #[derive(Clone, Debug)]
 pub struct CNameRecord {
-    pub(crate) target: Option<String>
+    target: Option<String>
 }
 
 impl Default for CNameRecord {

@@ -10,7 +10,7 @@ use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
 
 #[derive(Clone, Debug)]
 pub struct NsRecord {
-    pub(crate) server: Option<String>
+    server: Option<String>
 }
 
 impl Default for NsRecord {

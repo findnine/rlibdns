@@ -6,14 +6,16 @@ use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::{RecordBase, RecordError};
 use crate::utils::hex;
+use crate::zone::inter::zone_record_data::ZoneRecordData;
+use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
 
 #[derive(Clone, Debug)]
 pub struct SshFpRecord {
     class: RRClasses,
     ttl: u32,
-    pub(crate) algorithm: u8,
-    pub(crate) fingerprint_type: u8,
-    pub(crate) fingerprint: Vec<u8>
+    algorithm: u8,
+    fingerprint_type: u8,
+    fingerprint: Vec<u8>
 }
 
 impl Default for SshFpRecord {
@@ -136,6 +138,24 @@ impl SshFpRecord {
 
     pub fn get_fingerprint(&self) -> &[u8] {
         self.fingerprint.as_ref()
+    }
+}
+
+impl ZoneRecordData for SshFpRecord {
+
+    fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
+        match index {
+            0 => self.algorithm = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse algorithm param"))?,
+            1 => self.fingerprint_type = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse fingerprint_type param"))?,
+            2 => self.fingerprint = hex::decode(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse fingerprint param"))?,
+            _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found"))
+        }
+
+        Ok(())
+    }
+
+    fn upcast(self) -> Box<dyn ZoneRecordData> {
+        Box::new(self)
     }
 }
 

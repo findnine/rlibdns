@@ -5,13 +5,15 @@ use std::fmt::Formatter;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::{RecordBase, RecordError};
 use crate::utils::hex;
+use crate::zone::inter::zone_record_data::ZoneRecordData;
+use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
 
 #[derive(Clone, Debug)]
 pub struct SmimeaRecord {
-    pub(crate) usage: u8,
-    pub(crate) selector: u8,
-    pub(crate) matching_type: u8,
-    pub(crate) certificate: Vec<u8>
+    usage: u8,
+    selector: u8,
+    matching_type: u8,
+    certificate: Vec<u8>
 }
 
 impl Default for SmimeaRecord {
@@ -126,6 +128,25 @@ impl SmimeaRecord {
 
     pub fn get_certificate(&self) -> &[u8] {
         self.certificate.as_ref()
+    }
+}
+
+impl ZoneRecordData for SmimeaRecord {
+
+    fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
+        match index {
+            0 => self.usage = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse usage param"))?,
+            1 => self.selector = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse selector param"))?,
+            2 => self.matching_type = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse matching_type param"))?,
+            3 => self.certificate = hex::decode(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse certificate param"))?,
+            _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found"))
+        }
+
+        Ok(())
+    }
+
+    fn upcast(self) -> Box<dyn ZoneRecordData> {
+        Box::new(self)
     }
 }
 

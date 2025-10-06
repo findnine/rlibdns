@@ -12,13 +12,13 @@ use crate::utils::hex;
 pub struct TSigRecord {
     class: RRClasses,
     ttl: u32,
-    pub(crate) algorithm_name: Option<String>,
-    pub(crate) time_signed: u64,
-    pub(crate) fudge: u16,
-    pub(crate) mac: Vec<u8>,
-    pub(crate) original_id: u16,
-    pub(crate) error: u16,
-    pub(crate) data: Vec<u8>
+    algorithm_name: Option<String>,
+    time_signed: u64,
+    fudge: u16,
+    mac: Vec<u8>,
+    original_id: u16,
+    error: u16,
+    data: Vec<u8>
 }
 
 impl Default for TSigRecord {

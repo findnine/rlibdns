@@ -4,17 +4,19 @@ use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::{RecordBase, RecordError};
-use crate::utils::coord_utils::CoordUtils;
+use crate::utils::coord_utils::{encode_loc_precision, CoordUtils};
+use crate::zone::inter::zone_record_data::ZoneRecordData;
+use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
 
 #[derive(Clone, Debug)]
 pub struct LocRecord {
-    pub(crate) version: u8,
-    pub(crate) size: u8,
-    pub(crate) h_precision: u8,
-    pub(crate) v_precision: u8,
-    pub(crate) latitude: u32,
-    pub(crate) longitude: u32,
-    pub(crate) altitude: u32
+    version: u8,
+    size: u8,
+    h_precision: u8,
+    v_precision: u8,
+    latitude: u32,
+    longitude: u32,
+    altitude: u32
 }
 
 impl Default for LocRecord {
@@ -164,6 +166,61 @@ impl LocRecord {
     
     pub fn get_altitude(&self) -> u32 {
         self.altitude
+    }
+}
+
+impl ZoneRecordData for LocRecord {
+
+    fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
+        match index {
+            0 => self.latitude = value.parse::<u32>()
+                .map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse latitude 1 param"))? * 3_600_000,
+            1 => self.latitude = self.latitude + value.parse::<u32>()
+                .map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse latitude 2 param"))? * 60_000,
+            2 => self.latitude += (value.parse::<f64>()
+                .map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse latitude 3 param"))? * 1000.0).round() as u32,
+            3 => {
+                let sign = match value {
+                    "S" | "W" => -1,
+                    "N" | "E" => 1,
+                    _ => return Err(ZoneReaderError::new(ErrorKind::FormErr, "invalid direction"))
+                };
+
+                let val = (sign * (self.latitude as i64)) + (1 << 31);
+                self.latitude = val as u32
+            }
+            4 => self.longitude = value.parse::<u32>()
+                .map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse longitude 1 param"))? * 3_600_000,
+            5 => self.longitude = self.longitude + value.parse::<u32>()
+                .map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse longitude 2 param"))? * 60_000,
+            6 => self.longitude += (value.parse::<f64>()
+                .map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse longitude 3 param"))? * 1000.0).round() as u32,
+            7 => {
+                let sign = match value {
+                    "S" | "W" => -1,
+                    "N" | "E" => 1,
+                    _ => return Err(ZoneReaderError::new(ErrorKind::FormErr, "invalid direction"))
+                };
+
+                let val = (sign * (self.longitude as i64)) + (1 << 31);
+                self.longitude = val as u32
+            }
+            8 => {
+                let clean = value.trim_end_matches('m');
+                self.altitude = (clean.parse::<f64>()
+                    .map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse altitude param"))? * 100.0).round() as u32;
+            }
+            9 => self.size = encode_loc_precision(value).map_err(|e| ZoneReaderError::new(ErrorKind::FormErr, &e.to_string()))?,
+            10 => self.h_precision = encode_loc_precision(value).map_err(|e| ZoneReaderError::new(ErrorKind::FormErr, &e.to_string()))?,
+            11 => self.v_precision = encode_loc_precision(value).map_err(|e| ZoneReaderError::new(ErrorKind::FormErr, &e.to_string()))?,
+            _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found"))
+        }
+
+        Ok(())
+    }
+
+    fn upcast(self) -> Box<dyn ZoneRecordData> {
+        Box::new(self)
     }
 }
 

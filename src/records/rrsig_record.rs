@@ -2,23 +2,26 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
+use std::str::FromStr;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::{RecordBase, RecordError};
 use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 use crate::utils::base64;
 use crate::utils::time_utils::TimeUtils;
+use crate::zone::inter::zone_record_data::ZoneRecordData;
+use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
 
 #[derive(Clone, Debug)]
 pub struct RRSigRecord {
-    pub(crate) type_covered: RRTypes,
-    pub(crate) algorithm: u8,
-    pub(crate) labels: u8,
-    pub(crate) original_ttl: u32,
-    pub(crate) expiration: u32,
-    pub(crate) inception: u32,
-    pub(crate) key_tag: u16,
-    pub(crate) signer_name: Option<String>,
-    pub(crate) signature: Vec<u8>
+    type_covered: RRTypes,
+    algorithm: u8,
+    labels: u8,
+    original_ttl: u32,
+    expiration: u32,
+    inception: u32,
+    key_tag: u16,
+    signer_name: Option<String>,
+    signature: Vec<u8>
 }
 
 impl Default for RRSigRecord {
@@ -206,6 +209,31 @@ impl RRSigRecord {
 
     pub fn get_signature(&self) -> &[u8] {
         self.signature.as_ref()
+    }
+}
+
+impl ZoneRecordData for RRSigRecord {
+
+    fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
+        match index {
+            0 => self.type_covered = RRTypes::from_str(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse type_covered param"))?,
+            1 => self.algorithm = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse algorithm param"))?,
+            2 => self.labels = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse labels param"))?,
+            3 => self.original_ttl = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse original_ttl param"))?,
+            4 => self.expiration = u32::from_time_format(value),
+            5 => self.inception = u32::from_time_format(value),
+            6 => self.key_tag = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse key_tag param"))?,
+            7 => self.signer_name = Some(value.strip_suffix('.')
+                .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "signer_name param is not fully qualified (missing trailing dot)"))?.to_string()),
+            8 => self.signature = base64::decode(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse signature param"))?,
+            _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found"))
+        }
+
+        Ok(())
+    }
+
+    fn upcast(self) -> Box<dyn ZoneRecordData> {
+        Box::new(self)
     }
 }
 

@@ -4,11 +4,13 @@ use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::{RecordBase, RecordError};
+use crate::zone::inter::zone_record_data::ZoneRecordData;
+use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
 
 #[derive(Clone, Debug)]
 pub struct HInfoRecord {
-    pub(crate) cpu: Option<String>,
-    pub(crate) os: Option<String>
+    cpu: Option<String>,
+    os: Option<String>
 }
 
 impl Default for HInfoRecord {
@@ -102,6 +104,23 @@ impl HInfoRecord {
 
     pub fn get_os(&self) -> Option<&String> {
         self.os.as_ref()
+    }
+}
+
+impl ZoneRecordData for HInfoRecord {
+
+    fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
+        match index {
+            0 => self.cpu = Some(value.to_string()),
+            1 => self.os = Some(value.to_string()),
+            _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found"))
+        }
+
+        Ok(())
+    }
+
+    fn upcast(self) -> Box<dyn ZoneRecordData> {
+        Box::new(self)
     }
 }
 

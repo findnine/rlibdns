@@ -14,7 +14,7 @@ pub struct PtrRecord {
     class: RRClasses,
     cache_flush: bool,
     ttl: u32,
-    pub(crate) fqdn: Option<String>
+    fqdn: Option<String>
 }
 
 impl Default for PtrRecord {

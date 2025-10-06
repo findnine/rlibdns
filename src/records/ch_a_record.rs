@@ -10,8 +10,8 @@ use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
 
 #[derive(Clone, Debug)]
 pub struct ChARecord {
-    pub(crate) network: Option<String>,
-    pub(crate) address: u16
+    network: Option<String>,
+    address: u16
 }
 
 impl Default for ChARecord {

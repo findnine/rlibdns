@@ -52,27 +52,27 @@ impl dyn ZoneRecordData {
             RRTypes::Ns     => <NsRecord as ZoneRecordData>::upcast(NsRecord::default()),
             RRTypes::CName  => <CNameRecord as ZoneRecordData>::upcast(CNameRecord::default()),
             RRTypes::Soa    => <SoaRecord as ZoneRecordData>::upcast(SoaRecord::default()),
-            //RRTypes::Ptr    => <PtrRecord as ZoneRecordData>::upcast(PtrRecord::default()),
-            //RRTypes::HInfo  => <HInfoRecord as ZoneRecordData>::upcast(HInfoRecord::default()),
-            //RRTypes::Mx     => <MxRecord as ZoneRecordData>::upcast(MxRecord::default()),
-            //RRTypes::Txt    => <TxtRecord as ZoneRecordData>::upcast(TxtRecord::default()),
-            //RRTypes::Loc    => <LocRecord as ZoneRecordData>::upcast(LocRecord::default()),
-            //RRTypes::Srv    => <SrvRecord as ZoneRecordData>::upcast(SrvRecord::default()),
-            //RRTypes::Naptr  => <NaptrRecord as ZoneRecordData>::upcast(NaptrRecord::default()),
-            //RRTypes::SshFp  => <SshFpRecord as ZoneRecordData>::upcast(SshFpRecord::default()),
-            //RRTypes::RRSig  => <RRSigRecord as ZoneRecordData>::upcast(RRSigRecord::default()),
+            RRTypes::Ptr    => <PtrRecord as ZoneRecordData>::upcast(PtrRecord::default()),
+            RRTypes::HInfo  => <HInfoRecord as ZoneRecordData>::upcast(HInfoRecord::default()),
+            RRTypes::Mx     => <MxRecord as ZoneRecordData>::upcast(MxRecord::default()),
+            RRTypes::Txt    => <TxtRecord as ZoneRecordData>::upcast(TxtRecord::default()),
+            RRTypes::Loc    => <LocRecord as ZoneRecordData>::upcast(LocRecord::default()),
+            RRTypes::Srv    => <SrvRecord as ZoneRecordData>::upcast(SrvRecord::default()),
+            RRTypes::Naptr  => <NaptrRecord as ZoneRecordData>::upcast(NaptrRecord::default()),
+            RRTypes::SshFp  => <SshFpRecord as ZoneRecordData>::upcast(SshFpRecord::default()),
+            RRTypes::RRSig  => <RRSigRecord as ZoneRecordData>::upcast(RRSigRecord::default()),
             //RRTypes::Nsec   => <NSecRecord as ZoneRecordData>::upcast(NSecRecord::default()),
             //RRTypes::DnsKey => <DnsKeyRecord as ZoneRecordData>::upcast(DnsKeyRecord::default()),
-            //RRTypes::Smimea => <SmimeaRecord as ZoneRecordData>::upcast(SmimeaRecord::default()),
-            //RRTypes::Svcb   => <SvcbRecord as ZoneRecordData>::upcast(SvcbRecord::default()),
-            //RRTypes::Https  => <HttpsRecord as ZoneRecordData>::upcast(HttpsRecord::default()),
+            RRTypes::Smimea => <SmimeaRecord as ZoneRecordData>::upcast(SmimeaRecord::default()),
+            RRTypes::Svcb   => <SvcbRecord as ZoneRecordData>::upcast(SvcbRecord::default()),
+            RRTypes::Https  => <HttpsRecord as ZoneRecordData>::upcast(HttpsRecord::default()),
             /*
             RRTypes::Spf => {
                 todo!()
             }*/
             //RRTypes::TKey   => <TKeyRecord as ZoneRecordData>::upcast(TKeyRecord::default()),
             //RRTypes::TSig   => <TSigRecord as ZoneRecordData>::upcast(TSigRecord::default()),
-            //RRTypes::Uri    => <UriRecord as ZoneRecordData>::upcast(UriRecord::default()),
+            RRTypes::Uri    => <UriRecord as ZoneRecordData>::upcast(UriRecord::default()),
             /*RRTypes::Caa => {
                 todo!()
             }

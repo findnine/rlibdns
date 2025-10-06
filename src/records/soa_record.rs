@@ -10,13 +10,13 @@ use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
 
 #[derive(Clone, Debug)]
 pub struct SoaRecord {
-    pub(crate) fqdn: Option<String>,
-    pub(crate) mailbox: Option<String>,
-    pub(crate) serial: u32,
-    pub(crate) refresh: u32,
-    pub(crate) retry: u32,
-    pub(crate) expire: u32,
-    pub(crate) minimum_ttl: u32
+    fqdn: Option<String>,
+    mailbox: Option<String>,
+    serial: u32,
+    refresh: u32,
+    retry: u32,
+    expire: u32,
+    minimum_ttl: u32
 }
 
 impl Default for SoaRecord {
