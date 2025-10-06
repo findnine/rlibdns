@@ -125,11 +125,8 @@ impl JournalReader {
     pub fn read_txn(&mut self) -> Result<Option<Txn>, JournalReaderError> {
         let magic = true;
 
-        /*
-        let f = self.reader.stream_position().ok()?;
-        */
-
-        if self.reader.stream_position().ok()? >= self.end_offset as u64 {
+        if self.reader.stream_position()
+                .map_err(|e| JournalReaderError::new(ErrorKind::ReadErr, "unable to find position"))? >= self.end_offset as u64 {
             return Ok(None);
         }
 
@@ -200,7 +197,7 @@ impl JournalReader {
             txn.add_record(phase, &name, class, ttl, record);
         }
 
-        Ok(txn)
+        Ok(Some(txn))
     }
 
     pub fn txns(&mut self) -> JournalReaderIter {
