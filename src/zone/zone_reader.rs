@@ -88,6 +88,8 @@ impl ZoneReader {
 
         let mut line = String::new();
         loop {
+            line.clear();
+            
             match self.reader.read_line(&mut line) {
                 Ok(length) => {
                     if length == 0 {
