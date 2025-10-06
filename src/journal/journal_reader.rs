@@ -1,5 +1,4 @@
 use std::fs::File;
-use std::io;
 use std::io::{BufReader, Read, Seek, SeekFrom};
 use std::path::PathBuf;
 use crate::journal::inter::txn_op_codes::TxnOpCodes;
@@ -8,7 +7,6 @@ use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::RecordBase;
 use crate::utils::fqdn_utils::unpack_fqdn;
-use crate::zone::zone_reader::ZoneReaderError;
 
 pub struct JournalReader {
     reader: BufReader<File>,
@@ -29,6 +27,7 @@ pub struct JournalReaderError {
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum ErrorKind {
+    PathNotFound,
     ParseErr,
     ReadErr,
     ClassNotFound,
@@ -48,14 +47,13 @@ impl JournalReaderError {
 
 impl JournalReader {
 
-    pub fn open<P: Into<PathBuf>>(file_path: P) -> io::Result<Self> {
-        let file = File::open(file_path.into())?;
+    pub fn open<P: Into<PathBuf>>(file_path: P) -> Result<Self, JournalReaderError> {
+        let file = File::open(file_path.into()).map_err(|e| JournalReaderError::new(ErrorKind::PathNotFound, &e.to_string()))?;
         let mut reader = BufReader::new(file);
 
-
-
         let mut buf = vec![0u8; 64];
-        reader.read_exact(&mut buf)?;
+        reader.read_exact(&mut buf)
+            .map_err(|e| JournalReaderError::new(ErrorKind::ReadErr, &format!("unable to read next {} bytes", buf.len())))?;
 
         // Magic (first 16 bytes): ";BIND LOG V9\n" or ";BIND LOG V9.2\n"
         let magic = true;//&buf[0..16];
@@ -77,10 +75,12 @@ impl JournalReader {
 
         // ===== 2) OPTIONAL INDEX =====
         // Each index entry is 8 bytes: [serial(4) | offset(4)]
-        reader.seek(SeekFrom::Current((index_size as i64) * 8))?;
+        //reader.seek(SeekFrom::Current((index_size as i64) * 8))
+        //    .map_err(|e| JournalReaderError::new(ErrorKind::ReadErr, "unable to seek to position"))?;
 
         // ===== 3) POSITION TO FIRST TRANSACTION =====
-        reader.seek(SeekFrom::Start(begin_offset as u64))?;
+        reader.seek(SeekFrom::Start(begin_offset as u64))
+            .map_err(|e| JournalReaderError::new(ErrorKind::ReadErr, "unable to seek to position"))?;
 
         Ok(Self {
             reader,

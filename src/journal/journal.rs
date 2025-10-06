@@ -17,6 +17,7 @@ impl Journal {
     }
 
     pub fn open(file_path: &str) -> io::Result<Self> {
+        /*
         let mut txns = IndexMap::new();
 
         let mut reader = JournalReader::open(file_path)?;
@@ -27,6 +28,8 @@ impl Journal {
         Ok(Self {
             txns
         })
+        */
+        todo!()
     }
 
     pub fn get_txns(&self) -> &IndexMap<u32, Txn> {

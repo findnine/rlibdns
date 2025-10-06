@@ -33,6 +33,7 @@ pub struct ZoneReaderError {
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum ErrorKind {
+    PathNotFound,
     TypeNotFound,
     ParseErr,
     WrongClass,
@@ -61,7 +62,7 @@ impl fmt::Display for ZoneReaderError {
 impl ZoneReader {
 
     pub fn open<P: Into<PathBuf>>(file_path: P, origin: &str, class: RRClasses) -> Result<Self, ZoneReaderError> {
-        let file = File::open(file_path.into()).map_err(|e| ZoneReaderError::new(ErrorKind::UnexpectedEof, &e.to_string()))?;
+        let file = File::open(file_path.into()).map_err(|e| ZoneReaderError::new(ErrorKind::PathNotFound, &e.to_string()))?;
         let reader = BufReader::new(file);
 
         Ok(Self {

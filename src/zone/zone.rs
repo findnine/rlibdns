@@ -1,6 +1,5 @@
-use std::io;
 use std::path::PathBuf;
-use crate::journal::journal_reader::JournalReader;
+use crate::journal::journal_reader::{JournalReader, JournalReaderError};
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::zone::rr_set::RRSet;
@@ -167,7 +166,7 @@ impl Zone {
         }
     }
 
-    pub fn get_journal_reader(&self) -> io::Result<JournalReader> {
+    pub fn get_journal_reader(&self) -> Result<JournalReader, JournalReaderError> {
         JournalReader::open(self.journal_path.as_ref().unwrap())
     }
 
