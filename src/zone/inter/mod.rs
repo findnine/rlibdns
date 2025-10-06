@@ -1,2 +1,2 @@
 pub mod zone_types;
-pub mod zone_record_data;
+pub mod zone_record;

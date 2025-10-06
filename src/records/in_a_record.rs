@@ -5,7 +5,7 @@ use std::fmt::Formatter;
 use std::net::Ipv4Addr;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::{RecordBase, RecordError};
-use crate::zone::inter::zone_record_data::ZoneRecordData;
+use crate::zone::inter::zone_record::ZoneRecord;
 use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
 
 #[derive(Clone, Debug)]
@@ -88,7 +88,7 @@ impl InARecord {
     }
 }
 
-impl ZoneRecordData for InARecord {
+impl ZoneRecord for InARecord {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
         match index {
@@ -99,7 +99,7 @@ impl ZoneRecordData for InARecord {
         Ok(())
     }
 
-    fn upcast(self) -> Box<dyn ZoneRecordData> {
+    fn upcast(self) -> Box<dyn ZoneRecord> {
         Box::new(self)
     }
 }

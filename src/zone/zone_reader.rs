@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
-use crate::zone::inter::zone_record_data::ZoneRecordData;
+use crate::zone::inter::zone_record::ZoneRecord;
 
 #[derive(Debug, PartialEq, Eq)]
 enum ParserState {
@@ -73,7 +73,7 @@ impl ZoneReader {
         })
     }
 
-    pub fn read_record(&mut self, record: &mut Option<(String, u32, Box<dyn ZoneRecordData>)>) -> Result<usize, ZoneReaderError> {
+    pub fn read_record(&mut self, record: &mut Option<(String, u32, Box<dyn ZoneRecord>)>) -> Result<usize, ZoneReaderError> {
         let mut state = ParserState::Init;
         let mut paren_count: u8 = 0;
 
@@ -160,7 +160,7 @@ impl ZoneReader {
                                     _type = t;
                                     state = ParserState::Data;
                                     data_count = 0;
-                                    *record = Some((self.get_relative_name(&self.name).to_string(), ttl, <dyn ZoneRecordData>::new(_type, &self.class)
+                                    *record = Some((self.get_relative_name(&self.name).to_string(), ttl, <dyn ZoneRecord>::new(_type, &self.class)
                                         .ok_or_else(|| ZoneReaderError::new(ErrorKind::TypeNotFound, &format!("record type {} not found", _type)))?));
 
                                 } else {
@@ -274,7 +274,7 @@ pub struct ZoneReaderIter<'a> {
 
 impl<'a> Iterator for ZoneReaderIter<'a> {
 
-    type Item = Result<(String, u32, Box<dyn ZoneRecordData>), ZoneReaderError>;
+    type Item = Result<(String, u32, Box<dyn ZoneRecord>), ZoneReaderError>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let mut record = None;

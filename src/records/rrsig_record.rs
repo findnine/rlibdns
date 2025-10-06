@@ -8,7 +8,7 @@ use crate::records::inter::record_base::{RecordBase, RecordError};
 use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 use crate::utils::base64;
 use crate::utils::time_utils::TimeUtils;
-use crate::zone::inter::zone_record_data::ZoneRecordData;
+use crate::zone::inter::zone_record::ZoneRecord;
 use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
 
 #[derive(Clone, Debug)]
@@ -212,7 +212,7 @@ impl RRSigRecord {
     }
 }
 
-impl ZoneRecordData for RRSigRecord {
+impl ZoneRecord for RRSigRecord {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
         match index {
@@ -232,7 +232,7 @@ impl ZoneRecordData for RRSigRecord {
         Ok(())
     }
 
-    fn upcast(self) -> Box<dyn ZoneRecordData> {
+    fn upcast(self) -> Box<dyn ZoneRecord> {
         Box::new(self)
     }
 }

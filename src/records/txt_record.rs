@@ -4,7 +4,7 @@ use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::{RecordBase, RecordError};
-use crate::zone::inter::zone_record_data::ZoneRecordData;
+use crate::zone::inter::zone_record::ZoneRecord;
 use crate::zone::zone_reader::ZoneReaderError;
 
 #[derive(Clone, Debug)]
@@ -101,14 +101,14 @@ impl TxtRecord {
     }
 }
 
-impl ZoneRecordData for TxtRecord {
+impl ZoneRecord for TxtRecord {
 
     fn set_data(&mut self, _index: usize, value: &str) -> Result<(), ZoneReaderError> {
         self.data.push(value.to_string());
         Ok(())
     }
 
-    fn upcast(self) -> Box<dyn ZoneRecordData> {
+    fn upcast(self) -> Box<dyn ZoneRecord> {
         Box::new(self)
     }
 }
