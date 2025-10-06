@@ -8,6 +8,7 @@ use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::RecordBase;
 use crate::utils::fqdn_utils::unpack_fqdn;
+use crate::zone::zone_reader::ZoneReaderError;
 
 pub struct JournalReader {
     reader: BufReader<File>,
@@ -18,6 +19,28 @@ pub struct JournalReader {
     index_size: u32,
     source_serial: u32,
     flags: u8
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct JournalReaderError {
+    _type: ErrorKind,
+    message: String
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub enum ErrorKind {
+    ParseErr,
+    UnexpectedEof
+}
+
+impl JournalReaderError {
+
+    pub fn new(_type: ErrorKind, message: &str) -> Self {
+        Self {
+            _type,
+            message: message.to_string()
+        }
+    }
 }
 
 impl JournalReader {
@@ -96,13 +119,13 @@ impl JournalReader {
         self.flags
     }
 
-    fn read_txn(&mut self/*, txn: &mut Txn*/) -> Option<Txn> {
+    pub fn read_txn(&mut self, start_serial: u32) -> Result<Option<Txn>, JournalReaderError> {
         let magic = true;
 
         let f = self.reader.stream_position().ok()?;
 
         if self.reader.stream_position().ok()? >= self.end_offset as u64 {
-            return None;
+            return Ok(None);
         }
 
         let (size, rr_count, serial_0, serial_1) = match magic {
@@ -181,7 +204,7 @@ pub struct JournalReaderIter<'a> {
 
 impl<'a> Iterator for JournalReaderIter<'a> {
 
-    type Item = Txn;
+    type Item = Result<Txn, JournalReaderError>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.parser.read_txn()
