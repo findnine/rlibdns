@@ -2,6 +2,7 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
+use std::str::FromStr;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::{RecordBase, RecordError};
 use crate::records::inter::svc_param::SvcParams;
@@ -148,7 +149,7 @@ impl ZoneRecord for HttpsRecord {
             0 => self.priority = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse priority param"))?,
             1 => self.target = Some(value.strip_suffix('.')
                 .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "target param is not fully qualified (missing trailing dot)"))?.to_string()),
-            _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, &format!("extra record data found for record type {}", self.get_type())))
+            _ => self.params.push(SvcParams::from_str(value).unwrap())
         }
 
         Ok(())
