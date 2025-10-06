@@ -112,7 +112,7 @@ impl JournalReader {
     fn read_headers(&mut self) -> Result<&JournalHeader, JournalReaderError> {
         let mut buf = vec![0u8; 64];
         self.reader.read_exact(&mut buf)
-            .map_err(|e| JournalReaderError::new(ErrorKind::ReadErr, &format!("unable to read next {} bytes", buf.len())))?;
+            .map_err(|_| JournalReaderError::new(ErrorKind::ReadErr, &format!("unable to read next {} bytes", buf.len())))?;
 
         // Magic (first 16 bytes): ";BIND LOG V9\n" or ";BIND LOG V9.2\n"
         let magic = true;//&buf[0..16];
@@ -263,7 +263,7 @@ impl JournalReader {
                 true => {
                     let mut buf = vec![0u8; 16];
                     self.reader.read_exact(&mut buf)
-                        .map_err(|e| JournalReaderError::new(ErrorKind::ReadErr, &format!("unable to read next {} bytes", buf.len())))?;
+                        .map_err(|_| JournalReaderError::new(ErrorKind::ReadErr, &format!("unable to read next {} bytes", buf.len())))?;
                     let size = u32::from_be_bytes([buf[0], buf[1], buf[2], buf[3]]);
                     let rr_count = u32::from_be_bytes([buf[4], buf[5], buf[6], buf[7]]);
                     let serial_0 = u32::from_be_bytes([buf[8], buf[9], buf[10], buf[11]]);
