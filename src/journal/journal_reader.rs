@@ -119,7 +119,7 @@ impl JournalReader {
         self.flags
     }
 
-    pub fn read_txn(&mut self, start_serial: u32) -> Result<Option<Txn>, JournalReaderError> {
+    pub fn read_txn(&mut self) -> Result<Option<Txn>, JournalReaderError> {
         let magic = true;
 
         let f = self.reader.stream_position().ok()?;
@@ -128,7 +128,7 @@ impl JournalReader {
             return Ok(None);
         }
 
-        let (size, rr_count, serial_0, serial_1) = match magic {
+        let (size, _rr_count, serial_0, serial_1) = match magic {
             true => {
                 let mut buf = vec![0u8; 16];
                 self.reader.read_exact(&mut buf).ok()?;

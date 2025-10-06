@@ -3,7 +3,7 @@ use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::message::MessageRecord;
 use crate::records::inter::record_base::RecordBase;
 
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct Txn {
     serial_0: u32,
     serial_1: u32,
