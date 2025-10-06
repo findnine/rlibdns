@@ -10,35 +10,17 @@ mod tests {
     use crate::messages::message::Message;
     use crate::zone::zone_store::ZoneStore;
 
-
-
-    //Go through all error types and add a display error option
-
-
-
-
     //Don't use hashmaps or indexmaps or btreemaps at all
-    //Remove the order crap from types
-    //Just use vecs as its faster
-
 
     //REMOVE HASHMAP FOR POSITION POINTERS WHEN ENCODING
-
-    //DONT FOR LOOP FOR ENUMS - USE MATCH...
-
-
 
 
     //NEVER PANIC
 
-    //DO RESULTS WHILE PARSING RECORDS.
-
     //DONT USE UNWRAPS - MODIFY ALL ENUMS DOING IT - THEN CHANGE io::Result for from_bytes on Message to our own Result
-    //Check the same with each record to change the Result type
 
-    //ZONES SHOULD BE STORED NOT JUST PER NAME BUT PER CLASS
-    //SO ZONE STORE SHOULD ASK FOR CLASS AS WELL NOT JUST THE NAME
-    //ON CREATION OF ZONE IT WILL NEED THE CLASS
+    //CLEAN UP OCTALS, HEX, BASE64 parsing
+    //CLEAN UP COORD UTILS
 
 
 
