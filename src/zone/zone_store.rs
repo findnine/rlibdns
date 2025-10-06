@@ -30,7 +30,7 @@ impl ZoneStore {
                     zone.add_record(&query, ttl, record);
                 }
                 Err(e) => {
-                    println!("{:?}", e);
+                    println!("{}", e);
                 }
             }
         }
@@ -56,7 +56,7 @@ impl ZoneStore {
                     zone.add_record(&query, ttl, record);
                 }
                 Err(e) => {
-                    println!("{:?}", e);
+                    println!("{}", e);
                 }
             }
         }
