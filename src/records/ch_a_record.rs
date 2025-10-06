@@ -123,7 +123,7 @@ impl ZoneRecord for ChARecord {
 impl fmt::Display for ChARecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:<8}{} {}", self.get_type().to_string(),
+        write!(f, "{:<8}{} {:0>5o}", self.get_type().to_string(),
                format!("{}.", self.network.as_ref().unwrap_or(&String::new())),
                self.address)
     }
