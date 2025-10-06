@@ -85,9 +85,14 @@ impl ZoneReader {
         let mut record: Option<(String, u32, Box<dyn ZoneRecord>)> = None;
         let mut data_count = 0;
 
+        let mut line = String::new();
         loop {
-            match self.reader.by_ref().lines().next() {
-                Some(Ok(line)) => {
+            match self.reader.read_line(&mut line) {
+                Ok(length) => {
+                    if length == 0 {
+                        break;
+                    }
+
                     let mut pos = 0;
                     let mut quoted_buf = String::new();
 
@@ -216,8 +221,7 @@ impl ZoneReader {
                         return Ok(record);
                     }
                 }
-                Some(Err(e)) => return Err(ZoneReaderError::new(ErrorKind::UnexpectedEof, &e.to_string())),
-                None => break
+                Err(e) => return Err(ZoneReaderError::new(ErrorKind::UnexpectedEof, &e.to_string()))
             }
         }
 
@@ -269,12 +273,8 @@ impl<'a> Iterator for ZoneReaderIter<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.reader.read_record() {
-            Ok(record) => {
-                match record {
-                    Some(record) => Some(Ok(record)),
-                    None => None
-                }
-            }
+            Ok(Some(rec)) => Some(Ok(rec)),
+            Ok(None) => None,
             Err(e) => Some(Err(e))
         }
     }

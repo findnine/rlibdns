@@ -122,7 +122,7 @@ impl JournalReader {
         self.flags
     }
 
-    pub fn read_txn(&mut self) -> Result<Txn, JournalReaderError> {
+    pub fn read_txn(&mut self) -> Result<Option<Txn>, JournalReaderError> {
         let magic = true;
 
         /*
@@ -219,7 +219,11 @@ impl<'a> Iterator for JournalReaderIter<'a> {
     type Item = Result<Txn, JournalReaderError>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.reader.read_txn()
+        match self.reader.read_txn() {
+            Ok(Some(rec)) => Some(Ok(rec)),
+            Ok(None) => None,
+            Err(e) => Some(Err(e))
+        }
     }
 }
 
