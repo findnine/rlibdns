@@ -11,7 +11,7 @@ use crate::records::inter::record_base::RecordBase;
 use crate::utils::fqdn_utils::unpack_fqdn;
 
 #[derive(Default)]
-struct JournalHeader {
+pub struct JournalHeader {
     begin_serial: u32,
     begin_offset: u32,
     end_serial: u32,

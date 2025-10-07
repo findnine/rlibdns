@@ -83,7 +83,7 @@ pub fn encode_loc_precision(s: &str) -> Result<u8, CoordError> {
         for base in 0..=9 {
             let encoded = (base as f64) * 10f64.powi(exp);
             if (val - encoded).abs() < 0.5 {
-                return Ok(((base << 4) | exp).try_into().map_err(|e| CoordError("unable to parse into u8".to_string()))?);
+                return Ok(((base << 4) | exp).try_into().map_err(|_| CoordError("unable to parse into u8".to_string()))?);
             }
         }
     }

@@ -3,19 +3,22 @@ use crate::messages::inter::rr_classes::RRClasses;
 use crate::utils::fqdn_utils::{encode_fqdn, decode_fqdn};
 use crate::utils::trie::trie::Trie;
 use crate::zone::inter::zone_types::ZoneTypes;
+use crate::zone::name_list::NameList;
 use crate::zone::zone::Zone;
 use crate::zone::zone_reader::{ZoneReader, ZoneReaderError};
 
 #[derive(Debug, Clone)]
 pub struct ZoneStore {
-    trie: Trie<Vec<Zone>>
+    trie: Trie<Vec<Zone>>,
+    names: NameList
 }
 
 impl ZoneStore {
 
     pub fn new() -> Self {
         Self {
-            trie: Trie::new()
+            trie: Trie::new(),
+            names: NameList::new()
         }
     }
 
