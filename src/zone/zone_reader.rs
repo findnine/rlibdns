@@ -1,7 +1,7 @@
 use std::fmt;
 use std::fmt::Formatter;
 use std::fs::File;
-use std::io::{BufRead, BufReader, Read};
+use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 use std::str::FromStr;
 use crate::messages::inter::rr_classes::RRClasses;
@@ -89,7 +89,7 @@ impl ZoneReader {
         let mut line = String::new();
         loop {
             line.clear();
-            
+
             match self.reader.read_line(&mut line) {
                 Ok(length) => {
                     if length == 0 {

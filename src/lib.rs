@@ -12,6 +12,9 @@ mod tests {
 
     //Don't use hashmaps or indexmaps or btreemaps at all
 
+
+    //WE NEED TO VERIFY NO COLLISIONS WITH SETS AND WITH ZONES IN STORE
+
     //REMOVE HASHMAP FOR POSITION POINTERS WHEN ENCODING
 
 

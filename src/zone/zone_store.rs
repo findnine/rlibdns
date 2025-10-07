@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+use crate::journal::journal_reader::ErrorKind;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::utils::fqdn_utils::{encode_fqdn, decode_fqdn};
 use crate::utils::trie::trie::Trie;
@@ -10,6 +11,9 @@ use crate::zone::zone_reader::{ZoneReader, ZoneReaderError};
 pub struct ZoneStore {
     trie: Trie<Vec<Zone>>
 }
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct ZoneError(String);
 
 impl ZoneStore {
 
@@ -37,7 +41,12 @@ impl ZoneStore {
 
         let key = encode_fqdn(reader.get_origin());
         match self.trie.get_mut(&key) {
-            Some(zones) => zones.push(zone),
+            Some(zones) => {
+                if zones.iter().any(|z| z.get_class().eq(&class)) {
+                    return Ok(());
+                }
+                zones.push(zone);
+            }
             None => {
                 self.trie.insert(key, vec![zone]);
             }
@@ -63,7 +72,12 @@ impl ZoneStore {
 
         let key = encode_fqdn(reader.get_origin());
         match self.trie.get_mut(&key) {
-            Some(zones) => zones.push(zone),
+            Some(zones) => {
+                if zones.iter().any(|z| z.get_class().eq(&class)) {
+                    return Ok(());
+                }
+                zones.push(zone);
+            }
             None => {
                 self.trie.insert(key, vec![zone]);
             }
@@ -72,12 +86,22 @@ impl ZoneStore {
         Ok(())
     }
 
-    pub fn add_zone(&mut self, fqdn: &str, zone: Zone) {
+    pub fn add_zone(&mut self, fqdn: &str, zone: Zone) -> Option<Zone> {
         let key = encode_fqdn(fqdn);
         match self.trie.get_mut(&key) {
-            Some(zones) => zones.push(zone),
+            Some(zones) => {
+                let class = zone.get_class();
+                match zones.iter().find(|z| z.get_class().eq(&class)) {
+                    Some(zone) => {
+
+                    }
+                    None => {}
+                }
+                zones.push(zone);
+            }
             None => {
                 self.trie.insert(key, vec![zone]);
+                None
             }
         }
     }
