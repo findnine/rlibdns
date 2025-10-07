@@ -116,7 +116,7 @@ impl RecordBase for NSecRecord {
     }
 
     fn get_type(&self) -> RRTypes {
-        RRTypes::Nsec
+        RRTypes::NSec
     }
 
     fn upcast(self) -> Box<dyn RecordBase> {
