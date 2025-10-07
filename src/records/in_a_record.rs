@@ -92,7 +92,7 @@ impl ZoneRecord for InARecord {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
         match index {
-            0 => self.address = Some(value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse address param"))?),
+            0 => self.address = Some(value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse address param for record type {}", self.get_type())))?),
             _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, &format!("extra record data found for record type {}", self.get_type())))
         }
 

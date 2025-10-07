@@ -106,9 +106,9 @@ impl ZoneRecord for MxRecord {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
         match index {
-            0 => self.priority = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse priority param"))?,
+            0 => self.priority = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse priority param for record type {}", self.get_type())))?,
             1 => self.server = Some(value.strip_suffix('.')
-                .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "server param is not fully qualified (missing trailing dot)"))?.to_string()),
+                .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, &format!("server param is not fully qualified (missing trailing dot) for record type {}", self.get_type())))?.to_string()),
             _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, &format!("extra record data found for record type {}", self.get_type())))
         }
 

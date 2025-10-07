@@ -209,8 +209,8 @@ impl ZoneRecord for NaptrRecord {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
         match index {
-            0 => self.order = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse order param"))?,
-            1 => self.preference = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse preference param"))?,
+            0 => self.order = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse order param for record type {}", self.get_type())))?,
+            1 => self.preference = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse preference param for record type {}", self.get_type())))?,
             2 => {
                 let mut flags = Vec::new();
 
@@ -222,7 +222,7 @@ impl ZoneRecord for NaptrRecord {
 
                     flags.push(NaptrFlags::try_from(flag.chars()
                         .next()
-                        .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "empty NAPTR flag token"))?)
+                        .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, &format!("empty NAPTR flag token for record type {}", self.get_type())))?)
                         .map_err(|e|ZoneReaderError::new(ErrorKind::FormErr, &e.to_string()))?);
                 }
 
@@ -231,7 +231,7 @@ impl ZoneRecord for NaptrRecord {
             3 => self.service = Some(value.to_string()),
             4 => self.regex = Some(value.to_string()),
             5 => self.replacement = Some(value.strip_suffix('.')
-                .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "replacement param is not fully qualified (missing trailing dot)"))?.to_string()),
+                .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, &format!("replacement param is not fully qualified (missing trailing dot) for record type {}", self.get_type())))?.to_string()),
             _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, &format!("extra record data found for record type {}", self.get_type())))
         }
 

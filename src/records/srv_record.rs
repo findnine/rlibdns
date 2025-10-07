@@ -133,11 +133,11 @@ impl ZoneRecord for SrvRecord {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
         match index {
-            0 => self.priority = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse priority param"))?,
-            1 => self.weight = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to weight port param"))?,
-            2 => self.port = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse port param"))?,
+            0 => self.priority = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse priority param for record type {}", self.get_type())))?,
+            1 => self.weight = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to weight port param for record type {}", self.get_type())))?,
+            2 => self.port = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse port param for record type {}", self.get_type())))?,
             3 => self.target = Some(value.strip_suffix('.')
-                .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "target param is not fully qualified (missing trailing dot)"))?.to_string()),
+                .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, &format!("target param is not fully qualified (missing trailing dot) for record type {}", self.get_type())))?.to_string()),
             _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, &format!("extra record data found for record type {}", self.get_type())))
         }
 
