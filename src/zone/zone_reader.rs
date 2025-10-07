@@ -162,7 +162,7 @@ impl ZoneReader {
                                         .ok_or_else(|| ZoneReaderError::new(ErrorKind::TypeNotFound, &format!("record type {} not found", _type)))?));
 
                                 } else {
-                                    ttl = word.parse().map_err(|_| ZoneReaderError::new(ErrorKind::ParseErr, &format!("unable to parse ttl{}", word)))?;
+                                    ttl = word.parse().map_err(|_| ZoneReaderError::new(ErrorKind::ParseErr, &format!("unable to parse ttl {}", word)))?;
                                 }
                             }
                             ParserState::Directive => {
@@ -172,7 +172,7 @@ impl ZoneReader {
                                 match directive_buf.as_str() {
                                     "$ttl" => self.default_ttl = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::ParseErr, &format!("unable to parse default_ttl {}", value)))?,
                                     "$origin" => {
-                                        self.origin = value.strip_suffix('.').ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "origin is not fully qualified (missing trailing dot)"))?.to_string();
+                                        self.origin = value.strip_suffix('.').ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, &format!("origin is not fully qualified (missing trailing dot) {}", value)))?.to_string();
                                     }
                                     _ => return Err(ZoneReaderError::new(ErrorKind::FormErr, &format!("unknown directive {}", directive_buf)))
                                 }
