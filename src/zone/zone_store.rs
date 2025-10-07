@@ -1,5 +1,4 @@
 use std::path::PathBuf;
-use crate::journal::journal_reader::ErrorKind;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::utils::fqdn_utils::{encode_fqdn, decode_fqdn};
 use crate::utils::trie::trie::Trie;
@@ -12,9 +11,6 @@ pub struct ZoneStore {
     trie: Trie<Vec<Zone>>
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub struct ZoneError(String);
-
 impl ZoneStore {
 
     pub fn new() -> Self {
@@ -23,7 +19,7 @@ impl ZoneStore {
         }
     }
 
-    pub fn open<P: Into<PathBuf>>(&mut self, file_path: P, fqdn: &str, class: RRClasses) -> Result<(), ZoneReaderError> {
+    pub fn open<P: Into<PathBuf>>(&mut self, file_path: P, fqdn: &str, class: RRClasses) -> Result<Option<Zone>, ZoneReaderError> {
         let mut zone = Zone::new(ZoneTypes::Master, class);
 
         let mut reader = ZoneReader::open(file_path, fqdn, class)?;
@@ -39,23 +35,10 @@ impl ZoneStore {
             }
         }
 
-        let key = encode_fqdn(reader.get_origin());
-        match self.trie.get_mut(&key) {
-            Some(zones) => {
-                if zones.iter().any(|z| z.get_class().eq(&class)) {
-                    return Ok(());
-                }
-                zones.push(zone);
-            }
-            None => {
-                self.trie.insert(key, vec![zone]);
-            }
-        }
-
-        Ok(())
+        Ok(self.add_zone(reader.get_origin(), zone))
     }
 
-    pub fn open_with_jnl<P: Into<PathBuf>>(&mut self, file_path: P, fqdn: &str, class: RRClasses, journal_path: P) -> Result<(), ZoneReaderError> {
+    pub fn open_with_jnl<P: Into<PathBuf>>(&mut self, file_path: P, fqdn: &str, class: RRClasses, journal_path: P) -> Result<Option<Zone>, ZoneReaderError> {
         let mut zone = Zone::new_with_jnl(ZoneTypes::Master, class, journal_path);
 
         let mut reader = ZoneReader::open(file_path, fqdn, class)?;
@@ -70,20 +53,7 @@ impl ZoneStore {
             }
         }
 
-        let key = encode_fqdn(reader.get_origin());
-        match self.trie.get_mut(&key) {
-            Some(zones) => {
-                if zones.iter().any(|z| z.get_class().eq(&class)) {
-                    return Ok(());
-                }
-                zones.push(zone);
-            }
-            None => {
-                self.trie.insert(key, vec![zone]);
-            }
-        }
-
-        Ok(())
+        Ok(self.add_zone(reader.get_origin(), zone))
     }
 
     pub fn add_zone(&mut self, fqdn: &str, zone: Zone) -> Option<Zone> {
@@ -91,19 +61,18 @@ impl ZoneStore {
         match self.trie.get_mut(&key) {
             Some(zones) => {
                 let class = zone.get_class();
-                match zones.iter().find(|z| z.get_class().eq(&class)) {
-                    Some(zone) => {
 
-                    }
-                    None => {}
+                if let Some(index) = zones.iter().position(|z| z.get_class().eq(&class)) {
+                    return Some(std::mem::replace(&mut zones[index], zone));
                 }
+
                 zones.push(zone);
             }
             None => {
                 self.trie.insert(key, vec![zone]);
-                None
             }
         }
+        None
     }
 
     pub fn remove_zone(&mut self, fqdn: &str, class: RRClasses) {
