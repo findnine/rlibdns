@@ -128,7 +128,7 @@ pub fn to_fqdn(apex: &str, child: &str) -> String {
 }
 
 pub fn fqdn_to_relative(apex: &str, child: &str) -> Option<String> {
-    if apex == child {
+    if apex.eq(child) {
         return Some(String::new());
     }
 

@@ -6,6 +6,7 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
+use crate::utils::fqdn_utils::fqdn_to_relative;
 use crate::zone::inter::zone_record::ZoneRecord;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -158,7 +159,7 @@ impl ZoneReader {
                                     _type = t;
                                     state = ParserState::Data;
                                     data_count = 0;
-                                    record = Some((self.get_relative_name(&self.name).to_string(), ttl, <dyn ZoneRecord>::new(_type, &self.class)
+                                    record = Some((self.absolute_name(&self.name), ttl, <dyn ZoneRecord>::new(_type, &self.class)
                                         .ok_or_else(|| ZoneReaderError::new(ErrorKind::TypeNotFound, &format!("record type {} not found", _type)))?));
 
                                 } else {
@@ -235,29 +236,17 @@ impl ZoneReader {
         &self.origin
     }
 
-    pub fn get_relative_name<'a>(&self, name: &'a str) -> &'a str {
-        if name.eq("@") {
-            return "";
-        }
-
-        &name
-    }
-    /*
     pub fn absolute_name(&self, name: &str) -> String {
-        assert!(name != "");
-
-        if name == "@" {
-            return name.to_string();//self.origin.clone();
+        if name.eq("@") {
+            return String::new();
         }
 
         if name.ends_with('.') {
-            name.to_string()
-
-        } else {
-            format!("{}.{}", name, self.origin)
+            return fqdn_to_relative(&self.origin, name.strip_suffix('.').unwrap()).unwrap();
         }
+
+        name.to_string()
     }
-    */
 
     pub fn records(&mut self) -> ZoneReaderIter {
         ZoneReaderIter {
