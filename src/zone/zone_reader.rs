@@ -68,7 +68,7 @@ impl ZoneReader {
 
         Ok(Self {
             reader,
-            origin: origin.to_string(),
+            origin: origin.to_lowercase(),
             name: String::new(),
             class,
             default_ttl: 300
