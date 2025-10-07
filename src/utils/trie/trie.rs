@@ -214,6 +214,7 @@ impl<V> Trie<V> {
         }
     }
 
+    /*
     fn insert_at(root: &mut Option<Node<Vec<u8>, V>>, key: Vec<u8>, val: V) -> Option<V> {
         match root {
             None => {
@@ -257,6 +258,104 @@ impl<V> Trie<V> {
                             None
                         }
                     }
+                }
+            }
+        }
+    }
+    */
+
+    fn insert_at(root: &mut Option<Node<Vec<u8>, V>>, key: Vec<u8>, val: V) -> Option<V> {
+        match root {
+            None => {
+                *root = Some(Node::Leaf(Leaf::new(key, val)));
+                None
+            }
+            Some(node) => match node {
+                Node::Leaf(leaf) => {
+                    if leaf.key.as_slice() == key.as_slice() {
+                        return Some(std::mem::replace(&mut leaf.val, val));
+                    }
+
+                    let split = Self::first_diff_nibble(&leaf.key, &key);
+
+                    let old_leaf = match std::mem::replace(node, Node::Branch(Branch::new(split))) {
+                        Node::Leaf(l) => l,
+                        _ => unreachable!(),
+                    };
+
+                    if let Node::Branch(br) = node {
+                        let old_n = Self::nibble(&old_leaf.key, split);
+                        br.insert_child(old_n, Node::Leaf(old_leaf));
+
+                        let new_n = Self::nibble(&key, split);
+                        br.insert_child(new_n, Node::Leaf(Leaf::new(key, val)));
+                        None
+
+                    } else {
+                        unreachable!()
+                    }
+                }
+                Node::Branch(br) => {
+                    let rep_key = {
+                        let mut child_ref: Option<&Node<Vec<u8>, V>> = None;
+                        for i in 0..=16 {
+                            if let Some(ch) = br.get_child(i) {
+                                child_ref = Some(ch);
+                                break;
+                            }
+                        }
+                        let ch = child_ref.expect("branch must have at least one child");
+                        Self::first_leaf_key(ch)
+                    };
+
+                    let new_split = Self::first_diff_nibble(&rep_key, &key);
+                    let need_above = new_split < br.offset;
+
+                    if need_above {
+                        let old_node = std::mem::replace(node, Node::Branch(Branch::new(new_split)));
+
+                        if let Node::Branch(new_parent) = node {
+                            let old_n = Self::nibble(&rep_key, new_split);
+                            new_parent.insert_child(old_n, old_node);
+
+                            let new_n = Self::nibble(&key, new_split);
+                            new_parent.insert_child(new_n, Node::Leaf(Leaf::new(key, val)));
+                            return None;
+
+                        } else {
+                            unreachable!()
+                        }
+                    }
+
+                    let n = Self::nibble(&key,  br.offset);
+                    if let Some(child) = br.get_child_mut(n) {
+                        let mut tmp = Some(std::mem::replace(child, Node::Branch(Branch::default())));
+                        let ret = Self::insert_at(&mut tmp, key, val);
+                        *child = tmp.unwrap();
+                        return ret;
+
+                    }
+
+                    br.insert_child(n, Node::Leaf(Leaf::new(key, val)));
+                    None
+                }
+            }
+        }
+    }
+
+    fn first_leaf_key(mut cur: &Node<Vec<u8>, V>) -> Vec<u8> {
+        loop {
+            match cur {
+                Node::Leaf(l) => return l.key.clone(),
+                Node::Branch(b) => {
+                    let mut next: Option<&Node<Vec<u8>, V>> = None;
+                    for i in 0..=16 {
+                        if let Some(ch) = b.get_child(i) {
+                            next = Some(ch);
+                            break;
+                        }
+                    }
+                    cur = next.expect("branch must have at least one child");
                 }
             }
         }
