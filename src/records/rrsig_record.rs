@@ -13,7 +13,7 @@ use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
 
 #[derive(Clone, Debug)]
 pub struct RRSigRecord {
-    type_covered: RRTypes,
+    type_covered: Option<RRTypes>,
     algorithm: u8,
     labels: u8,
     original_ttl: u32,
@@ -28,7 +28,7 @@ impl Default for RRSigRecord {
 
     fn default() -> Self {
         Self {
-            type_covered: RRTypes::default(),
+            type_covered: None,
             algorithm: 0,
             labels: 0,
             original_ttl: 0,
@@ -67,7 +67,7 @@ impl RecordBase for RRSigRecord {
         let signature = buf[off+20+signer_name_length..length].to_vec();
 
         Ok(Self {
-            type_covered,
+            type_covered: Some(type_covered),
             algorithm,
             labels,
             original_ttl,
@@ -82,7 +82,8 @@ impl RecordBase for RRSigRecord {
     fn to_bytes(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RecordError> {
         let mut buf = vec![0u8; 26];
 
-        buf.splice(2..4, self.type_covered.get_code().to_be_bytes());
+        buf.splice(2..4, self.type_covered.as_ref()
+            .ok_or_else(|| RecordError("type_covered param was not set".to_string()))?.get_code().to_be_bytes());
 
         buf[4] = self.algorithm;
         buf[5] = self.labels;
@@ -127,7 +128,7 @@ impl RRSigRecord {
 
     pub fn new(type_covered: RRTypes, algorithm: u8, labels: u8, original_ttl: u32, expiration: u32, inception: u32, key_tag: u16, signer_name: &str, signature: Vec<u8>) -> Self {
         Self {
-            type_covered,
+            type_covered: Some(type_covered),
             algorithm,
             labels,
             original_ttl,
@@ -140,11 +141,11 @@ impl RRSigRecord {
     }
 
     pub fn set_type_covered(&mut self, type_covered: RRTypes) {
-        self.type_covered = type_covered;
+        self.type_covered = Some(type_covered);
     }
 
-    pub fn get_type_covered(&self) -> RRTypes {
-        self.type_covered
+    pub fn get_type_covered(&self) -> Option<&RRTypes> {
+        self.type_covered.as_ref()
     }
 
     pub fn set_algorithm(&mut self, algorithm: u8) {
@@ -216,7 +217,7 @@ impl ZoneRecord for RRSigRecord {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
         match index {
-            0 => self.type_covered = RRTypes::from_str(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse type_covered param for record type {}", self.get_type())))?,
+            0 => self.type_covered = Some(RRTypes::from_str(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse type_covered param for record type {}", self.get_type())))?),
             1 => self.algorithm = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse algorithm param for record type {}", self.get_type())))?,
             2 => self.labels = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse labels param for record type {}", self.get_type())))?,
             3 => self.original_ttl = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse original_ttl param for record type {}", self.get_type())))?,
@@ -241,7 +242,7 @@ impl fmt::Display for RRSigRecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{:<8}{} {} {} {} {} {} {} {} {}", self.get_type().to_string(),
-               self.type_covered.to_string(),
+               self.type_covered.as_ref().map(|t| t.to_string()).unwrap_or(String::new()),
                self.algorithm,
                self.labels,
                self.original_ttl,

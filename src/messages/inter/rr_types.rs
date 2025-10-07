@@ -4,9 +4,8 @@ use std::str::FromStr;
 
 //https://www.iana.org/assignments/dns-parameters/dns-parameters.xhtml
 
-#[derive(Copy, Default, Clone, Eq, PartialEq, Hash, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum RRTypes {
-    #[default]
     A,
     Aaaa,
     Ns,
