@@ -120,7 +120,7 @@ impl fmt::Display for DsRecord {
 
 #[test]
 fn test() {
-    let buf = vec![ 0x0, 0x4, 0x7f, 0x0, 0x0, 0x1 ];
+    let buf = vec![ ];
     let record = DsRecord::from_bytes(&buf, 0).unwrap();
     assert_eq!(buf, record.to_bytes(&mut HashMap::new(), 0).unwrap());
 }

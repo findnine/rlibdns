@@ -88,8 +88,6 @@ impl RecordBase for NSec3Record {
             off += data_length;
         }
 
-
-
         Ok(Self {
             algorithm,
             flags,
