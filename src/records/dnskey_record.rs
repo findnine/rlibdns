@@ -4,7 +4,7 @@ use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::{RecordBase, RecordError};
-use crate::utils::hex;
+use crate::utils::base64;
 use crate::zone::inter::zone_record::ZoneRecord;
 use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
 
@@ -146,7 +146,7 @@ impl ZoneRecord for DnsKeyRecord {
             0 => self.flags = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse flags param for record type {}", self.get_type())))?,
             1 => self.protocol = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse protocol param for record type {}", self.get_type())))?,
             2 => self.algorithm = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse algorithm param for record type {}", self.get_type())))?,
-            3 => self.public_key = hex::decode(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse public_key param for record type {}", self.get_type())))?,
+            3 => self.public_key = base64::decode(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse public_key param for record type {}", self.get_type())))?,
             _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, &format!("extra record data found for record type {}", self.get_type())))
         })
     }
@@ -163,7 +163,7 @@ impl fmt::Display for DnsKeyRecord {
                self.flags,
                self.protocol,
                self.algorithm,
-               hex::encode(&self.public_key))
+               base64::encode(&self.public_key))
     }
 }
 
