@@ -200,10 +200,14 @@ impl ZoneRecord for NSec3Record {
             0 => self.algorithm = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse algorithm param for record type {}", self.get_type())))?,
             1 => self.flags = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse flags param for record type {}", self.get_type())))?,
             2 => self.iterations = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse iterations param for record type {}", self.get_type())))?,
-            3 => self.salt = hex::decode(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse salt param for record type {}", self.get_type())))?,
+            3 => {
+                if !value.eq("-") {
+                    self.salt = hex::decode(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse salt param for record type {}", self.get_type())))?
+                }
+            }
             4 => self.next_hash = hex::decode(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse next_hash param for record type {}", self.get_type())))?,
             _ => self.types.push(RRTypes::from_str(value)
-                .map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse rr_types param for record type {}", self.get_type())))?)
+                .map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse types param for record type {}", self.get_type())))?)
         })
     }
 
