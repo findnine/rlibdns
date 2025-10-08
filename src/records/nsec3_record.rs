@@ -5,7 +5,7 @@ use std::fmt::Formatter;
 use std::str::FromStr;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::{RecordBase, RecordError};
-use crate::utils::hex;
+use crate::utils::{base32, hex};
 use crate::zone::inter::zone_record::ZoneRecord;
 use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
 
@@ -205,7 +205,7 @@ impl ZoneRecord for NSec3Record {
                     self.salt = hex::decode(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse salt param for record type {}", self.get_type())))?
                 }
             }
-            4 => self.next_hash = hex::decode(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse next_hash param for record type {}", self.get_type())))?,
+            4 => self.next_hash = base32::hex_decode(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse next_hash param for record type {}", self.get_type())))?,
             _ => self.types.push(RRTypes::from_str(value)
                 .map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse types param for record type {}", self.get_type())))?)
         })
@@ -223,7 +223,7 @@ impl fmt::Display for NSec3Record {
                self.algorithm,
                self.flags,
                self.iterations,
-               hex::encode(&self.salt),
+               base32::hex_encode_nopad(&self.salt),
                self.types.iter()
                    .map(|t| t.to_string())
                    .collect::<Vec<_>>()
