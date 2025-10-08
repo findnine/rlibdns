@@ -2,10 +2,8 @@ use std::any::Any;
 use std::collections::{BTreeMap, HashMap};
 use std::fmt;
 use std::fmt::Formatter;
-use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::{RecordBase, RecordError};
-use crate::utils::base64;
 use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 use crate::zone::inter::zone_record::ZoneRecord;
 use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
@@ -29,7 +27,7 @@ impl Default for NSecRecord {
 impl RecordBase for NSecRecord {
 
     fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> {
-        let mut length = u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
+        let length = u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
         if length == 0 {
             return Ok(Default::default());
         }
@@ -37,34 +35,36 @@ impl RecordBase for NSecRecord {
         let (fqdn, fqdn_length) = unpack_fqdn(buf, off+2);
         let mut off = fqdn_length+2;
 
-        println!("{off}  {length}");
-
         let mut _types = Vec::new();
 
         while off < length {
-            let window = buf[off];
-            let length = buf[off + 1] as usize;
-
-            if off+2+length > length {
+            if off+2 > length {
                 break;
             }
 
-            let bitmap = &buf[off + 2..off + 2 + length];
+            let window = buf[off];
+            let data_length = buf[off + 1] as usize;
+            off += 2;
 
-            for (i, &byte) in bitmap.iter().enumerate() {
+            if data_length == 0 || data_length > 32 {
+                return Err(RecordError("invalid NSEC window length".to_string()));
+            }
+
+            if off + data_length > length {
+                return Err(RecordError("truncated NSEC bitmap".to_string()));
+            }
+
+            for (i, &byte) in buf[off..off + data_length].iter().enumerate() {
                 for bit in 0..8 {
-                    if byte & (1 << (7 - bit)) != 0 {
+                    if (byte & (1 << (7 - bit))) != 0 {
                         let _type = RRTypes::try_from((window as u16) * 256 + (i as u16 * 8 + bit as u16))
                             .map_err(|e| RecordError(e.to_string()))?;
-                        println!("{_type:?}");
-                        //_types.push(_type);
+                        _types.push(_type);
                     }
                 }
             }
 
-            println!("{off}");
-
-            off += 2+length;
+            off += data_length;
         }
 
         Ok(Self {
