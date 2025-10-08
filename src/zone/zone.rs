@@ -90,12 +90,12 @@ impl Zone {
         }
     }
 
-    pub fn remove_set(&mut self) {
-        println!("REMOVE SET");
-    }
-
     pub fn remove_record(&mut self) {
         println!("REMOVE RECORD");
+    }
+
+    pub fn remove_set(&mut self, query: &str) {
+        println!("REMOVE SET");
     }
 
     pub fn remove_all_records(&mut self, query: &str) {
