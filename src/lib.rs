@@ -20,6 +20,11 @@ mod tests {
 
     //ADD JNL AND ZONE WRITERS...
 
+    //CLEAN UP JNL & ZONER READERS
+
+
+
+
 
 
     //Don't use hashmaps or indexmaps or btreemaps at all
