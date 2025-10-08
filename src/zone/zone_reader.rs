@@ -171,10 +171,10 @@ impl ZoneReader {
                                     .map_err(|_| ZoneReaderError::new(ErrorKind::ParseErr, "unable to parse string"))?.to_lowercase();
 
                                 match directive_buf.as_str() {
-                                    "$ttl" => self.default_ttl = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::ParseErr, &format!("unable to parse default_ttl {}", value)))?,
-                                    "$origin" => {
-                                        self.origin = value.strip_suffix('.').ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, &format!("origin is not fully qualified (missing trailing dot) {}", value)))?.to_string();
-                                    }
+                                    "$ttl" => self.default_ttl = value.parse()
+                                        .map_err(|_| ZoneReaderError::new(ErrorKind::ParseErr, &format!("unable to parse default_ttl {}", value)))?,
+                                    "$origin" => self.origin = value.strip_suffix('.')
+                                        .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, &format!("origin is not fully qualified (missing trailing dot) {}", value)))?.to_string(),
                                     _ => return Err(ZoneReaderError::new(ErrorKind::FormErr, &format!("unknown directive {}", directive_buf)))
                                 }
 

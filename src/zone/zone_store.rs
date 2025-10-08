@@ -3,7 +3,7 @@ use crate::messages::inter::rr_classes::RRClasses;
 use crate::utils::fqdn_utils::{encode_fqdn, decode_fqdn};
 use crate::utils::trie::trie::Trie;
 use crate::zone::inter::zone_types::ZoneTypes;
-use crate::zone::name_list::NameList;
+use crate::utils::name_list::NameList;
 use crate::zone::zone::Zone;
 use crate::zone::zone_reader::{ZoneReader, ZoneReaderError};
 

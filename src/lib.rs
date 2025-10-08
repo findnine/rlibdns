@@ -10,6 +10,18 @@ mod tests {
     use crate::messages::message::Message;
     use crate::zone::zone_store::ZoneStore;
 
+
+    //REDO
+    // QP-TRIE
+    // NAME_LIST
+
+    //CLEAN UP OCTALS, HEX, BASE64 parsing
+    //CLEAN UP COORD UTILS
+
+    //ADD JNL AND ZONE WRITERS...
+
+
+
     //Don't use hashmaps or indexmaps or btreemaps at all
 
 
@@ -22,8 +34,6 @@ mod tests {
 
     //DONT USE UNWRAPS - MODIFY ALL ENUMS DOING IT - THEN CHANGE io::Result for from_bytes on Message to our own Result
 
-    //CLEAN UP OCTALS, HEX, BASE64 parsing
-    //CLEAN UP COORD UTILS
 
 
 
