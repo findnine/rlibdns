@@ -111,7 +111,7 @@ impl Zone {
         removed
     }
 
-    pub fn remove_all_records(&mut self, query: &str) {
+    pub fn remove_all_records(&mut self, query: &str, protected_types: &[RRTypes]) {
         println!("REMOVE ALL RECORD");
     }
     /*
