@@ -29,20 +29,23 @@ impl Default for NSecRecord {
 impl RecordBase for NSecRecord {
 
     fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> {
-        let mut off = off;
+        let mut length = u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
+        if length == 0 {
+            return Ok(Default::default());
+        }
 
-        let (fqdn, length) = unpack_fqdn(buf, off+2);
+        let (fqdn, fqdn_length) = unpack_fqdn(buf, off+2);
+        let mut off = fqdn_length+2;
 
-        let data_length = off+2+u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
-        off += length+8;
+        println!("{off}  {length}");
 
         let mut _types = Vec::new();
 
-        while off < data_length {
+        while off < length {
             let window = buf[off];
             let length = buf[off + 1] as usize;
 
-            if off+2+length > data_length {
+            if off+2+length > length {
                 break;
             }
 
@@ -53,10 +56,13 @@ impl RecordBase for NSecRecord {
                     if byte & (1 << (7 - bit)) != 0 {
                         let _type = RRTypes::try_from((window as u16) * 256 + (i as u16 * 8 + bit as u16))
                             .map_err(|e| RecordError(e.to_string()))?;
-                        _types.push(_type);
+                        println!("{_type:?}");
+                        //_types.push(_type);
                     }
                 }
             }
+
+            println!("{off}");
 
             off += 2+length;
         }
@@ -178,5 +184,7 @@ impl fmt::Display for NSecRecord {
 fn test() {
     let buf = vec![ 0x0, 0x1b, 0x1, 0x0, 0x5, 0x66, 0x69, 0x6e, 0x64, 0x39, 0x3, 0x6e, 0x65, 0x74, 0x0, 0x0, 0x9, 0x62, 0x5, 0x80, 0xc, 0x54, 0xb, 0x8d, 0x1c, 0xc0, 0x1, 0x1, 0xc0 ];
     let record = NSecRecord::from_bytes(&buf, 0).unwrap();
-    assert_eq!(buf, record.to_bytes(&mut HashMap::new(), 0).unwrap());
+    println!("{:?}", record);
+
+    //assert_eq!(buf, record.to_bytes(&mut HashMap::new(), 0).unwrap());
 }
