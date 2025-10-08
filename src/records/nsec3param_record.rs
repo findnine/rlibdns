@@ -135,7 +135,10 @@ impl ZoneRecord for NSec3ParamRecord {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
         match index {
-            //0 => self.address = Some(value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse address param for record type {}", self.get_type())))?),
+            0 => self.algorithm = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse algorithm param for record type {}", self.get_type())))?,
+            1 => self.flags = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse flags param for record type {}", self.get_type())))?,
+            2 => self.iterations = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse iterations param for record type {}", self.get_type())))?,
+            3 => self.salt = hex::decode(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse salt param for record type {}", self.get_type())))?,
             _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, &format!("extra record data found for record type {}", self.get_type())))
         }
 
@@ -162,6 +165,5 @@ impl fmt::Display for NSec3ParamRecord {
 fn test() {
     let buf = vec![ 0x0, 0x5, 0x1, 0x0, 0x0, 0x0, 0x0 ];
     let record = NSec3ParamRecord::from_bytes(&buf, 0).unwrap();
-    println!("{}", record);
     assert_eq!(buf, record.to_bytes(&mut HashMap::new(), 0).unwrap());
 }
