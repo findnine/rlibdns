@@ -102,7 +102,7 @@ impl RecordBase for NSec3Record {
     }
 
     fn to_bytes(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RecordError> {
-        let mut buf = vec![0u8; 6];
+        let mut buf = vec![0u8; 2];
 
         buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
 

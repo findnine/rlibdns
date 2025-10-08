@@ -4,7 +4,6 @@ use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::{RecordBase, RecordError};
-use crate::records::nsec3_record::NSec3Record;
 use crate::utils::hex;
 use crate::zone::inter::zone_record::ZoneRecord;
 use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};

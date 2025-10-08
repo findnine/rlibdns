@@ -2,7 +2,6 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
-use std::net::Ipv4Addr;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::{RecordBase, RecordError};
 use crate::zone::inter::zone_record::ZoneRecord;
@@ -10,14 +9,20 @@ use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
 
 #[derive(Clone, Debug)]
 pub struct DsRecord {
-    address: Option<Ipv4Addr>
+    key_tag: u16,
+    algorithm: u8,
+    digest_type: u8,
+    digest: Vec<u8>
 }
 
 impl Default for DsRecord {
 
     fn default() -> Self {
         Self {
-            address: None
+            key_tag: 0,
+            algorithm: 0,
+            digest_type: 0,
+            digest: Vec::new()
         }
     }
 }
@@ -30,20 +35,21 @@ impl RecordBase for DsRecord {
             return Ok(Default::default());
         }
 
-        let address = match length {
-            4 => Ipv4Addr::new(buf[off+2], buf[off+3], buf[off+4], buf[off+5]),
-            _ => return Err(RecordError("invalid inet address".to_string()))
-        };
+        let key_tag = 0;
+        let algorithm = 0;
+        let digest_type = 0;
+        let digest = Vec::new();
 
         Ok(Self {
-            address: Some(address)
+            key_tag,
+            algorithm,
+            digest_type,
+            digest
         })
     }
 
     fn to_bytes(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RecordError> {
-        let mut buf = vec![0u8; 6];
-
-        buf.splice(2..6, self.address.ok_or_else(|| RecordError("address param was not set".to_string()))?.octets().to_vec());
+        let mut buf = vec![0u8; 2];
 
         buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
 
@@ -73,18 +79,13 @@ impl RecordBase for DsRecord {
 
 impl DsRecord {
 
-    pub fn new(address: Ipv4Addr) -> Self {
+    pub fn new(key_tag: u16, algorithm: u8, digest_type: u8, digest: Vec<u8>) -> Self {
         Self {
-            address: Some(address)
+            key_tag,
+            algorithm,
+            digest_type,
+            digest
         }
-    }
-
-    pub fn set_address(&mut self, address: Ipv4Addr) {
-        self.address = Some(address);
-    }
-
-    pub fn get_address(&self) -> Option<Ipv4Addr> {
-        self.address
     }
 }
 
@@ -92,7 +93,7 @@ impl ZoneRecord for DsRecord {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
         match index {
-            0 => self.address = Some(value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse address param for record type {}", self.get_type())))?),
+            //0 => self.address = Some(value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse address param for record type {}", self.get_type())))?),
             _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, &format!("extra record data found for record type {}", self.get_type())))
         }
 
@@ -108,7 +109,7 @@ impl fmt::Display for DsRecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{:<8}{}", self.get_type().to_string(),
-               self.address.map(|a| a.to_string()).unwrap_or_default())
+               self.key_tag)
     }
 }
 
