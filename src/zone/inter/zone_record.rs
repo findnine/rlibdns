@@ -64,7 +64,7 @@ impl dyn ZoneRecord {
             RRTypes::SshFp  => <SshFpRecord as ZoneRecord>::upcast(SshFpRecord::default()),
             RRTypes::RRSig  => <RRSigRecord as ZoneRecord>::upcast(RRSigRecord::default()),
             RRTypes::NSec   => <NSecRecord as ZoneRecord>::upcast(NSecRecord::default()),
-            //RRTypes::DnsKey => <DnsKeyRecord as ZoneRecord>::upcast(DnsKeyRecord::default()),
+            RRTypes::DnsKey => <DnsKeyRecord as ZoneRecord>::upcast(DnsKeyRecord::default()),
             RRTypes::NSec3   => <NSec3Record as ZoneRecord>::upcast(NSec3Record::default()),
             RRTypes::NSec3Param   => <NSec3ParamRecord as ZoneRecord>::upcast(NSec3ParamRecord::default()),
             RRTypes::Smimea => <SmimeaRecord as ZoneRecord>::upcast(SmimeaRecord::default()),
