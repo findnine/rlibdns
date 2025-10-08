@@ -34,11 +34,11 @@ impl RecordBase for TxtRecord {
         let mut data = Vec::new();
 
         while off < length {
-            let length = buf[off] as usize;
-            let record = String::from_utf8(buf[off + 1..off + 1 + length].to_vec())
+            let data_length = buf[off] as usize;
+            let record = String::from_utf8(buf[off + 1..off + 1 + data_length].to_vec())
                 .map_err(|e| RecordError(e.to_string()))?;
             data.push(record);
-            off += length+1;
+            off += data_length+1;
         }
 
         Ok(Self {
