@@ -94,8 +94,21 @@ impl Zone {
         println!("REMOVE RECORD");
     }
 
-    pub fn remove_set(&mut self, query: &str) {
-        println!("REMOVE SET");
+    pub fn remove_set(&mut self, query: &str, _type: &RRTypes) -> Option<RRSet> {
+        let key = encode_fqdn(query);
+
+        let (removed, became_empty) = {
+            let sets = self.rrmap.get_mut(&key)?;
+            let idx = sets.iter().position(|s| s.get_type().eq(_type))?;
+            let removed = sets.swap_remove(idx);
+            (Some(removed), sets.is_empty())
+        };
+
+        if became_empty {
+            self.rrmap.remove(&key);
+        }
+
+        removed
     }
 
     pub fn remove_all_records(&mut self, query: &str) {
@@ -125,7 +138,7 @@ impl Zone {
     */
 
     pub fn get_sets(&self, query: &str, _type: &RRTypes) -> Option<&RRSet> {
-        self.rrmap.get(&encode_fqdn(query))?.iter().find(|s| s.get_type().eq(&_type))
+        self.rrmap.get(&encode_fqdn(query))?.iter().find(|s| s.get_type().eq(_type))
     }
 
     pub fn get_all_sets(&self, query: &str) -> Option<&Vec<RRSet>> {
