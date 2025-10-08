@@ -91,7 +91,7 @@ impl dyn RecordBase {
             RRTypes::Loc    => LocRecord::default().upcast(),
             RRTypes::Srv    => SrvRecord::default().upcast(),
             RRTypes::Naptr  => NaptrRecord::default().upcast(),
-            RRTypes::Ds  => DsRecord::default().upcast(),
+            RRTypes::Ds     => DsRecord::default().upcast(),
             RRTypes::SshFp  => SshFpRecord::default().upcast(),
             RRTypes::RRSig  => RRSigRecord::default().upcast(),
             RRTypes::NSec   => NSecRecord::default().upcast(),
