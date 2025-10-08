@@ -15,7 +15,7 @@ mod tests {
     // QP-TRIE
     // NAME_LIST
 
-    //CLEAN UP OCTALS, HEX, BASE64 parsing
+    //CLEAN UP OCTALS, HEX, BASE64, BASE32 parsing
     //CLEAN UP COORD UTILS
 
     //ADD JNL AND ZONE WRITERS...

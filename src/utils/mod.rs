@@ -3,6 +3,7 @@ pub mod index_map;
 pub mod trie;
 pub mod random;
 pub mod base64;
+pub mod base32;
 pub mod hex;
 pub mod octal;
 pub mod coord_utils;
