@@ -2,6 +2,7 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
+use std::str::FromStr;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::{RecordBase, RecordError};
 use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
@@ -170,8 +171,10 @@ impl ZoneRecord for NSecRecord {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
         match index {
-            //0 => self.address = Some(value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse address param for record type {}", self.get_type())))?),
-            _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, &format!("extra record data found for record type {}", self.get_type())))
+            0 => self.next_domain = Some(value.strip_suffix('.')
+                .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, &format!("next_domain param is not fully qualified (missing trailing dot) for record type {}", self.get_type())))?.to_string()),
+            _ => self.types.push(RRTypes::from_str(value)
+                .map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse rr_types param for record type {}", self.get_type())))?)
         }
 
         Ok(())
