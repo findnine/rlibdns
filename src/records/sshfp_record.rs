@@ -144,14 +144,12 @@ impl SshFpRecord {
 impl ZoneRecord for SshFpRecord {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
-        match index {
+        Ok(match index {
             0 => self.algorithm = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse algorithm param for record type {}", self.get_type())))?,
             1 => self.fingerprint_type = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse fingerprint_type param for record type {}", self.get_type())))?,
             2 => self.fingerprint = hex::decode(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse fingerprint param for record type {}", self.get_type())))?,
             _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, &format!("extra record data found for record type {}", self.get_type())))
-        }
-
-        Ok(())
+        })
     }
 
     fn upcast(self) -> Box<dyn ZoneRecord> {

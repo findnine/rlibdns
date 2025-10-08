@@ -106,14 +106,12 @@ impl ChARecord {
 impl ZoneRecord for ChARecord {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
-        match index {
+        Ok(match index {
             0 => self.network = Some(value.strip_suffix('.')
                 .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, &format!("network param is not fully qualified (missing trailing dot) for record type {}", self.get_type())))?.to_string()),
             1 => self.address = octal::from_octal(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse address param for record type {}", self.get_type())))?,
             _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, &format!("extra record data found for record type {}", self.get_type())))
-        }
-
-        Ok(())
+        })
     }
 
     fn upcast(self) -> Box<dyn ZoneRecord> {

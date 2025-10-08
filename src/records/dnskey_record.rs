@@ -142,15 +142,13 @@ impl DnsKeyRecord {
 impl ZoneRecord for DnsKeyRecord {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
-        match index {
+        Ok(match index {
             0 => self.flags = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse flags param for record type {}", self.get_type())))?,
             1 => self.protocol = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse protocol param for record type {}", self.get_type())))?,
             2 => self.algorithm = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse algorithm param for record type {}", self.get_type())))?,
             3 => self.public_key = hex::decode(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse public_key param for record type {}", self.get_type())))?,
             _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, &format!("extra record data found for record type {}", self.get_type())))
-        }
-
-        Ok(())
+        })
     }
 
     fn upcast(self) -> Box<dyn ZoneRecord> {

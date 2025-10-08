@@ -118,14 +118,12 @@ impl UriRecord {
 impl ZoneRecord for UriRecord {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
-        match index {
+        Ok(match index {
             0 => self.priority = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse priority param for record type {}", self.get_type())))?,
             1 => self.weight = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse weight param for record type {}", self.get_type())))?,
             2 => self.target = Some(value.to_string()),
             _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, &format!("extra record data found for record type {}", self.get_type())))
-        }
-
-        Ok(())
+        })
     }
 
     fn upcast(self) -> Box<dyn ZoneRecord> {

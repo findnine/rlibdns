@@ -104,8 +104,7 @@ impl TxtRecord {
 impl ZoneRecord for TxtRecord {
 
     fn set_data(&mut self, _index: usize, value: &str) -> Result<(), ZoneReaderError> {
-        self.data.push(value.to_string());
-        Ok(())
+        Ok(self.data.push(value.to_string()))
     }
 
     fn upcast(self) -> Box<dyn ZoneRecord> {

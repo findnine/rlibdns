@@ -170,14 +170,12 @@ impl NSecRecord {
 impl ZoneRecord for NSecRecord {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
-        match index {
+        Ok(match index {
             0 => self.next_domain = Some(value.strip_suffix('.')
                 .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, &format!("next_domain param is not fully qualified (missing trailing dot) for record type {}", self.get_type())))?.to_string()),
             _ => self.types.push(RRTypes::from_str(value)
                 .map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse rr_types param for record type {}", self.get_type())))?)
-        }
-
-        Ok(())
+        })
     }
 
     fn upcast(self) -> Box<dyn ZoneRecord> {

@@ -172,7 +172,7 @@ impl LocRecord {
 impl ZoneRecord for LocRecord {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
-        match index {
+        Ok(match index {
             0 => self.latitude = value.parse::<u32>()
                 .map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse latitude 1 param for record type {}", self.get_type())))? * 3_600_000,
             1 => self.latitude = self.latitude + value.parse::<u32>()
@@ -214,9 +214,7 @@ impl ZoneRecord for LocRecord {
             10 => self.h_precision = encode_loc_precision(value).map_err(|e| ZoneReaderError::new(ErrorKind::FormErr, &e.to_string()))?,
             11 => self.v_precision = encode_loc_precision(value).map_err(|e| ZoneReaderError::new(ErrorKind::FormErr, &e.to_string()))?,
             _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, &format!("extra record data found for record type {}", self.get_type())))
-        }
-
-        Ok(())
+        })
     }
 
     fn upcast(self) -> Box<dyn ZoneRecord> {

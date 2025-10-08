@@ -216,7 +216,7 @@ impl RRSigRecord {
 impl ZoneRecord for RRSigRecord {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
-        match index {
+        Ok(match index {
             0 => self.type_covered = Some(RRTypes::from_str(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse type_covered param for record type {}", self.get_type())))?),
             1 => self.algorithm = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse algorithm param for record type {}", self.get_type())))?,
             2 => self.labels = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse labels param for record type {}", self.get_type())))?,
@@ -228,9 +228,7 @@ impl ZoneRecord for RRSigRecord {
                 .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, &format!("signer_name param is not fully qualified (missing trailing dot) for record type {}", self.get_type())))?.to_string()),
             8 => self.signature = base64::decode(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse signature param for record type {}", self.get_type())))?,
             _ => self.signature.extend_from_slice(&base64::decode(value).unwrap())
-        }
-
-        Ok(())
+        })
     }
 
     fn upcast(self) -> Box<dyn ZoneRecord> {

@@ -184,7 +184,7 @@ impl SoaRecord {
 impl ZoneRecord for SoaRecord {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
-        match index {
+        Ok(match index {
             0 => self.fqdn = Some(value.strip_suffix('.')
                 .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, &format!("fqdn param is not fully qualified (missing trailing dot) for record type {}", self.get_type())))?.to_string()),
             1 => self.mailbox = Some(value.strip_suffix('.')
@@ -195,9 +195,7 @@ impl ZoneRecord for SoaRecord {
             5 => self.expire = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse expire param for record type {}", self.get_type())))?,
             6 => self.minimum_ttl = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse minimum_ttl param for record type {}", self.get_type())))?,
             _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, &format!("extra record data found for record type {}", self.get_type())))
-        }
-
-        Ok(())
+        })
     }
 
     fn upcast(self) -> Box<dyn ZoneRecord> {
