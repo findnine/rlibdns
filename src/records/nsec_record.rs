@@ -188,8 +188,12 @@ impl ZoneRecord for NSecRecord {
 impl fmt::Display for NSecRecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:<8}{} ", self.get_type().to_string(),
-               format!("{}.", self.next_domain.as_ref().unwrap_or(&String::new())))
+        write!(f, "{:<8}{} {}", self.get_type().to_string(),
+               format!("{}.", self.next_domain.as_ref().unwrap_or(&String::new())),
+               self.types.iter()
+                   .map(|t| t.to_string())
+                   .collect::<Vec<_>>()
+                   .join(" "))
     }
 }
 
