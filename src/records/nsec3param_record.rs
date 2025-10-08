@@ -2,22 +2,28 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
-use std::net::Ipv4Addr;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::records::inter::record_base::{RecordBase, RecordError};
+use crate::utils::hex;
 use crate::zone::inter::zone_record::ZoneRecord;
 use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
 
 #[derive(Clone, Debug)]
 pub struct NSec3ParamRecord {
-    address: Option<Ipv4Addr>
+    algorithm: u8,
+    flags: u8,
+    iterations: u16,
+    salt: Vec<u8>
 }
 
 impl Default for NSec3ParamRecord {
 
     fn default() -> Self {
         Self {
-            address: None
+            algorithm: 0,
+            flags: 0,
+            iterations: 0,
+            salt: Vec::new()
         }
     }
 }
@@ -30,20 +36,25 @@ impl RecordBase for NSec3ParamRecord {
             return Ok(Default::default());
         }
 
-        let address = match length {
-            4 => Ipv4Addr::new(buf[off+2], buf[off+3], buf[off+4], buf[off+5]),
-            _ => return Err(RecordError("invalid inet address".to_string()))
-        };
+        let algorithm = 0;
+        let flags = 0;
+        let iterations = 0;
+        let salt = Vec::new();
+
 
         Ok(Self {
-            address: Some(address)
+            algorithm,
+            flags,
+            iterations,
+            salt
         })
     }
 
     fn to_bytes(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RecordError> {
-        let mut buf = vec![0u8; 6];
+        let mut buf = vec![0u8; 4];
 
-        buf.splice(2..6, self.address.ok_or_else(|| RecordError("address param was not set".to_string()))?.octets().to_vec());
+
+
 
         buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
 
@@ -73,18 +84,13 @@ impl RecordBase for NSec3ParamRecord {
 
 impl NSec3ParamRecord {
 
-    pub fn new(address: Ipv4Addr) -> Self {
+    pub fn new(algorithm: u8, flags: u8, iterations: u16, salt: Vec<u8>) -> Self {
         Self {
-            address: Some(address)
+            algorithm,
+            flags,
+            iterations,
+            salt
         }
-    }
-
-    pub fn set_address(&mut self, address: Ipv4Addr) {
-        self.address = Some(address);
-    }
-
-    pub fn get_address(&self) -> Option<Ipv4Addr> {
-        self.address
     }
 }
 
@@ -92,7 +98,7 @@ impl ZoneRecord for NSec3ParamRecord {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
         match index {
-            0 => self.address = Some(value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse address param for record type {}", self.get_type())))?),
+            //0 => self.address = Some(value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse address param for record type {}", self.get_type())))?),
             _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, &format!("extra record data found for record type {}", self.get_type())))
         }
 
@@ -107,14 +113,17 @@ impl ZoneRecord for NSec3ParamRecord {
 impl fmt::Display for NSec3ParamRecord {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:<8}{}", self.get_type().to_string(),
-               self.address.map(|a| a.to_string()).unwrap_or_default())
+        write!(f, "{:<8}{} {} {} {}", self.get_type().to_string(),
+               self.algorithm,
+               self.flags,
+               self.iterations,
+               hex::encode(&self.salt))
     }
 }
 
 #[test]
 fn test() {
-    let buf = vec![ 0x0, 0x4, 0x7f, 0x0, 0x0, 0x1 ];
+    let buf = vec![ 0x0, 0x5, 0x1, 0x0, 0x0, 0x0, 0x0 ];
     let record = NSec3ParamRecord::from_bytes(&buf, 0).unwrap();
     assert_eq!(buf, record.to_bytes(&mut HashMap::new(), 0).unwrap());
 }
