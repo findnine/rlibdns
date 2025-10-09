@@ -12,7 +12,7 @@ pub mod ns_rr_data;
 pub mod nsec_rr_data;
 pub mod nsec3_rr_data;
 pub mod nsec3param_rr_data;
-pub mod opt_record;
+pub mod opt_rr_data;
 pub mod ptr_rr_data;
 pub mod hinfo_rr_data;
 pub mod rrsig_rr_data;

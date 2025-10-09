@@ -8,7 +8,7 @@ use crate::messages::inter::rr_classes::RRClasses;
 use crate::rr_data::inter::rr_data::RRData;
 use crate::messages::rr_query::RRQuery;
 use crate::messages::inter::rr_types::RRTypes;
-use crate::rr_data::opt_record::OptRecord;
+use crate::rr_data::opt_rr_data::OptRRData;
 use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 /*
                                1  1  1  1  1  1
@@ -493,7 +493,7 @@ fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> Result<Vec<Mes
             RRTypes::TKey => {}
             RRTypes::TSig => {}
             RRTypes::Opt => {
-                let data = OptRecord::from_bytes(buf, *off+2).map_err(|e| MessageError::RecordError(e.to_string()))?;
+                let data = OptRRData::from_bytes(buf, *off+2).map_err(|e| MessageError::RecordError(e.to_string()))?;
                 *off += 5+u16::from_be_bytes([buf[*off+3], buf[*off+4]]) as usize;
             }
             _ => {

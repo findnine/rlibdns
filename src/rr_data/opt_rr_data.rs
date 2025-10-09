@@ -10,7 +10,7 @@ use crate::utils::hex;
 use crate::utils::index_map::IndexMap;
 
 #[derive(Clone, Debug)]
-pub struct OptRecord {
+pub struct OptRRData {
     payload_size: u16,
     ext_rcode: u8,
     version: u8,
@@ -18,7 +18,7 @@ pub struct OptRecord {
     options: IndexMap<OptCodes, Vec<u8>>
 }
 
-impl Default for OptRecord {
+impl Default for OptRRData {
 
     fn default() -> Self {
         Self {
@@ -31,7 +31,7 @@ impl Default for OptRecord {
     }
 }
 
-impl RRData for OptRecord {
+impl RRData for OptRRData {
 
     fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> {
         let payload_size = u16::from_be_bytes([buf[off], buf[off+1]]);
@@ -102,7 +102,7 @@ impl RRData for OptRecord {
     }
 }
 
-impl OptRecord {
+impl OptRRData {
 
     pub fn new(payload_size: u16, ext_rcode: u8, version: u8, flags: u16, options: IndexMap<OptCodes, Vec<u8>>) -> Self {
         Self {
@@ -171,7 +171,7 @@ impl OptRecord {
     }
 }
 
-impl fmt::Display for OptRecord {
+impl fmt::Display for OptRRData {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "; EDNS: version: {}, flags: {}; udp: {}", self.version, self.flags, self.payload_size)?;
