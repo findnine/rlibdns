@@ -72,9 +72,8 @@ impl RRData for SoaRRData {
             .ok_or_else(|| RecordError("fqdn param was not set".to_string()))?, compression_data, off+2, true);
         buf.extend_from_slice(&fqdn);
 
-        let mailbox = pack_fqdn(self.mailbox.as_ref()
-            .ok_or_else(|| RecordError("mailbox param was not set".to_string()))?, compression_data, off+2+fqdn.len(), true);
-        buf.extend_from_slice(&mailbox);
+        buf.extend_from_slice(&pack_fqdn(self.mailbox.as_ref()
+            .ok_or_else(|| RecordError("mailbox param was not set".to_string()))?, compression_data, off+2+fqdn.len(), true));
 
         buf.extend_from_slice(&self.serial.to_be_bytes());
         buf.extend_from_slice(&self.refresh.to_be_bytes());

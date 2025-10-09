@@ -5,6 +5,7 @@ use std::fmt::Formatter;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::rr_data::inter::naptr_flags::NaptrFlags;
 use crate::rr_data::inter::rr_data::{RRData, RecordError};
+use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 use crate::zone::inter::zone_rr_data::ZoneRRData;
 use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
 
@@ -72,9 +73,7 @@ impl RRData for NaptrRRData {
 
         off += 1+data_length;
 
-        let data_length = buf[off] as usize;
-        let replacement = String::from_utf8(buf[off + 1..off + 1 + data_length].to_vec())
-            .map_err(|e| RecordError(e.to_string()))?;
+        let (replacement, _) = unpack_fqdn(buf, off);
 
         Ok(Self {
             order,
@@ -86,7 +85,7 @@ impl RRData for NaptrRRData {
         })
     }
 
-    fn to_bytes(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RecordError> {
+    fn to_bytes(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RecordError> {
         let mut buf = vec![0u8; 6];
 
         buf.splice(2..4, self.order.to_be_bytes());
@@ -109,9 +108,8 @@ impl RRData for NaptrRRData {
         buf.push(regex.len() as u8);
         buf.extend_from_slice(regex);
 
-        let replacement = self.replacement.as_ref().ok_or_else(|| RecordError("replacement param was not set".to_string()))?.as_bytes();
-        buf.push(replacement.len() as u8);
-        buf.extend_from_slice(replacement);
+        buf.extend_from_slice(&pack_fqdn(self.replacement.as_ref()
+            .ok_or_else(|| RecordError("replacement param was not set".to_string()))?, compression_data, off+buf.len(), true));
 
         buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
 
@@ -230,7 +228,8 @@ impl ZoneRRData for NaptrRRData {
             }
             3 => self.service = Some(value.to_string()),
             4 => self.regex = Some(value.to_string()),
-            5 => self.replacement = Some(value.to_string()),
+            5 => self.replacement = Some(value.strip_suffix('.')
+                .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, &format!("replacement param is not fully qualified (missing trailing dot) for record type {}", self.get_type())))?.to_string()),
             _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, &format!("extra record data found for record type {}", self.get_type())))
         })
     }
@@ -243,13 +242,16 @@ impl ZoneRRData for NaptrRRData {
 impl fmt::Display for NaptrRRData {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:<8}{} {} \"{:?}\" \"{}\" \"{}\" {}", self.get_type().to_string(),
+        write!(f, "{:<8}{} {} \"{}\" \"{}\" \"{}\" {}", self.get_type().to_string(),
                self.order,
                self.preference,
-               self.flags,
+               self.flags.iter()
+                   .map(|f| f.to_string())
+                   .collect::<Vec<_>>()
+                   .join(","),
                self.service.as_ref().unwrap_or(&String::new()),
                self.regex.as_ref().unwrap_or(&String::new()),
-               self.replacement.as_ref().unwrap_or(&String::new()))
+               format!("{}.", self.replacement.as_ref().unwrap_or(&String::new())))
     }
 }
 
@@ -257,5 +259,7 @@ impl fmt::Display for NaptrRRData {
 fn test() {
     let buf = vec![ 0x0, 0x2b, 0x0, 0x64, 0x0, 0xa, 0x3, 0x55, 0x2c, 0x50, 0x7, 0x45, 0x32, 0x55, 0x2b, 0x73, 0x69, 0x70, 0x19, 0x21, 0x5e, 0x2e, 0x2a, 0x24, 0x21, 0x73, 0x69, 0x70, 0x3a, 0x69, 0x6e, 0x66, 0x6f, 0x40, 0x66, 0x69, 0x6e, 0x64, 0x39, 0x2e, 0x6e, 0x65, 0x74, 0x21, 0x0 ];
     let record = NaptrRRData::from_bytes(&buf, 0).unwrap();
+
+    println!("{}", record);
     assert_eq!(buf, record.to_bytes(&mut HashMap::new(), 0).unwrap());
 }
