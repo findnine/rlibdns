@@ -12,7 +12,7 @@ use crate::zone::inter::zone_types::ZoneTypes;
 pub struct Zone {
     _type: ZoneTypes,
     class: RRClasses,
-    rrmap: Trie<Vec<RRSet>>,
+    sets: Trie<Vec<RRSet>>,
     journal_path: Option<PathBuf>
 }
 
@@ -22,7 +22,7 @@ impl Default for Zone {
         Self {
             _type: Default::default(),
             class: Default::default(),
-            rrmap: Trie::new(),
+            sets: Trie::new(),
             journal_path: None
         }
     }
@@ -67,7 +67,7 @@ impl Zone {
         let key = encode_fqdn(query);
         let _type = record.get_type();
 
-        match self.rrmap.get_mut(&key) {
+        match self.sets.get_mut(&key) {
             Some(sets) => {
                 match sets
                         .iter_mut()
@@ -85,7 +85,7 @@ impl Zone {
             None => {
                 let mut set = RRSet::new(_type, ttl);
                 set.add_record(ttl, record);
-                self.rrmap.insert(key, vec![set]);
+                self.sets.insert(key, vec![set]);
             }
         }
     }
@@ -98,14 +98,14 @@ impl Zone {
         let key = encode_fqdn(query);
 
         let (removed, became_empty) = {
-            let sets = self.rrmap.get_mut(&key)?;
+            let sets = self.sets.get_mut(&key)?;
             let idx = sets.iter().position(|s| s.get_type().eq(_type))?;
             let removed = sets.swap_remove(idx);
             (Some(removed), sets.is_empty())
         };
 
         if became_empty {
-            self.rrmap.remove(&key);
+            self.sets.remove(&key);
         }
 
         removed
@@ -138,15 +138,15 @@ impl Zone {
     */
 
     pub fn get_set(&self, query: &str, _type: &RRTypes) -> Option<&RRSet> {
-        self.rrmap.get(&encode_fqdn(query))?.iter().find(|s| s.get_type().eq(_type))
+        self.sets.get(&encode_fqdn(query))?.iter().find(|s| s.get_type().eq(_type))
     }
 
     pub fn get_all_sets(&self, query: &str) -> Option<&Vec<RRSet>> {
-        self.rrmap.get(&encode_fqdn(query))
+        self.sets.get(&encode_fqdn(query))
     }
 
     pub fn get_all_sets_recursive(&self) -> impl Iterator<Item = (String, &Vec<RRSet>)> {
-        self.rrmap.iter().map(|(key, records)| (decode_fqdn(key), records))
+        self.sets.iter().map(|(key, records)| (decode_fqdn(key), records))
     }
 
     /*
@@ -168,7 +168,7 @@ impl Zone {
     */
 
     pub fn get_delegation_point(&self, query: &str) -> Option<(String, &RRSet)> {
-        match self.rrmap.get_shallowest(&encode_fqdn(query)) {
+        match self.sets.get_shallowest(&encode_fqdn(query)) {
             Some((name, sets)) => {
                 sets
                     .iter()
