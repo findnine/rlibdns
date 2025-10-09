@@ -137,7 +137,7 @@ impl Zone {
     }
     */
 
-    pub fn get_sets(&self, query: &str, _type: &RRTypes) -> Option<&RRSet> {
+    pub fn get_set(&self, query: &str, _type: &RRTypes) -> Option<&RRSet> {
         self.rrmap.get(&encode_fqdn(query))?.iter().find(|s| s.get_type().eq(_type))
     }
 

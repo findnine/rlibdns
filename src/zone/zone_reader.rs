@@ -21,7 +21,6 @@ enum ParserState {
 pub struct ZoneReader {
     reader: BufReader<File>,
     origin: String,
-    name: String,
     class: RRClasses,
     default_ttl: u32
 }
@@ -69,7 +68,6 @@ impl ZoneReader {
         Ok(Self {
             reader,
             origin: origin.to_lowercase(),
-            name: String::new(),
             class,
             default_ttl: 300
         })
@@ -79,6 +77,7 @@ impl ZoneReader {
         let mut state = ParserState::Init;
         let mut paren_count: u8 = 0;
 
+        let mut name = String::new();
         let mut _type;
         let mut ttl = self.default_ttl;
 
@@ -139,7 +138,7 @@ impl ZoneReader {
 
                                     } else {
                                         if word_len > 0 {
-                                            self.name = word;
+                                            name = word;
                                         }
 
                                         state = ParserState::Common;
@@ -159,7 +158,7 @@ impl ZoneReader {
                                     _type = t;
                                     state = ParserState::Data;
                                     data_count = 0;
-                                    record = Some((self.absolute_name(&self.name), ttl, <dyn ZoneRecord>::new(_type, &self.class)
+                                    record = Some((self.absolute_name(&name), ttl, <dyn ZoneRecord>::new(_type, &self.class)
                                         .ok_or_else(|| ZoneReaderError::new(ErrorKind::TypeNotFound, &format!("record type {} not found", _type)))?));
 
                                 } else {
