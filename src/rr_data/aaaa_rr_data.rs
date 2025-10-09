@@ -4,7 +4,7 @@ use std::fmt;
 use std::fmt::Formatter;
 use std::net::Ipv6Addr;
 use crate::messages::inter::rr_types::RRTypes;
-use crate::rr_data::inter::rr_data::{RRData, RecordError};
+use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::zone::inter::zone_rr_data::ZoneRRData;
 use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
 
@@ -24,7 +24,7 @@ impl Default for AaaaRRData {
 
 impl RRData for AaaaRRData {
 
-    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> {
+    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RRDataError> {
         let length = u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
         if length == 0 {
             return Ok(Default::default());
@@ -36,7 +36,7 @@ impl RRData for AaaaRRData {
                 octets.copy_from_slice(&buf[off + 2..off + 2 + length]);
                 Ipv6Addr::from(octets)
             }
-            _ => return Err(RecordError("invalid inet address".to_string()))
+            _ => return Err(RRDataError("invalid inet address".to_string()))
         };
 
         Ok(Self {
@@ -44,10 +44,10 @@ impl RRData for AaaaRRData {
         })
     }
 
-    fn to_bytes(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RecordError> {
+    fn to_bytes(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RRDataError> {
         let mut buf = vec![0u8; 18];
 
-        buf.splice(2..18, self.address.ok_or_else(|| RecordError("address param was not set".to_string()))?.octets().to_vec());
+        buf.splice(2..18, self.address.ok_or_else(|| RRDataError("address param was not set".to_string()))?.octets().to_vec());
 
         buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
 

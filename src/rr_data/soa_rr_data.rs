@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_types::RRTypes;
-use crate::rr_data::inter::rr_data::{RRData, RecordError};
+use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 use crate::zone::inter::zone_rr_data::ZoneRRData;
 use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
@@ -36,7 +36,7 @@ impl Default for SoaRRData {
 
 impl RRData for SoaRRData {
 
-    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> {
+    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RRDataError> {
         let length = u16::from_be_bytes([buf[off], buf[off+1]]);
         if length == 0 {
             return Ok(Default::default());
@@ -65,15 +65,15 @@ impl RRData for SoaRRData {
         })
     }
 
-    fn to_bytes(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RecordError> {
+    fn to_bytes(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
         let mut buf = vec![0u8; 2];
 
         let fqdn = pack_fqdn(self.fqdn.as_ref()
-            .ok_or_else(|| RecordError("fqdn param was not set".to_string()))?, compression_data, off+2, true);
+            .ok_or_else(|| RRDataError("fqdn param was not set".to_string()))?, compression_data, off+2, true);
         buf.extend_from_slice(&fqdn);
 
         buf.extend_from_slice(&pack_fqdn(self.mailbox.as_ref()
-            .ok_or_else(|| RecordError("mailbox param was not set".to_string()))?, compression_data, off+2+fqdn.len(), true));
+            .ok_or_else(|| RRDataError("mailbox param was not set".to_string()))?, compression_data, off+2+fqdn.len(), true));
 
         buf.extend_from_slice(&self.serial.to_be_bytes());
         buf.extend_from_slice(&self.refresh.to_be_bytes());

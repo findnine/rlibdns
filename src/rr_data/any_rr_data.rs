@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_types::RRTypes;
-use crate::rr_data::inter::rr_data::{RRData, RecordError};
+use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 
 #[derive(Clone, Debug)]
 pub struct AnyRRData;
@@ -17,11 +17,11 @@ impl Default for AnyRRData {
 
 impl RRData for AnyRRData {
 
-    fn from_bytes(_buf: &[u8], _off: usize) -> Result<Self, RecordError> {
+    fn from_bytes(_buf: &[u8], _off: usize) -> Result<Self, RRDataError> {
         Ok(Self)
     }
 
-    fn to_bytes(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RecordError> {
+    fn to_bytes(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RRDataError> {
         Ok(0u16.to_be_bytes().to_vec())
     }
 

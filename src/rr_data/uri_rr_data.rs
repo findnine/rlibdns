@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_types::RRTypes;
-use crate::rr_data::inter::rr_data::{RRData, RecordError};
+use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::zone::inter::zone_rr_data::ZoneRRData;
 use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
 
@@ -27,7 +27,7 @@ impl Default for UriRRData {
 
 impl RRData for UriRRData {
 
-    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> {
+    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RRDataError> {
         let length = u16::from_be_bytes([buf[off], buf[off+1]]);
         if length == 0 {
             return Ok(Default::default());
@@ -37,7 +37,7 @@ impl RRData for UriRRData {
         let weight = u16::from_be_bytes([buf[off+4], buf[off+5]]);
 
         let target = String::from_utf8(buf[off+6..off+2+length as usize].to_vec())
-            .map_err(|e| RecordError(e.to_string()))?;
+            .map_err(|e| RRDataError(e.to_string()))?;
 
         Ok(Self {
             priority,
@@ -46,13 +46,13 @@ impl RRData for UriRRData {
         })
     }
 
-    fn to_bytes(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RecordError> {
+    fn to_bytes(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RRDataError> {
         let mut buf = vec![0u8; 6];
 
         buf.splice(2..4, self.priority.to_be_bytes());
         buf.splice(4..6, self.weight.to_be_bytes());
 
-        buf.extend_from_slice(self.target.as_ref().ok_or_else(|| RecordError("target param was not set".to_string()))?.as_bytes());
+        buf.extend_from_slice(self.target.as_ref().ok_or_else(|| RRDataError("target param was not set".to_string()))?.as_bytes());
 
         buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
 

@@ -4,7 +4,7 @@ use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
-use crate::rr_data::inter::rr_data::{RRData, RecordError};
+use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 use crate::zone::inter::zone_rr_data::ZoneRRData;
 use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
@@ -31,7 +31,7 @@ impl Default for PtrRRData {
 
 impl RRData for PtrRRData {
 
-    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> {
+    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RRDataError> {
         let class = u16::from_be_bytes([buf[off], buf[off+1]]);
         let cache_flush = (class & 0x8000) != 0;
         let class = RRClasses::try_from(class & 0x7FFF).unwrap();
@@ -49,7 +49,7 @@ impl RRData for PtrRRData {
         })
     }
 
-    fn to_bytes(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RecordError> {
+    fn to_bytes(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
         let mut buf = vec![0u8; 8];
 
         let mut class = self.class.get_code();

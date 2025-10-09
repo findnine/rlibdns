@@ -5,7 +5,7 @@ use std::fmt::Formatter;
 use std::net::{Ipv4Addr, Ipv6Addr};
 use crate::messages::inter::rr_types::RRTypes;
 use crate::rr_data::inter::opt_codes::OptCodes;
-use crate::rr_data::inter::rr_data::{RRData, RecordError};
+use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::utils::hex;
 use crate::utils::index_map::IndexMap;
 
@@ -33,7 +33,7 @@ impl Default for OptRRData {
 
 impl RRData for OptRRData {
 
-    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> {
+    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RRDataError> {
         let payload_size = u16::from_be_bytes([buf[off], buf[off+1]]);
         let ext_rcode = buf[off+2];
         let version = buf[off+3];
@@ -60,7 +60,7 @@ impl RRData for OptRRData {
         })
     }
 
-    fn to_bytes(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RecordError> {
+    fn to_bytes(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RRDataError> {
         let mut buf = vec![0u8; 8];
 
         buf.splice(0..2, self.payload_size.to_be_bytes());

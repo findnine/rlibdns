@@ -37,9 +37,9 @@ use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct RecordError(pub String);
+pub struct RRDataError(pub String);
 
-impl Display for RecordError {
+impl Display for RRDataError {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0)
@@ -48,9 +48,9 @@ impl Display for RecordError {
 
 pub trait RRData: Display + Debug + Send + Sync {
 
-    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> where Self: Sized;
+    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RRDataError> where Self: Sized;
 
-    fn to_bytes(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RecordError>;
+    fn to_bytes(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError>;
 
     fn get_type(&self) -> RRTypes;
 
@@ -120,7 +120,7 @@ impl dyn RRData {
         })
     }
 
-    pub fn from_wire(_type: RRTypes, class: &RRClasses, buf: &[u8], off: usize) -> Result<Box<dyn RRData>, RecordError> {
+    pub fn from_wire(_type: RRTypes, class: &RRClasses, buf: &[u8], off: usize) -> Result<Box<dyn RRData>, RRDataError> {
         Ok(match _type {
             RRTypes::A      => {
                 match class {
@@ -165,7 +165,7 @@ impl dyn RRData {
             */
             RRTypes::Any    => AnyRRData::from_bytes(buf, off)?.upcast(),
             //RRTypes::Opt    => OptRecord::from_bytes(buf, off)?.upcast(),
-            _ => return Err(RecordError("rrtype could not produce a record".to_string()))
+            _ => return Err(RRDataError("type could not produce a record".to_string()))
         })
     }
 }

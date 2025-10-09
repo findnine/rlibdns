@@ -4,7 +4,7 @@ use std::fmt;
 use std::fmt::Formatter;
 use std::str::FromStr;
 use crate::messages::inter::rr_types::RRTypes;
-use crate::rr_data::inter::rr_data::{RRData, RecordError};
+use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 use crate::utils::base64;
 use crate::utils::time_utils::TimeUtils;
@@ -43,14 +43,14 @@ impl Default for RRSigRRData {
 
 impl RRData for RRSigRRData {
 
-    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> {
+    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RRDataError> {
         let mut length = u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
         if length == 0 {
             return Ok(Default::default());
         }
 
         let type_covered = RRTypes::try_from(u16::from_be_bytes([buf[off+2], buf[off+3]]))
-            .map_err(|e| RecordError(e.to_string()))?;
+            .map_err(|e| RRDataError(e.to_string()))?;
 
         let algorithm = buf[off+4];
         let labels = buf[off+5];
@@ -79,11 +79,11 @@ impl RRData for RRSigRRData {
         })
     }
 
-    fn to_bytes(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RecordError> {
+    fn to_bytes(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
         let mut buf = vec![0u8; 20];
 
         buf.splice(2..4, self.type_covered.as_ref()
-            .ok_or_else(|| RecordError("type_covered param was not set".to_string()))?.get_code().to_be_bytes());
+            .ok_or_else(|| RRDataError("type_covered param was not set".to_string()))?.get_code().to_be_bytes());
 
         buf[4] = self.algorithm;
         buf[5] = self.labels;
@@ -94,7 +94,7 @@ impl RRData for RRSigRRData {
         buf.splice(18..20, self.key_tag.to_be_bytes());
 
         buf.extend_from_slice(&pack_fqdn(self.signer_name.as_ref()
-            .ok_or_else(|| RecordError("signer_name param was not set".to_string()))?, compression_data, off+22, true));
+            .ok_or_else(|| RRDataError("signer_name param was not set".to_string()))?, compression_data, off+22, true));
 
         buf.extend_from_slice(&self.signature);
 

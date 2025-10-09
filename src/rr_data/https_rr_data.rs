@@ -4,7 +4,7 @@ use std::fmt;
 use std::fmt::Formatter;
 use std::str::FromStr;
 use crate::messages::inter::rr_types::RRTypes;
-use crate::rr_data::inter::rr_data::{RRData, RecordError};
+use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::rr_data::inter::svc_param::SvcParams;
 use crate::rr_data::inter::svc_param_keys::SvcParamKeys;
 use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
@@ -31,7 +31,7 @@ impl Default for HttpsRRData {
 
 impl RRData for HttpsRRData {
 
-    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> {
+    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RRDataError> {
         let mut length = u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
         if length == 0 {
             return Ok(Default::default());
@@ -47,10 +47,10 @@ impl RRData for HttpsRRData {
 
         while off < length {
             let key = SvcParamKeys::try_from(u16::from_be_bytes([buf[off], buf[off+1]]))
-                .map_err(|e| RecordError(e.to_string()))?;
+                .map_err(|e| RRDataError(e.to_string()))?;
             let length = u16::from_be_bytes([buf[off+2], buf[off+3]]) as usize;
             params.push(SvcParams::from_bytes(key, &buf[off+4..off+4+length])
-                .map_err(|e| RecordError(e.to_string()))?);
+                .map_err(|e| RRDataError(e.to_string()))?);
 
             off += length+4;
         }
@@ -62,13 +62,13 @@ impl RRData for HttpsRRData {
         })
     }
 
-    fn to_bytes(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RecordError> {
+    fn to_bytes(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
         let mut buf = vec![0u8; 4];
 
         buf.splice(2..4, self.priority.to_be_bytes());
 
         buf.extend_from_slice(&pack_fqdn(self.target.as_ref()
-            .ok_or_else(|| RecordError("target param was not set".to_string()))?.as_str(), compression_data, off+4, true));
+            .ok_or_else(|| RRDataError("target param was not set".to_string()))?.as_str(), compression_data, off+4, true));
 
         for param in self.params.iter() {
             buf.extend_from_slice(&param.get_code().to_be_bytes());

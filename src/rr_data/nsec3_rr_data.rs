@@ -4,7 +4,7 @@ use std::fmt;
 use std::fmt::Formatter;
 use std::str::FromStr;
 use crate::messages::inter::rr_types::RRTypes;
-use crate::rr_data::inter::rr_data::{RRData, RecordError};
+use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::utils::{base32, hex};
 use crate::zone::inter::zone_rr_data::ZoneRRData;
 use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
@@ -35,7 +35,7 @@ impl Default for NSec3RRData {
 
 impl RRData for NSec3RRData {
 
-    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> {
+    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RRDataError> {
         let mut length = u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
         if length == 0 {
             return Ok(Default::default());
@@ -60,7 +60,7 @@ impl RRData for NSec3RRData {
 
         while off < length {
             if off+2 > length {
-                return Err(RecordError("truncated NSEC window header".to_string()));
+                return Err(RRDataError("truncated NSEC window header".to_string()));
             }
 
             let window = buf[off];
@@ -68,18 +68,18 @@ impl RRData for NSec3RRData {
             off += 2;
 
             if data_length == 0 || data_length > 32 {
-                return Err(RecordError("invalid NSEC window length".to_string()));
+                return Err(RRDataError("invalid NSEC window length".to_string()));
             }
 
             if off + data_length > length {
-                return Err(RecordError("truncated NSEC bitmap".to_string()));
+                return Err(RRDataError("truncated NSEC bitmap".to_string()));
             }
 
             for (i, &byte) in buf[off..off + data_length].iter().enumerate() {
                 for bit in 0..8 {
                     if (byte & (1 << (7 - bit))) != 0 {
                         let _type = RRTypes::try_from((window as u16) * 256 + (i as u16 * 8 + bit as u16))
-                            .map_err(|e| RecordError(e.to_string()))?;
+                            .map_err(|e| RRDataError(e.to_string()))?;
                         types.push(_type);
                     }
                 }
@@ -98,7 +98,7 @@ impl RRData for NSec3RRData {
         })
     }
 
-    fn to_bytes(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RecordError> {
+    fn to_bytes(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RRDataError> {
         let mut buf = vec![0u8; 2];
 
         buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());

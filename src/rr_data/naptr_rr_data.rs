@@ -4,7 +4,7 @@ use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::rr_data::inter::naptr_flags::NaptrFlags;
-use crate::rr_data::inter::rr_data::{RRData, RecordError};
+use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 use crate::zone::inter::zone_rr_data::ZoneRRData;
 use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
@@ -35,7 +35,7 @@ impl Default for NaptrRRData {
 
 impl RRData for NaptrRRData {
 
-    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> {
+    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RRDataError> {
         let length = u16::from_be_bytes([buf[off], buf[off+1]]);
         if length == 0 {
             return Ok(Default::default());
@@ -48,7 +48,7 @@ impl RRData for NaptrRRData {
         let mut flags = Vec::new();
 
         for flag in String::from_utf8(buf[off + 7..off + 7 + data_length].to_vec())
-                .map_err(|e| RecordError(e.to_string()))?.split(",") {
+                .map_err(|e| RRDataError(e.to_string()))?.split(",") {
             let tok = flag.trim();
             if tok.is_empty() {
                 continue;
@@ -56,20 +56,20 @@ impl RRData for NaptrRRData {
 
             flags.push(NaptrFlags::try_from(flag.chars()
                 .next()
-                .ok_or_else(|| RecordError("empty NAPTR flag token".to_string()))?).map_err(|e| RecordError(e.to_string()))?);
+                .ok_or_else(|| RRDataError("empty NAPTR flag token".to_string()))?).map_err(|e| RRDataError(e.to_string()))?);
         }
 
         let mut off = off+7+data_length;
 
         let data_length = buf[off] as usize;
         let service = String::from_utf8(buf[off + 1..off + 1 + data_length].to_vec())
-            .map_err(|e| RecordError(e.to_string()))?;
+            .map_err(|e| RRDataError(e.to_string()))?;
 
         off += 1+data_length;
 
         let data_length = buf[off] as usize;
         let regex = String::from_utf8(buf[off + 1..off + 1 + data_length].to_vec())
-            .map_err(|e| RecordError(e.to_string()))?;
+            .map_err(|e| RRDataError(e.to_string()))?;
 
         off += 1+data_length;
 
@@ -85,7 +85,7 @@ impl RRData for NaptrRRData {
         })
     }
 
-    fn to_bytes(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RecordError> {
+    fn to_bytes(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
         let mut buf = vec![0u8; 6];
 
         buf.splice(2..4, self.order.to_be_bytes());
@@ -100,16 +100,16 @@ impl RRData for NaptrRRData {
             }
         }
 
-        let service = self.service.as_ref().ok_or_else(|| RecordError("service param was not set".to_string()))?.as_bytes();
+        let service = self.service.as_ref().ok_or_else(|| RRDataError("service param was not set".to_string()))?.as_bytes();
         buf.push(service.len() as u8);
         buf.extend_from_slice(service);
 
-        let regex = self.regex.as_ref().ok_or_else(|| RecordError("regex param was not set".to_string()))?.as_bytes();
+        let regex = self.regex.as_ref().ok_or_else(|| RRDataError("regex param was not set".to_string()))?.as_bytes();
         buf.push(regex.len() as u8);
         buf.extend_from_slice(regex);
 
         buf.extend_from_slice(&pack_fqdn(self.replacement.as_ref()
-            .ok_or_else(|| RecordError("replacement param was not set".to_string()))?, compression_data, off+buf.len(), true));
+            .ok_or_else(|| RRDataError("replacement param was not set".to_string()))?, compression_data, off+buf.len(), true));
 
         buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
 

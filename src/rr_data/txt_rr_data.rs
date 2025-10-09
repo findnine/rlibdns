@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_types::RRTypes;
-use crate::rr_data::inter::rr_data::{RRData, RecordError};
+use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::zone::inter::zone_rr_data::ZoneRRData;
 use crate::zone::zone_reader::ZoneReaderError;
 
@@ -23,7 +23,7 @@ impl Default for TxtRRData {
 
 impl RRData for TxtRRData {
 
-    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RecordError> {
+    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RRDataError> {
         let mut length = u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
         if length == 0 {
             return Ok(Default::default());
@@ -36,7 +36,7 @@ impl RRData for TxtRRData {
         while off < length {
             let data_length = buf[off] as usize;
             let record = String::from_utf8(buf[off + 1..off + 1 + data_length].to_vec())
-                .map_err(|e| RecordError(e.to_string()))?;
+                .map_err(|e| RRDataError(e.to_string()))?;
             data.push(record);
             off += data_length+1;
         }
@@ -46,7 +46,7 @@ impl RRData for TxtRRData {
         })
     }
 
-    fn to_bytes(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RecordError> {
+    fn to_bytes(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RRDataError> {
         let mut buf = vec![0u8; 2];
 
         for record in &self.data {
