@@ -112,7 +112,17 @@ impl Zone {
     }
 
     pub fn remove_all_records(&mut self, query: &str, protected_types: &[RRTypes]) {
-        println!("REMOVE ALL RECORD");
+        let key = encode_fqdn(query);
+
+        if match self.sets.get_mut(&key) {
+            Some(sets) => {
+                sets.retain(|set| protected_types.contains(&set.get_type()));
+                sets.is_empty()
+            }
+            None => false
+        } {
+            self.sets.remove(&key);
+        }
     }
     /*
     pub fn add_record(&mut self, name: &str, record: Box<dyn RRData>) {
