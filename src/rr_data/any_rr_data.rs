@@ -21,7 +21,11 @@ impl RRData for AnyRRData {
         Ok(Self)
     }
 
-    fn to_bytes(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RRDataError> {
+    fn to_bytes_compressed(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RRDataError> {
+        self.to_bytes()
+    }
+
+    fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
         Ok(0u16.to_be_bytes().to_vec())
     }
 

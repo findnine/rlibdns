@@ -51,7 +51,11 @@ impl RRData for NSec3ParamRRData {
         })
     }
 
-    fn to_bytes(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RRDataError> {
+    fn to_bytes_compressed(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RRDataError> {
+        self.to_bytes()
+    }
+
+    fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
         let mut buf = vec![0u8; 7];
 
         buf[2] = self.algorithm;
@@ -163,5 +167,5 @@ impl fmt::Display for NSec3ParamRRData {
 fn test() {
     let buf = vec![ 0x0, 0x5, 0x1, 0x0, 0x0, 0x0, 0x0 ];
     let record = NSec3ParamRRData::from_bytes(&buf, 0).unwrap();
-    assert_eq!(buf, record.to_bytes(&mut HashMap::new(), 0).unwrap());
+    assert_eq!(buf, record.to_bytes().unwrap());
 }

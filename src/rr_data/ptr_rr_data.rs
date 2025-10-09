@@ -5,7 +5,7 @@ use std::fmt::Formatter;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
-use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
+use crate::utils::fqdn_utils::{pack_fqdn, pack_fqdn_compressed, unpack_fqdn};
 use crate::zone::inter::zone_rr_data::ZoneRRData;
 use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
 
@@ -49,7 +49,7 @@ impl RRData for PtrRRData {
         })
     }
 
-    fn to_bytes(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
+    fn to_bytes_compressed(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
         let mut buf = vec![0u8; 8];
 
         let mut class = self.class.get_code();
@@ -60,7 +60,25 @@ impl RRData for PtrRRData {
         buf.splice(0..2, class.to_be_bytes());
         buf.splice(2..6, self.ttl.to_be_bytes());
 
-        buf.extend_from_slice(&pack_fqdn(self.fqdn.as_ref().unwrap().as_str(), compression_data, off+8, true));
+        buf.extend_from_slice(&pack_fqdn_compressed(self.fqdn.as_ref().unwrap().as_str(), compression_data, off+8));
+
+        buf.splice(6..8, ((buf.len()-8) as u16).to_be_bytes());
+
+        Ok(buf)
+    }
+
+    fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
+        let mut buf = vec![0u8; 8];
+
+        let mut class = self.class.get_code();
+        if self.cache_flush {
+            class = class | 0x8000;
+        }
+
+        buf.splice(0..2, class.to_be_bytes());
+        buf.splice(2..6, self.ttl.to_be_bytes());
+
+        buf.extend_from_slice(&pack_fqdn(self.fqdn.as_ref().unwrap().as_str()));
 
         buf.splice(6..8, ((buf.len()-8) as u16).to_be_bytes());
 

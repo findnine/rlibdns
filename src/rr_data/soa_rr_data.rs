@@ -4,7 +4,7 @@ use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
-use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
+use crate::utils::fqdn_utils::{pack_fqdn, pack_fqdn_compressed, unpack_fqdn};
 use crate::zone::inter::zone_rr_data::ZoneRRData;
 use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
 
@@ -65,15 +65,36 @@ impl RRData for SoaRRData {
         })
     }
 
-    fn to_bytes(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
+    fn to_bytes_compressed(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
+        let mut buf = vec![0u8; 2];
+
+        let fqdn = pack_fqdn_compressed(self.fqdn.as_ref()
+            .ok_or_else(|| RRDataError("fqdn param was not set".to_string()))?, compression_data, off+2);
+        buf.extend_from_slice(&fqdn);
+
+        buf.extend_from_slice(&pack_fqdn_compressed(self.mailbox.as_ref()
+            .ok_or_else(|| RRDataError("mailbox param was not set".to_string()))?, compression_data, off+2+fqdn.len()));
+
+        buf.extend_from_slice(&self.serial.to_be_bytes());
+        buf.extend_from_slice(&self.refresh.to_be_bytes());
+        buf.extend_from_slice(&self.retry.to_be_bytes());
+        buf.extend_from_slice(&self.expire.to_be_bytes());
+        buf.extend_from_slice(&self.minimum_ttl.to_be_bytes());
+
+        buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
+
+        Ok(buf)
+    }
+
+    fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
         let mut buf = vec![0u8; 2];
 
         let fqdn = pack_fqdn(self.fqdn.as_ref()
-            .ok_or_else(|| RRDataError("fqdn param was not set".to_string()))?, compression_data, off+2, true);
+            .ok_or_else(|| RRDataError("fqdn param was not set".to_string()))?);
         buf.extend_from_slice(&fqdn);
 
         buf.extend_from_slice(&pack_fqdn(self.mailbox.as_ref()
-            .ok_or_else(|| RRDataError("mailbox param was not set".to_string()))?, compression_data, off+2+fqdn.len(), true));
+            .ok_or_else(|| RRDataError("mailbox param was not set".to_string()))?));
 
         buf.extend_from_slice(&self.serial.to_be_bytes());
         buf.extend_from_slice(&self.refresh.to_be_bytes());
@@ -218,5 +239,5 @@ impl fmt::Display for SoaRRData {
 fn test() {
     let buf = vec![ 0x0, 0x34, 0x3, 0x6e, 0x73, 0x31, 0x5, 0x66, 0x69, 0x6e, 0x64, 0x39, 0x3, 0x6e, 0x65, 0x74, 0x0, 0x5, 0x61, 0x64, 0x6d, 0x69, 0x6e, 0x5, 0x66, 0x69, 0x6e, 0x64, 0x39, 0x3, 0x6e, 0x65, 0x74, 0x0, 0x0, 0x0, 0x0, 0x4, 0x0, 0x9, 0x3a, 0x80, 0x0, 0x1, 0x51, 0x80, 0x0, 0x24, 0xea, 0x0, 0x0, 0x9, 0x3a, 0x80 ];
     let record = SoaRRData::from_bytes(&buf, 0).unwrap();
-    assert_eq!(buf, record.to_bytes(&mut HashMap::new(), 0).unwrap());
+    assert_eq!(buf, record.to_bytes().unwrap());
 }

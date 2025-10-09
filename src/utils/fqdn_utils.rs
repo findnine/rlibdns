@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-pub fn pack_fqdn(fqdn: &str, compression_data: &mut HashMap<String, usize>, off: usize, compress: bool) -> Vec<u8> {
+pub fn pack_fqdn_compressed(fqdn: &str, compression_data: &mut HashMap<String, usize>, off: usize) -> Vec<u8> {
     if fqdn.is_empty() {
         return vec![0x00];
     }
@@ -13,12 +13,10 @@ pub fn pack_fqdn(fqdn: &str, compression_data: &mut HashMap<String, usize>, off:
     for i in 0..parts.len() {
         let suffix = parts[i..].join(".");
 
-        if compress {
-            if let Some(&ptr) = compression_data.get(&suffix) {
-                buf.push(0xC0 | ((ptr >> 8) as u8 & 0x3F));
-                buf.push((ptr & 0xFF) as u8);
-                return buf;
-            }
+        if let Some(&ptr) = compression_data.get(&suffix) {
+            buf.push(0xC0 | ((ptr >> 8) as u8 & 0x3F));
+            buf.push((ptr & 0xFF) as u8);
+            return buf;
         }
 
         let label_bytes = parts[i].as_bytes();
@@ -30,6 +28,26 @@ pub fn pack_fqdn(fqdn: &str, compression_data: &mut HashMap<String, usize>, off:
             compression_data.entry(suffix).or_insert(off);
         }
         off = off.saturating_add(label_bytes.len() + 1);
+    }
+
+    buf.push(0x00);
+    buf
+}
+
+pub fn pack_fqdn(fqdn: &str) -> Vec<u8> {
+    if fqdn.is_empty() {
+        return vec![0x00];
+    }
+
+    let mut buf = Vec::new();
+
+    let parts: Vec<&str> = fqdn.split('.').collect();
+
+    for i in 0..parts.len() {
+        let label_bytes = parts[i].as_bytes();
+        //assert!(label_bytes.len() <= 63, "label too long");
+        buf.push(label_bytes.len() as u8);
+        buf.extend_from_slice(label_bytes);
     }
 
     buf.push(0x00);

@@ -5,7 +5,7 @@ use std::fmt::Formatter;
 use std::str::FromStr;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
-use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
+use crate::utils::fqdn_utils::{pack_fqdn, pack_fqdn_compressed, unpack_fqdn};
 use crate::zone::inter::zone_rr_data::ZoneRRData;
 use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
 
@@ -75,11 +75,53 @@ impl RRData for NSecRRData {
         })
     }
 
-    fn to_bytes(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
+    fn to_bytes_compressed(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
+        let mut buf = vec![0u8; 2];
+
+        buf.extend_from_slice(&pack_fqdn_compressed(self.next_domain.as_ref()
+            .ok_or_else(|| RRDataError("mailbox param was not set".to_string()))?, compression_data, off+2));
+
+        let mut windows: Vec<Vec<u8>> = vec![Vec::new(); 256];
+
+        for _type in self.types.iter() {
+            let code = _type.get_code();
+            let w = (code >> 8) as usize;
+            let low = (code & 0xFF) as u8;
+            let byte_i = (low >> 3) as usize;
+            let bit_in_byte = 7 - (low & 0x07);
+
+            let bm = &mut windows[w];
+            if bm.len() <= byte_i {
+                bm.resize(byte_i + 1, 0);
+            }
+            bm[byte_i] |= 1 << bit_in_byte;
+        }
+
+
+        for (win, bm) in windows.into_iter().enumerate() {
+            let mut used = bm.len();
+            while used > 0 && bm[used - 1] == 0 {
+                used -= 1;
+            }
+            if used == 0 {
+                continue;
+            }
+
+            buf.push(win as u8);
+            buf.push(used as u8);
+            buf.extend_from_slice(&bm[..used]);
+        }
+
+        buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
+
+        Ok(buf)
+    }
+
+    fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
         let mut buf = vec![0u8; 2];
 
         buf.extend_from_slice(&pack_fqdn(self.next_domain.as_ref()
-            .ok_or_else(|| RRDataError("mailbox param was not set".to_string()))?, compression_data, off+2, true));
+            .ok_or_else(|| RRDataError("mailbox param was not set".to_string()))?));
 
         let mut windows: Vec<Vec<u8>> = vec![Vec::new(); 256];
 
@@ -200,5 +242,5 @@ impl fmt::Display for NSecRRData {
 fn test() {
     let buf = vec![ 0x0, 0x1b, 0x1, 0x0, 0x5, 0x66, 0x69, 0x6e, 0x64, 0x39, 0x3, 0x6e, 0x65, 0x74, 0x0, 0x0, 0x9, 0x62, 0x5, 0x80, 0xc, 0x54, 0xb, 0x8d, 0x1c, 0xc0, 0x1, 0x1, 0xc0 ];
     let record = NSecRRData::from_bytes(&buf, 0).unwrap();
-    assert_eq!(buf, record.to_bytes(&mut HashMap::new(), 0).unwrap());
+    assert_eq!(buf, record.to_bytes().unwrap());
 }

@@ -4,7 +4,7 @@ use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
-use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
+use crate::utils::fqdn_utils::{pack_fqdn, pack_fqdn_compressed, unpack_fqdn};
 use crate::utils::octal;
 use crate::zone::inter::zone_rr_data::ZoneRRData;
 use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
@@ -43,11 +43,24 @@ impl RRData for ChARRData {
         })
     }
 
-    fn to_bytes(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
+    fn to_bytes_compressed(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
+        let mut buf = vec![0u8; 2];
+
+        buf.extend_from_slice(&pack_fqdn_compressed(self.network.as_ref()
+            .ok_or_else(|| RRDataError("network param was not set".to_string()))?, compression_data, off+2));
+
+        buf.extend_from_slice(&self.address.to_be_bytes());
+
+        buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
+
+        Ok(buf)
+    }
+
+    fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
         let mut buf = vec![0u8; 2];
 
         buf.extend_from_slice(&pack_fqdn(self.network.as_ref()
-            .ok_or_else(|| RRDataError("network param was not set".to_string()))?, compression_data, off+2, true));
+            .ok_or_else(|| RRDataError("network param was not set".to_string()))?));
 
         buf.extend_from_slice(&self.address.to_be_bytes());
 
@@ -133,5 +146,5 @@ fn test() {
     let buf = vec![ 0x0, 0xb, 0x7, 0x43, 0x48, 0x2d, 0x41, 0x44, 0x44, 0x52, 0x0, 0x6, 0x61 ];
     let record = ChARRData::from_bytes(&buf, 0).unwrap();
     println!("{}", record);
-    assert_eq!(buf, record.to_bytes(&mut HashMap::new(), 0).unwrap());
+    assert_eq!(buf, record.to_bytes().unwrap());
 }

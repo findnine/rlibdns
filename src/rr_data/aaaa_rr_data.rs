@@ -44,7 +44,11 @@ impl RRData for AaaaRRData {
         })
     }
 
-    fn to_bytes(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RRDataError> {
+    fn to_bytes_compressed(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RRDataError> {
+        self.to_bytes()
+    }
+
+    fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
         let mut buf = vec![0u8; 18];
 
         buf.splice(2..18, self.address.ok_or_else(|| RRDataError("address param was not set".to_string()))?.octets().to_vec());
@@ -118,5 +122,5 @@ impl fmt::Display for AaaaRRData {
 fn test() {
     let buf = vec![ 0x0, 0x10, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1 ];
     let record = AaaaRRData::from_bytes(&buf, 0).unwrap();
-    assert_eq!(buf, record.to_bytes(&mut HashMap::new(), 0).unwrap());
+    assert_eq!(buf, record.to_bytes().unwrap());
 }

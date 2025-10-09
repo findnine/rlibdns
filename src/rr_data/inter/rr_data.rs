@@ -50,7 +50,9 @@ pub trait RRData: Display + Debug + Send + Sync {
 
     fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RRDataError> where Self: Sized;
 
-    fn to_bytes(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError>;
+    fn to_bytes_compressed(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError>;
+
+    fn to_bytes(&self) -> Result<Vec<u8>, RRDataError>;
 
     fn get_type(&self) -> RRTypes;
 

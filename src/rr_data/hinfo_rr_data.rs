@@ -44,7 +44,11 @@ impl RRData for HInfoRRData {
         })
     }
 
-    fn to_bytes(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RRDataError> {
+    fn to_bytes_compressed(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RRDataError> {
+        self.to_bytes()
+    }
+
+    fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
         let mut buf = vec![0u8; 2];
 
         let cpu = self.cpu.as_ref().unwrap().as_bytes();
@@ -135,5 +139,5 @@ impl fmt::Display for HInfoRRData {
 fn test() {
     let buf = vec![ 0x0, 0x5, 0x3, 0x41, 0x4d, 0x44, 0x0 ];
     let record = HInfoRRData::from_bytes(&buf, 0).unwrap();
-    assert_eq!(buf, record.to_bytes(&mut HashMap::new(), 0).unwrap());
+    assert_eq!(buf, record.to_bytes().unwrap());
 }

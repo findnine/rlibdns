@@ -60,7 +60,11 @@ impl RRData for DnsKeyRRData {
         })
     }
 
-    fn to_bytes(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RRDataError> {
+    fn to_bytes_compressed(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RRDataError> {
+        self.to_bytes()
+    }
+
+    fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
         let mut buf = vec![0u8; 6];
 
         buf.splice(2..4, self.flags.to_be_bytes());
@@ -171,5 +175,5 @@ impl fmt::Display for DnsKeyRRData {
 fn test() {
     let buf = vec![ ];
     let record = DnsKeyRRData::from_bytes(&buf, 0).unwrap();
-    assert_eq!(buf, record.to_bytes(&mut HashMap::new(), 0).unwrap());
+    assert_eq!(buf, record.to_bytes().unwrap());
 }

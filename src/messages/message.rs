@@ -9,7 +9,7 @@ use crate::rr_data::inter::rr_data::RRData;
 use crate::messages::rr_query::RRQuery;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::rr_data::opt_rr_data::OptRRData;
-use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
+use crate::utils::fqdn_utils::{pack_fqdn, pack_fqdn_compressed, unpack_fqdn};
 /*
                                1  1  1  1  1  1
  0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
@@ -152,7 +152,7 @@ impl Message {
         let mut truncated = false;
 
         for query in &self.queries {
-            let q = query.to_bytes(&mut compression_data, off);
+            let q = query.to_bytes_compressed(&mut compression_data, off);
             if off+q.len() > max_payload_len {
                 truncated = true;
                 break;
@@ -447,7 +447,7 @@ impl<'a> Iterator for WireIter<'a> {
         let mut truncated = false;
 
         for query in &self.message.queries {
-            let q = query.to_bytes(&mut compression_data, off);
+            let q = query.to_bytes_compressed(&mut compression_data, off);
             if off+q.len() > self.max_payload_len {
                 truncated = true;
                 break;
@@ -520,11 +520,11 @@ fn records_to_bytes(off: usize, section: &[MessageRecord], compression_data: &mu
     let mut off = off;
 
     for (fqdn, class, ttl, data) in section.iter() {
-        let fqdn = pack_fqdn(&fqdn, compression_data, off, true);
+        let fqdn = pack_fqdn_compressed(&fqdn, compression_data, off);
 
         off += fqdn.len()+8;
 
-        match data.to_bytes(compression_data, off) {
+        match data.to_bytes_compressed(compression_data, off) {
             Ok(r) => {
                 if off+r.len() > max_payload_len {
                     truncated = true;

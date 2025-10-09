@@ -4,7 +4,7 @@ use std::fmt::Formatter;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::messages::message::MessageError;
-use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
+use crate::utils::fqdn_utils::{pack_fqdn, pack_fqdn_compressed, unpack_fqdn};
 
 #[derive(Debug, Clone)]
 pub struct RRQuery {
@@ -38,8 +38,17 @@ impl RRQuery {
         })
     }
 
-    pub fn to_bytes(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Vec<u8> {
-        let mut buf = pack_fqdn(&self.fqdn, compression_data, off, true);
+    pub fn to_bytes_compressed(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Vec<u8> {
+        let mut buf = pack_fqdn_compressed(&self.fqdn, compression_data, off);
+
+        buf.extend_from_slice(&self._type.get_code().to_be_bytes());
+        buf.extend_from_slice(&self.class.get_code().to_be_bytes());
+
+        buf
+    }
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut buf = pack_fqdn(&self.fqdn);
 
         buf.extend_from_slice(&self._type.get_code().to_be_bytes());
         buf.extend_from_slice(&self.class.get_code().to_be_bytes());

@@ -7,7 +7,7 @@ use crate::messages::inter::rr_types::RRTypes;
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::rr_data::inter::svc_param::SvcParams;
 use crate::rr_data::inter::svc_param_keys::SvcParamKeys;
-use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
+use crate::utils::fqdn_utils::{pack_fqdn, pack_fqdn_compressed, unpack_fqdn};
 use crate::zone::inter::zone_rr_data::ZoneRRData;
 use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
 
@@ -62,13 +62,33 @@ impl RRData for HttpsRRData {
         })
     }
 
-    fn to_bytes(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
+    fn to_bytes_compressed(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
+        let mut buf = vec![0u8; 4];
+
+        buf.splice(2..4, self.priority.to_be_bytes());
+
+        buf.extend_from_slice(&pack_fqdn_compressed(self.target.as_ref()
+            .ok_or_else(|| RRDataError("target param was not set".to_string()))?.as_str(), compression_data, off+4));
+
+        for param in self.params.iter() {
+            buf.extend_from_slice(&param.get_code().to_be_bytes());
+            let param_buf = param.to_bytes();
+            buf.extend_from_slice(&(param_buf.len() as u16).to_be_bytes());
+            buf.extend_from_slice(&param_buf);
+        }
+
+        buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
+
+        Ok(buf)
+    }
+
+    fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
         let mut buf = vec![0u8; 4];
 
         buf.splice(2..4, self.priority.to_be_bytes());
 
         buf.extend_from_slice(&pack_fqdn(self.target.as_ref()
-            .ok_or_else(|| RRDataError("target param was not set".to_string()))?.as_str(), compression_data, off+4, true));
+            .ok_or_else(|| RRDataError("target param was not set".to_string()))?.as_str()));
 
         for param in self.params.iter() {
             buf.extend_from_slice(&param.get_code().to_be_bytes());
@@ -176,5 +196,5 @@ impl fmt::Display for HttpsRRData {
 fn test() {
     let buf = vec![ 0x0, 0x96, 0x0, 0x1, 0x3, 0x77, 0x77, 0x77, 0x5, 0x66, 0x69, 0x6e, 0x64, 0x39, 0x3, 0x6e, 0x65, 0x74, 0x0, 0x0, 0x1, 0x0, 0x6, 0x2, 0x68, 0x33, 0x2, 0x68, 0x32, 0x0, 0x4, 0x0, 0x8, 0x68, 0x15, 0x2a, 0x89, 0xac, 0x43, 0xce, 0x1c, 0x0, 0x5, 0x0, 0x47, 0x0, 0x45, 0xfe, 0xd, 0x0, 0x41, 0xda, 0x0, 0x20, 0x0, 0x20, 0xad, 0xee, 0x8b, 0x18, 0xce, 0xda, 0xba, 0x2b, 0x15, 0xe4, 0x6e, 0x16, 0x57, 0xc1, 0xf4, 0x91, 0x27, 0x41, 0xc0, 0xd8, 0xbf, 0x6, 0x22, 0x55, 0xa1, 0xd6, 0x80, 0x27, 0x63, 0x7e, 0x4e, 0x10, 0x0, 0x4, 0x0, 0x1, 0x0, 0x1, 0x0, 0x12, 0x63, 0x6c, 0x6f, 0x75, 0x64, 0x66, 0x6c, 0x61, 0x72, 0x65, 0x2d, 0x65, 0x63, 0x68, 0x2e, 0x63, 0x6f, 0x6d, 0x0, 0x0, 0x0, 0x6, 0x0, 0x20, 0x26, 0x6, 0x47, 0x0, 0x30, 0x30, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x68, 0x15, 0x2a, 0x89, 0x26, 0x6, 0x47, 0x0, 0x30, 0x35, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xac, 0x43, 0xce, 0x1c ];
     let record = HttpsRRData::from_bytes(&buf, 0).unwrap();
-    assert_eq!(buf, record.to_bytes(&mut HashMap::new(), 0).unwrap());
+    assert_eq!(buf, record.to_bytes().unwrap());
 }
