@@ -230,8 +230,7 @@ impl ZoneRecord for NaptrRecord {
             }
             3 => self.service = Some(value.to_string()),
             4 => self.regex = Some(value.to_string()),
-            5 => self.replacement = Some(value.strip_suffix('.')
-                .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, &format!("replacement param is not fully qualified (missing trailing dot) for record type {}", self.get_type())))?.to_string()),
+            5 => self.replacement = Some(value.to_string()),
             _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, &format!("extra record data found for record type {}", self.get_type())))
         })
     }

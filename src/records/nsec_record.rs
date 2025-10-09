@@ -78,7 +78,8 @@ impl RecordBase for NSecRecord {
     fn to_bytes(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RecordError> {
         let mut buf = vec![0u8; 2];
 
-        buf.extend_from_slice(&pack_fqdn(self.next_domain.as_ref().unwrap().as_str(), compression_data, off+2, true));
+        buf.extend_from_slice(&pack_fqdn(self.next_domain.as_ref()
+            .ok_or_else(|| RecordError("mailbox param was not set".to_string()))?, compression_data, off+2, true));
 
         let mut windows: Vec<Vec<u8>> = vec![Vec::new(); 256];
 

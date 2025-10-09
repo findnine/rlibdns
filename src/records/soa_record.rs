@@ -42,11 +42,11 @@ impl RecordBase for SoaRecord {
             return Ok(Default::default());
         }
 
-        let (fqdn, data_length) = unpack_fqdn(buf, off+2);
-        let mut off = off+data_length+2;
+        let (fqdn, fqdn_length) = unpack_fqdn(buf, off+2);
+        let mut off = off+fqdn_length+2;
 
-        let (mailbox, data_length) = unpack_fqdn(buf, off);
-        off += data_length;
+        let (mailbox, mailbox_length) = unpack_fqdn(buf, off);
+        off += mailbox_length;
 
         let serial = u32::from_be_bytes([buf[off], buf[off+1], buf[off+2], buf[off+3]]);
         let refresh = u32::from_be_bytes([buf[off+4], buf[off+5], buf[off+6], buf[off+7]]);
@@ -66,16 +66,14 @@ impl RecordBase for SoaRecord {
     }
 
     fn to_bytes(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RecordError> {
-        let mut off = off;
-
         let mut buf = vec![0u8; 2];
 
-        let fqdn = pack_fqdn(self.fqdn.as_ref().unwrap().as_str(), compression_data, off+2, true);
+        let fqdn = pack_fqdn(self.fqdn.as_ref()
+            .ok_or_else(|| RecordError("fqdn param was not set".to_string()))?, compression_data, off+2, true);
         buf.extend_from_slice(&fqdn);
 
-        off += fqdn.len()+8;
-
-        let mailbox = pack_fqdn(self.mailbox.as_ref().unwrap().as_str(), compression_data, off, true);
+        let mailbox = pack_fqdn(self.mailbox.as_ref()
+            .ok_or_else(|| RecordError("mailbox param was not set".to_string()))?, compression_data, off+2+fqdn.len(), true);
         buf.extend_from_slice(&mailbox);
 
         buf.extend_from_slice(&self.serial.to_be_bytes());
