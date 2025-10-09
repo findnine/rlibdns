@@ -7,7 +7,7 @@ use crate::journal::inter::txn_op_codes::TxnOpCodes;
 use crate::journal::txn::Txn;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
-use crate::records::inter::record_base::RecordBase;
+use crate::rr_data::inter::rr_data::RRData;
 use crate::utils::fqdn_utils::unpack_fqdn;
 
 #[derive(Default)]
@@ -228,9 +228,9 @@ impl JournalReader {
                 .map_err(|e| JournalReaderError::new(ErrorKind::ClassNotFound, &e.to_string()))?;
             let ttl = u32::from_be_bytes([buf[off+4], buf[off+5], buf[off+6], buf[off+7]]);
 
-            let record = <dyn RecordBase>::from_wire(_type, &class, &buf, off+8)
+            let data = <dyn RRData>::from_wire(_type, &class, &buf, off+8)
                 .map_err(|_| JournalReaderError::new(ErrorKind::TypeNotFound, &format!("record type {} not found", _type)))?;
-            txn.add_record(phase, &name, class, ttl, record);
+            txn.add_record(phase, &name, class, ttl, data);
         }
 
         Ok(Some(txn))

@@ -1,7 +1,7 @@
 use crate::journal::inter::txn_op_codes::TxnOpCodes;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::message::MessageRecord;
-use crate::records::inter::record_base::RecordBase;
+use crate::rr_data::inter::rr_data::RRData;
 
 #[derive(Default, Debug, Clone)]
 pub struct Txn {
@@ -36,7 +36,7 @@ impl Txn {
         self.serial_1
     }
 
-    pub fn add_record(&mut self, op_code: TxnOpCodes, query: &str, class: RRClasses, ttl: u32, record: Box<dyn RecordBase>) {
+    pub fn add_record(&mut self, op_code: TxnOpCodes, query: &str, class: RRClasses, ttl: u32, record: Box<dyn RRData>) {
         self.records[op_code as usize].push((query.to_string(), class, ttl, record));
     }
 

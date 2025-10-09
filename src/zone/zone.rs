@@ -3,7 +3,7 @@ use crate::journal::journal_reader::{JournalReader, JournalReaderError};
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::zone::rr_set::RRSet;
-use crate::records::inter::record_base::RecordBase;
+use crate::rr_data::inter::rr_data::RRData;
 use crate::utils::fqdn_utils::{decode_fqdn, encode_fqdn};
 use crate::utils::trie::trie::Trie;
 use crate::zone::inter::zone_types::ZoneTypes;
@@ -63,9 +63,9 @@ impl Zone {
         self._type.eq(&ZoneTypes::Master) || self._type.eq(&ZoneTypes::Slave)
     }
 
-    pub fn add_record(&mut self, query: &str, ttl: u32, record: Box<dyn RecordBase>) {
+    pub fn add_record(&mut self, query: &str, ttl: u32, data: Box<dyn RRData>) {
         let key = encode_fqdn(query);
-        let _type = record.get_type();
+        let _type = data.get_type();
 
         match self.sets.get_mut(&key) {
             Some(sets) => {
@@ -73,18 +73,18 @@ impl Zone {
                         .iter_mut()
                         .find(|s| s.get_type().eq(&_type)) {
                     Some(set) => {
-                        set.add_record(ttl, record);
+                        set.add_data(ttl, data);
                     }
                     None => {
                         let mut set = RRSet::new(_type, ttl);
-                        set.add_record(ttl, record);
+                        set.add_data(ttl, data);
                         sets.push(set);
                     }
                 }
             }
             None => {
                 let mut set = RRSet::new(_type, ttl);
-                set.add_record(ttl, record);
+                set.add_data(ttl, data);
                 self.sets.insert(key, vec![set]);
             }
         }
@@ -115,20 +115,20 @@ impl Zone {
         println!("REMOVE ALL RECORD");
     }
     /*
-    pub fn add_record(&mut self, name: &str, record: Box<dyn RecordBase>) {
+    pub fn add_record(&mut self, name: &str, record: Box<dyn RRData>) {
         let key = encode_fqdn(name);
-        match self.records.get_mut(&key) {
-            Some(records) => {
-                records.entry(record.get_type()).or_insert(Vec::new()).push(record);
+        match self.rr_data.get_mut(&key) {
+            Some(rr_data) => {
+                rr_data.entry(record.get_type()).or_insert(Vec::new()).push(record);
             }
             None => {
                 let mut rrmap = BTreeMap::new();
                 rrmap.insert(record.get_type(), vec![record]);
-                self.records.insert(key, rrmap);
+                self.rr_data.insert(key, rrmap);
             }
         }
 
-        //self.records
+        //self.rr_data
         //    .entry(name.to_string()).or_insert_with(IndexMap::new)
         //    .entry(record.get_type()).or_insert(Vec::new()).push(record);
 

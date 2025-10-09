@@ -1,11 +1,11 @@
 use crate::messages::inter::rr_types::RRTypes;
-use crate::records::inter::record_base::RecordBase;
+use crate::rr_data::inter::rr_data::RRData;
 
 #[derive(Debug, Clone)]
 pub struct RRSet {
     _type: RRTypes,
     ttl: u32,
-    records: Vec<Box<dyn RecordBase>>
+    data: Vec<Box<dyn RRData>>
 }
 
 impl RRSet {
@@ -14,7 +14,7 @@ impl RRSet {
         Self {
             _type,
             ttl,
-            records: Vec::new()
+            data: Vec::new()
         }
     }
 
@@ -34,19 +34,19 @@ impl RRSet {
         self.ttl
     }
 
-    pub fn add_record(&mut self, ttl: u32, record: Box<dyn RecordBase>) {
+    pub fn add_data(&mut self, ttl: u32, data: Box<dyn RRData>) {
         if self.ttl != ttl {
             self.ttl = self.ttl.min(ttl);
         }
 
-        self.records.push(record);
+        self.data.push(data);
     }
 
-    pub fn get_records(&self) -> &Vec<Box<dyn RecordBase>> {
-        &self.records
+    pub fn get_data(&self) -> &Vec<Box<dyn RRData>> {
+        &self.data
     }
 
-    pub fn total_records(&self) -> usize {
-        self.records.len()
+    pub fn total_data(&self) -> usize {
+        self.data.len()
     }
 }

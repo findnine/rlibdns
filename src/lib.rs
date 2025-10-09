@@ -1,5 +1,5 @@
 pub mod messages;
-pub mod records;
+pub mod rr_data;
 pub mod utils;
 pub mod zone;
 pub mod journal;

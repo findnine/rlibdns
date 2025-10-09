@@ -5,10 +5,10 @@ use std::net::SocketAddr;
 use crate::messages::inter::op_codes::OpCodes;
 use crate::messages::inter::response_codes::ResponseCodes;
 use crate::messages::inter::rr_classes::RRClasses;
-use crate::records::inter::record_base::RecordBase;
+use crate::rr_data::inter::rr_data::RRData;
 use crate::messages::rr_query::RRQuery;
 use crate::messages::inter::rr_types::RRTypes;
-use crate::records::opt_record::OptRecord;
+use crate::rr_data::opt_record::OptRecord;
 use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 /*
                                1  1  1  1  1  1
@@ -30,7 +30,7 @@ use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 
 pub const DNS_HEADER_LEN: usize = 12;
 
-pub type MessageRecord = (String, RRClasses, u32, Box<dyn RecordBase>);
+pub type MessageRecord = (String, RRClasses, u32, Box<dyn RRData>);
 
 #[derive(Debug, Clone)]
 pub struct Message {
@@ -303,8 +303,8 @@ impl Message {
         self.sections[index] = section;
     }
 
-    pub fn add_section(&mut self, index: usize, query: &str, class: RRClasses, ttl: u32, record: Box<dyn RecordBase>) {
-        self.sections[index].push((query.to_string(), class, ttl, record));
+    pub fn add_section(&mut self, index: usize, query: &str, class: RRClasses, ttl: u32, data: Box<dyn RRData>) {
+        self.sections[index].push((query.to_string(), class, ttl, data));
     }
 
     pub fn get_section(&self, index: usize) -> &Vec<MessageRecord> {
@@ -493,7 +493,7 @@ fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> Result<Vec<Mes
             RRTypes::TKey => {}
             RRTypes::TSig => {}
             RRTypes::Opt => {
-                let record = OptRecord::from_bytes(buf, *off+2).map_err(|e| MessageError::RecordError(e.to_string()))?;
+                let data = OptRecord::from_bytes(buf, *off+2).map_err(|e| MessageError::RecordError(e.to_string()))?;
                 *off += 5+u16::from_be_bytes([buf[*off+3], buf[*off+4]]) as usize;
             }
             _ => {
@@ -502,8 +502,8 @@ fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> Result<Vec<Mes
                 let class = RRClasses::try_from(class & 0x7FFF).map_err(|e| MessageError::RecordError(e.to_string()))?;
                 let ttl = u32::from_be_bytes([buf[*off+4], buf[*off+5], buf[*off+6], buf[*off+7]]);
 
-                let record = <dyn RecordBase>::from_wire(_type, &class, buf, *off+8).map_err(|e| MessageError::RecordError(e.to_string()))?;
-                section.push((fqdn, class, ttl, record));
+                let data = <dyn RRData>::from_wire(_type, &class, buf, *off+8).map_err(|e| MessageError::RecordError(e.to_string()))?;
+                section.push((fqdn, class, ttl, data));
                 *off += 10+u16::from_be_bytes([buf[*off+8], buf[*off+9]]) as usize;
             }
         }
@@ -519,12 +519,12 @@ fn records_to_bytes(off: usize, section: &[MessageRecord], compression_data: &mu
     let mut i = 0;
     let mut off = off;
 
-    for (fqdn, class, ttl, record) in section.iter() {
+    for (fqdn, class, ttl, data) in section.iter() {
         let fqdn = pack_fqdn(&fqdn, compression_data, off, true);
 
         off += fqdn.len()+8;
 
-        match record.to_bytes(compression_data, off) {
+        match data.to_bytes(compression_data, off) {
             Ok(r) => {
                 if off+r.len() > max_payload_len {
                     truncated = true;
@@ -532,7 +532,7 @@ fn records_to_bytes(off: usize, section: &[MessageRecord], compression_data: &mu
                 }
 
                 buf.extend_from_slice(&fqdn);
-                buf.extend_from_slice(&record.get_type().get_code().to_be_bytes());
+                buf.extend_from_slice(&data.get_type().get_code().to_be_bytes());
 
                 buf.extend_from_slice(&class.get_code().to_be_bytes());
                 buf.extend_from_slice(&ttl.to_be_bytes());
