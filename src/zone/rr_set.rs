@@ -43,9 +43,10 @@ impl RRSet {
         self.data.extend_from_slice(&data.to_bytes().unwrap());
     }
 
-    pub fn data(&self) -> RRSetIter {
+    pub fn data(&self/*, class: &RRClasses*/) -> RRSetIter {
         RRSetIter {
             set: self,
+            class: RRClasses::In,
             off: 0
         }
     }
@@ -57,6 +58,7 @@ impl RRSet {
 
 pub struct RRSetIter<'a> {
     set: &'a RRSet,
+    class: RRClasses,
     off: usize
 }
 
@@ -69,7 +71,7 @@ impl<'a> Iterator for RRSetIter<'a> {
             return None;
         }
 
-        let data = <dyn RRData>::from_wire(self.set._type, &RRClasses::In, &self.set.data[self.off..], 0).unwrap();
+        let data = <dyn RRData>::from_wire(self.set._type, &self.class, &self.set.data[self.off..], 0).unwrap();
         self.off += 2+u16::from_be_bytes([self.set.data[self.off], self.set.data[self.off+1]]) as usize;
 
         Some(data)

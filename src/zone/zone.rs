@@ -90,7 +90,7 @@ impl Zone {
         }
     }
 
-    pub fn remove_record(&mut self) {
+    pub fn remove_record(&mut self, query: &str, data: Box<dyn RRData>) {
         println!("REMOVE RECORD");
     }
 
