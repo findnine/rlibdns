@@ -43,6 +43,9 @@ impl RRSet {
         self.data.extend_from_slice(&data.to_bytes().unwrap());
     }
 
+    pub fn remove_data(&mut self, data: &Box<dyn RRData>) {
+    }
+
     pub fn data(&self/*, class: &RRClasses*/) -> RRSetIter {
         RRSetIter {
             set: self,
