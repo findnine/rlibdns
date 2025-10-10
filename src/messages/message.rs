@@ -594,15 +594,15 @@ pub fn compress_data(class: &RRClasses, _type: &RRTypes, data: Vec<u8>, compress
             //println!("{name}");
             let compressed_name = pack_fqdn_compressed(&name, compression_data, 2+off);
 
-            let mut buf = vec![0u8; 2];//data.len()+compressed_name.len()-consumed];
+            let mut buf = Vec::with_capacity(data.len()+compressed_name.len()-consumed);
+            buf.extend_from_slice(&((buf.capacity()-2) as u16).to_be_bytes());
+            //let mut buf = vec![0u8; 2];//data.len()+compressed_name.len()-consumed];
             //buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
             //buf.splice(2..compressed_name.len(), compressed_name);
             //buf.extend_from_slice(&data[2 + consumed..]);
             //buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
             buf.extend_from_slice(&compressed_name);
 
-
-            buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
 
             buf
         }
