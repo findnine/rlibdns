@@ -4,6 +4,7 @@ use crate::rr_data::inter::rr_data::RRData;
 
 #[derive(Debug, Clone)]
 pub struct RRSet {
+    class: RRClasses,
     _type: RRTypes,
     ttl: u32,
     data: Vec<u8>
@@ -11,8 +12,9 @@ pub struct RRSet {
 
 impl RRSet {
 
-    pub fn new(_type: RRTypes, ttl: u32) -> Self {
+    pub fn new(class: RRClasses, _type: RRTypes, ttl: u32) -> Self {
         Self {
+            class,
             _type,
             ttl,
             data: Vec::new()
@@ -46,10 +48,9 @@ impl RRSet {
     pub fn remove_data(&mut self, data: &Box<dyn RRData>) {
     }
 
-    pub fn data(&self/*, class: &RRClasses*/) -> RRSetIter {
+    pub fn data(&self) -> RRSetIter {
         RRSetIter {
             set: self,
-            class: RRClasses::In,
             off: 0
         }
     }
@@ -61,7 +62,6 @@ impl RRSet {
 
 pub struct RRSetIter<'a> {
     set: &'a RRSet,
-    class: RRClasses,
     off: usize
 }
 
@@ -74,7 +74,7 @@ impl<'a> Iterator for RRSetIter<'a> {
             return None;
         }
 
-        let data = <dyn RRData>::from_wire(self.set._type, &self.class, &self.set.data[self.off..], 0).unwrap();
+        let data = <dyn RRData>::from_wire(self.set._type, &self.set.class, &self.set.data[self.off..], 0).unwrap();
         self.off += 2+u16::from_be_bytes([self.set.data[self.off], self.set.data[self.off+1]]) as usize;
 
         Some(data)
