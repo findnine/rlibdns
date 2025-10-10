@@ -85,35 +85,8 @@ impl RRData for NaptrRRData {
         })
     }
 
-    fn to_bytes_compressed(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = vec![0u8; 6];
-
-        buf.splice(2..4, self.order.to_be_bytes());
-        buf.splice(4..6, self.preference.to_be_bytes());
-
-        let length = self.flags.len();
-        buf.push(((length * 2) - 1) as u8);
-        for (i, flag) in self.flags.iter().enumerate() {
-            buf.push(flag.get_code());
-            if i < length - 1 {
-                buf.push(b',');
-            }
-        }
-
-        let service = self.service.as_ref().ok_or_else(|| RRDataError("service param was not set".to_string()))?.as_bytes();
-        buf.push(service.len() as u8);
-        buf.extend_from_slice(service);
-
-        let regex = self.regex.as_ref().ok_or_else(|| RRDataError("regex param was not set".to_string()))?.as_bytes();
-        buf.push(regex.len() as u8);
-        buf.extend_from_slice(regex);
-
-        buf.extend_from_slice(&pack_fqdn_compressed(self.replacement.as_ref()
-            .ok_or_else(|| RRDataError("replacement param was not set".to_string()))?, compression_data, off+buf.len()));
-
-        buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
-
-        Ok(buf)
+    fn to_bytes_compressed(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RRDataError> {
+        self.to_bytes()
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
