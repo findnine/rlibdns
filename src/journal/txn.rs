@@ -37,7 +37,7 @@ impl Txn {
     }
 
     pub fn add_record(&mut self, op_code: TxnOpCodes, query: &str, class: RRClasses, ttl: u32, record: Box<dyn RRData>) {
-        self.records[op_code as usize].push((query.to_string(), class, ttl, record));
+        //self.records[op_code as usize].push((query.to_string(), class, ttl, record));
     }
 
     pub fn get_records(&self, op_code: TxnOpCodes) -> &Vec<MessageRecord> {

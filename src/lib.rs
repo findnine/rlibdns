@@ -6,8 +6,10 @@ pub mod journal;
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
     use crate::messages::inter::rr_classes::RRClasses;
-    use crate::messages::message::Message;
+    use crate::messages::inter::rr_types::RRTypes;
+    use crate::messages::message::{compress_data, Message};
     use crate::zone::zone_store::ZoneStore;
 
 
@@ -90,6 +92,25 @@ mod tests {
     fn parsing() {
         let mut store = ZoneStore::new();
         store.open("/home/brad/Downloads/find9.net.test.zone", "find9.net", RRClasses::In).unwrap();
+
+
+        let (apex, zone) = store.get_deepest_zone("x1.find9.net", &RRClasses::In).unwrap();
+        let set = zone.get_set("www", &RRTypes::CName).unwrap();
+
+        let mut compression_data = HashMap::new();
+
+        for data in set.data() {
+            println!("{}", data);
+
+            let buf = data.to_bytes().unwrap();
+            println!("UC {:x?}", buf);
+
+            let buf = compress_data(&RRClasses::In, &RRTypes::CName, buf, &mut compression_data, 0);
+            println!("C {:x?}", buf);
+
+            println!("");
+        }
+
 
         //println!("{:?}", store.get_deepest_zone("x1.find9.net"));
         //println!("{:?}", store.get_deepest_zone_with_name("find9.net"));

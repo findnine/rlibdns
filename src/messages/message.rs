@@ -8,7 +8,6 @@ use crate::messages::inter::rr_classes::RRClasses;
 use crate::rr_data::inter::rr_data::RRData;
 use crate::messages::rr_query::RRQuery;
 use crate::messages::inter::rr_types::RRTypes;
-use crate::messages::message_record::MessageRecord;
 use crate::rr_data::opt_rr_data::OptRRData;
 use crate::utils::fqdn_utils::{pack_fqdn, pack_fqdn_compressed, unpack_fqdn};
 /*
@@ -28,6 +27,7 @@ use crate::utils::fqdn_utils::{pack_fqdn, pack_fqdn_compressed, unpack_fqdn};
 |                    ARCOUNT                    |
 +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 */
+pub type MessageRecord = (String, RRClasses, RRTypes, u32, Vec<u8>);
 
 pub const DNS_HEADER_LEN: usize = 12;
 
@@ -303,7 +303,7 @@ impl Message {
     }
 
     pub fn add_section(&mut self, index: usize, query: &str, class: RRClasses, ttl: u32, data: Box<dyn RRData>) {
-        self.sections[index].push((query.to_string(), class, ttl, data));
+        self.sections[index].push((query.to_string(), class, data.get_type(), ttl, data.to_bytes().unwrap()));
     }
 
     pub fn get_section(&self, index: usize) -> &Vec<MessageRecord> {
@@ -504,7 +504,7 @@ fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> Result<Vec<Mes
                 let ttl = u32::from_be_bytes([buf[*off+4], buf[*off+5], buf[*off+6], buf[*off+7]]);
 
                 let data = <dyn RRData>::from_wire(_type, &class, buf, *off+8).map_err(|e| MessageError::RecordError(e.to_string()))?;
-                section.push((fqdn, class, ttl, data));
+                section.push((fqdn, class, _type, ttl, data.to_bytes().unwrap()));
                 *off += 10+u16::from_be_bytes([buf[*off+8], buf[*off+9]]) as usize;
             }
         }
@@ -520,12 +520,30 @@ fn records_to_bytes(off: usize, section: &[MessageRecord], compression_data: &mu
     let mut i = 0;
     let mut off = off;
 
-    for record in section.iter() {
-        let fqdn = pack_fqdn_compressed(&record.get_fqdn(), compression_data, off);
+    for (fqdn, class, _type, ttl, data) in section.iter() {
+        let fqdn = pack_fqdn_compressed(&fqdn, compression_data, off);
 
         off += fqdn.len()+8;
 
-        match record.get_data_compressed(compression_data, off) {
+        let r = compress_data(class, _type, data.clone(), compression_data, off);
+
+        if off+r.len() > max_payload_len {
+            truncated = true;
+            break;
+        }
+
+        buf.extend_from_slice(&fqdn);
+        buf.extend_from_slice(&_type.get_code().to_be_bytes());
+
+        buf.extend_from_slice(&class.get_code().to_be_bytes());
+        buf.extend_from_slice(&ttl.to_be_bytes());
+
+        buf.extend_from_slice(&r);
+        off += r.len();
+        i += 1;
+
+        //match record.get_data_compressed(compression_data, off) {
+            /*
             Ok(r) => {
                 if off+r.len() > max_payload_len {
                     truncated = true;
@@ -533,7 +551,7 @@ fn records_to_bytes(off: usize, section: &[MessageRecord], compression_data: &mu
                 }
 
                 buf.extend_from_slice(&fqdn);
-                buf.extend_from_slice(&data.get_type().get_code().to_be_bytes());
+                buf.extend_from_slice(&record.get_type().get_code().to_be_bytes());
 
                 buf.extend_from_slice(&record.get_class().get_code().to_be_bytes());
                 buf.extend_from_slice(&record.get_ttl().to_be_bytes());
@@ -543,8 +561,82 @@ fn records_to_bytes(off: usize, section: &[MessageRecord], compression_data: &mu
                 i += 1;
             }
             Err(_) => continue
-        }
+            */
+        //}
     }
 
     (buf, i, truncated)
+}
+
+
+
+pub fn compress_data(class: &RRClasses, _type: &RRTypes, data: Vec<u8>, compression_data: &mut HashMap<String, usize>, off: usize) -> Vec<u8> {
+    match _type {
+        RRTypes::A => {
+            match class {
+                RRClasses::Ch => {
+                    let (name, consumed) = unpack_fqdn(&data[2..], 0);
+                    let compressed_name = pack_fqdn_compressed(&name, compression_data, 2+off);
+
+                    let mut buf = Vec::with_capacity(data.len()+compressed_name.len()-consumed);
+                    //buf.extend_from_slice(&self.data[2..]);
+                    buf.extend_from_slice(&compressed_name);
+                    buf.extend_from_slice(&data[2 + consumed..]);
+                    buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
+
+                    buf
+                }
+                _ => data
+            }
+        }
+        RRTypes::Ns | RRTypes::CName | RRTypes::Ptr | RRTypes::NSec | RRTypes::TKey | RRTypes::TSig => {
+            let (name, consumed) = unpack_fqdn(&data[2..], 0);
+            //println!("{name}");
+            let compressed_name = pack_fqdn_compressed(&name, compression_data, 2+off);
+
+            let mut buf = vec![0u8; 2];//data.len()+compressed_name.len()-consumed];
+            //buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
+            //buf.splice(2..compressed_name.len(), compressed_name);
+            //buf.extend_from_slice(&data[2 + consumed..]);
+            //buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
+            buf.extend_from_slice(&compressed_name);
+
+
+            buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
+
+            buf
+        }
+        /*
+        RRTypes::Soa => {
+            /.*
+            let (name, consumed) = unpack_fqdn(&self.data[2..], 0);
+            let (mailbox, consumed) = unpack_fqdn(&self.data[2..], 0);
+
+            let compressed_name = pack_fqdn_compressed(&name, compression_data, 2+off);
+
+            let mut buf = Vec::with_capacity(self.data.len()+compressed_name.len()-consumed);
+            buf.extend_from_slice(&((buf.len()-2) as u16).to_be_bytes());
+            //buf.extend_from_slice(&self.data[2..]);
+            buf.extend_from_slice(&compressed_name);
+            buf.extend_from_slice(&self.data[2 + consumed..]);
+
+            &buf
+            *./
+        }
+        RRTypes::Mx => {
+
+        }
+        RRTypes::Srv => {
+
+        }
+        RRTypes::RRSig => {
+
+        }
+
+        RRTypes::Svcb | RRTypes::Https => {
+
+        }
+        */
+        _ => data
+    }
 }
