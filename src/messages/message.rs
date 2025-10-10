@@ -8,6 +8,7 @@ use crate::messages::inter::rr_classes::RRClasses;
 use crate::rr_data::inter::rr_data::RRData;
 use crate::messages::rr_query::RRQuery;
 use crate::messages::inter::rr_types::RRTypes;
+use crate::messages::message_record::MessageRecord;
 use crate::rr_data::opt_rr_data::OptRRData;
 use crate::utils::fqdn_utils::{pack_fqdn, pack_fqdn_compressed, unpack_fqdn};
 /*
@@ -29,8 +30,6 @@ use crate::utils::fqdn_utils::{pack_fqdn, pack_fqdn_compressed, unpack_fqdn};
 */
 
 pub const DNS_HEADER_LEN: usize = 12;
-
-pub type MessageRecord = (String, RRClasses, u32, Box<dyn RRData>);
 
 #[derive(Debug, Clone)]
 pub struct Message {
@@ -380,6 +379,7 @@ impl fmt::Display for Message {
             writeln!(f, ";{}", q)?;
         }
 
+        /*
         if !self.sections[0].is_empty() {
             writeln!(f, "\r\n;; ANSWER SECTION:")?;
 
@@ -403,6 +403,7 @@ impl fmt::Display for Message {
                 writeln!(f, "{:<24}{:<8}{:<8}{}", format!("{}.", fqdn), ttl, class.to_string(), record)?;
             }
         }
+        */
 
         Ok(())
     }
@@ -519,12 +520,12 @@ fn records_to_bytes(off: usize, section: &[MessageRecord], compression_data: &mu
     let mut i = 0;
     let mut off = off;
 
-    for (fqdn, class, ttl, data) in section.iter() {
-        let fqdn = pack_fqdn_compressed(&fqdn, compression_data, off);
+    for record in section.iter() {
+        let fqdn = pack_fqdn_compressed(&record.get_fqdn(), compression_data, off);
 
         off += fqdn.len()+8;
 
-        match data.to_bytes_compressed(compression_data, off) {
+        match record.get_data_compressed(compression_data, off) {
             Ok(r) => {
                 if off+r.len() > max_payload_len {
                     truncated = true;
@@ -534,8 +535,8 @@ fn records_to_bytes(off: usize, section: &[MessageRecord], compression_data: &mu
                 buf.extend_from_slice(&fqdn);
                 buf.extend_from_slice(&data.get_type().get_code().to_be_bytes());
 
-                buf.extend_from_slice(&class.get_code().to_be_bytes());
-                buf.extend_from_slice(&ttl.to_be_bytes());
+                buf.extend_from_slice(&record.get_class().get_code().to_be_bytes());
+                buf.extend_from_slice(&record.get_ttl().to_be_bytes());
 
                 buf.extend_from_slice(&r);
                 off += r.len();
