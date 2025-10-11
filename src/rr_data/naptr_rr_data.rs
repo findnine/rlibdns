@@ -5,11 +5,11 @@ use std::fmt::Formatter;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::rr_data::inter::naptr_flags::NaptrFlags;
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
-use crate::utils::fqdn_utils::{pack_fqdn, pack_fqdn_compressed, unpack_fqdn};
+use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 use crate::zone::inter::zone_rr_data::ZoneRRData;
 use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct NaptrRRData {
     order: u16,
     preference: u16,
@@ -138,6 +138,10 @@ impl RRData for NaptrRRData {
 
     fn clone_box(&self) -> Box<dyn RRData> {
         Box::new(self.clone())
+    }
+
+    fn eq_box(&self, other: &dyn RRData) -> bool {
+        other.as_any().downcast_ref::<Self>().map_or(false, |o| self == o)
     }
 }
 

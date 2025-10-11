@@ -8,7 +8,7 @@ use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::utils::base64;
 use crate::utils::fqdn_utils::{pack_fqdn, pack_fqdn_compressed, unpack_fqdn};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct TKeyRRData {
     class: RRClasses,
     ttl: u32,
@@ -145,6 +145,10 @@ impl RRData for TKeyRRData {
 
     fn clone_box(&self) -> Box<dyn RRData> {
         Box::new(self.clone())
+    }
+
+    fn eq_box(&self, other: &dyn RRData) -> bool {
+        other.as_any().downcast_ref::<Self>().map_or(false, |o| self == o)
     }
 }
 

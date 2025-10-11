@@ -45,7 +45,12 @@ impl RRSet {
         self.data.push(data);
     }
 
-    pub fn remove_data(&mut self, data: &Box<dyn RRData>) {
+    pub fn remove_data(&mut self, data: &Box<dyn RRData>) -> Option<Box<dyn RRData>> {
+        if let Some(i) = self.data.iter().position(|b| b.eq(data)) {
+            return Some(self.data.remove(i));
+        }
+
+        None
     }
 
     pub fn get_data(&self) -> &Vec<Box<dyn RRData>> {

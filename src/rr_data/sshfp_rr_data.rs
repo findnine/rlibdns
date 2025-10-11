@@ -9,7 +9,7 @@ use crate::utils::hex;
 use crate::zone::inter::zone_rr_data::ZoneRRData;
 use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SshFpRRData {
     class: RRClasses,
     ttl: u32,
@@ -91,6 +91,10 @@ impl RRData for SshFpRRData {
 
     fn clone_box(&self) -> Box<dyn RRData> {
         Box::new(self.clone())
+    }
+
+    fn eq_box(&self, other: &dyn RRData) -> bool {
+        other.as_any().downcast_ref::<Self>().map_or(false, |o| self == o)
     }
 }
 

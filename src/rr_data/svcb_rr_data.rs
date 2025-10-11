@@ -11,7 +11,7 @@ use crate::utils::fqdn_utils::{pack_fqdn, pack_fqdn_compressed, unpack_fqdn};
 use crate::zone::inter::zone_rr_data::ZoneRRData;
 use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SvcbRRData {
     priority: u16,
     target: Option<String>,
@@ -120,6 +120,10 @@ impl RRData for SvcbRRData {
 
     fn clone_box(&self) -> Box<dyn RRData> {
         Box::new(self.clone())
+    }
+
+    fn eq_box(&self, other: &dyn RRData) -> bool {
+        other.as_any().downcast_ref::<Self>().map_or(false, |o| self == o)
     }
 }
 

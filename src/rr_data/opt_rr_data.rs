@@ -9,13 +9,13 @@ use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::utils::hex;
 use crate::utils::index_map::IndexMap;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct OptRRData {
     payload_size: u16,
     ext_rcode: u8,
     version: u8,
     flags: u16,
-    options: IndexMap<OptCodes, Vec<u8>>
+    //options: IndexMap<OptCodes, Vec<u8>>
 }
 
 impl Default for OptRRData {
@@ -26,7 +26,7 @@ impl Default for OptRRData {
             ext_rcode: 0,
             version: 0,
             flags: 0x8000,
-            options: IndexMap::new()
+            //options: IndexMap::new()
         }
     }
 }
@@ -56,7 +56,7 @@ impl RRData for OptRRData {
             ext_rcode,
             version,
             flags,
-            options
+            //options
         })
     }
 
@@ -73,13 +73,13 @@ impl RRData for OptRRData {
         buf[3] = self.version;
 
         buf.splice(4..6, self.flags.to_be_bytes());
-
+/*
         for (code, option) in self.options.iter() {
             buf.extend_from_slice(&code.get_code().to_be_bytes());
             buf.extend_from_slice(&(option.len() as u16).to_be_bytes());
             buf.extend_from_slice(&option);
         }
-
+*/
         buf.splice(6..8, ((buf.len()-8) as u16).to_be_bytes());
 
         Ok(buf)
@@ -104,6 +104,10 @@ impl RRData for OptRRData {
     fn clone_box(&self) -> Box<dyn RRData> {
         Box::new(self.clone())
     }
+
+    fn eq_box(&self, other: &dyn RRData) -> bool {
+        other.as_any().downcast_ref::<Self>().map_or(false, |o| self == o)
+    }
 }
 
 impl OptRRData {
@@ -114,7 +118,7 @@ impl OptRRData {
             ext_rcode,
             version,
             flags,
-            options
+            //options
         }
     }
 
@@ -149,7 +153,7 @@ impl OptRRData {
     pub fn get_flags(&self) -> u16 {
         self.flags
     }
-
+/*
     pub fn has_option(&mut self, code: &OptCodes) -> bool {
         self.options.contains_key(code)
     }
@@ -172,14 +176,14 @@ impl OptRRData {
 
     pub fn get_options_mut(&mut self) -> impl Iterator<Item = (&OptCodes, &mut Vec<u8>)> {
         self.options.iter_mut()
-    }
+    }*/
 }
 
 impl fmt::Display for OptRRData {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "; EDNS: version: {}, flags: {}; udp: {}", self.version, self.flags, self.payload_size)?;
-
+/*
         for (code, option) in self.options.iter() {
             match code {
                 OptCodes::Ecs => {
@@ -203,7 +207,7 @@ impl fmt::Display for OptRRData {
                 }
                 _ => write!(f, "\r\n; {code}: {}", hex::encode(option))?
             }
-        }
+        }*/
 
         Ok(())
     }

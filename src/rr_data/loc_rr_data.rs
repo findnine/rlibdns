@@ -8,7 +8,7 @@ use crate::utils::coord_utils::{encode_loc_precision, CoordUtils};
 use crate::zone::inter::zone_rr_data::ZoneRRData;
 use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct LocRRData {
     version: u8,
     size: u8,
@@ -99,6 +99,10 @@ impl RRData for LocRRData {
 
     fn clone_box(&self) -> Box<dyn RRData> {
         Box::new(self.clone())
+    }
+
+    fn eq_box(&self, other: &dyn RRData) -> bool {
+        other.as_any().downcast_ref::<Self>().map_or(false, |o| self == o)
     }
 }
 

@@ -63,6 +63,8 @@ pub trait RRData: Display + Debug + Send + Sync {
     fn as_any_mut(&mut self) -> &mut dyn Any;
     
     fn clone_box(&self) -> Box<dyn RRData>;
+
+    fn eq_box(&self, other: &dyn RRData) -> bool;
 }
 
 impl Clone for Box<dyn RRData> {
@@ -71,6 +73,14 @@ impl Clone for Box<dyn RRData> {
         self.clone_box()
     }
 }
+
+impl PartialEq for dyn RRData {
+
+    fn eq(&self, other: &Self) -> bool {
+        self.eq_box(other)
+    }
+}
+impl Eq for dyn RRData {}
 
 impl dyn RRData {
 
