@@ -1,10 +1,9 @@
 use std::any::Any;
-use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
-use crate::utils::fqdn_utils::{pack_fqdn, pack_fqdn_compressed, unpack_fqdn};
+use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 use crate::zone::inter::zone_rr_data::ZoneRRData;
 use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
 
@@ -40,19 +39,6 @@ impl RRData for MxRRData {
             priority,
             server: Some(server)
         })
-    }
-
-    fn to_bytes_compressed(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = vec![0u8; 4];
-
-        buf.splice(2..4, self.priority.to_be_bytes());
-
-        buf.extend_from_slice(&pack_fqdn_compressed(self.server.as_ref()
-            .ok_or_else(|| RRDataError("server param was not set".to_string()))?, compression_data, off+4));
-
-        buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
-
-        Ok(buf)
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {

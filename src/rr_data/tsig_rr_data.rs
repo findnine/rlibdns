@@ -1,11 +1,10 @@
 use std::any::Any;
-use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
-use crate::utils::fqdn_utils::{pack_fqdn, pack_fqdn_compressed, unpack_fqdn};
+use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 use crate::utils::hex;
 
 #[derive(Clone, Debug)]
@@ -80,38 +79,6 @@ impl RRData for TSigRRData {
             error,
             data
         })
-    }
-
-    fn to_bytes_compressed(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = vec![0u8; 8];
-
-        buf.splice(0..2, self.class.get_code().to_be_bytes());
-        buf.splice(2..6, self.ttl.to_be_bytes());
-
-        buf.extend_from_slice(&pack_fqdn_compressed(self.algorithm_name.as_ref().unwrap().as_str(), compression_data, off+8)); //PROBABLY NO COMPRESS
-
-        buf.extend_from_slice(&[
-            ((self.time_signed >> 40) & 0xFF) as u8,
-            ((self.time_signed >> 32) & 0xFF) as u8,
-            ((self.time_signed >> 24) & 0xFF) as u8,
-            ((self.time_signed >> 16) & 0xFF) as u8,
-            ((self.time_signed >>  8) & 0xFF) as u8,
-            ( self.time_signed        & 0xFF) as u8
-        ]);
-        buf.extend_from_slice(&self.fudge.to_be_bytes());
-
-        buf.extend_from_slice(&(self.mac.len() as u16).to_be_bytes());
-        buf.extend_from_slice(&self.mac);
-
-        buf.extend_from_slice(&self.original_id.to_be_bytes());
-        buf.extend_from_slice(&self.error.to_be_bytes());
-
-        buf.extend_from_slice(&(self.data.len() as u16).to_be_bytes());
-        buf.extend_from_slice(&self.data);
-
-        buf.splice(6..8, ((buf.len()-8) as u16).to_be_bytes());
-
-        Ok(buf)
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {

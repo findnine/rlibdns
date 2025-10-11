@@ -1,5 +1,4 @@
 use std::any::Any;
-use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use std::str::FromStr;
@@ -7,7 +6,7 @@ use crate::messages::inter::rr_types::RRTypes;
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::rr_data::inter::svc_param::SvcParams;
 use crate::rr_data::inter::svc_param_keys::SvcParamKeys;
-use crate::utils::fqdn_utils::{pack_fqdn, pack_fqdn_compressed, unpack_fqdn};
+use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 use crate::zone::inter::zone_rr_data::ZoneRRData;
 use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
 
@@ -60,26 +59,6 @@ impl RRData for SvcbRRData {
             target: Some(target),
             params
         })
-    }
-
-    fn to_bytes_compressed(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = vec![0u8; 4];
-
-        buf.splice(2..4, self.priority.to_be_bytes());
-
-        buf.extend_from_slice(&pack_fqdn_compressed(self.target.as_ref()
-            .ok_or_else(|| RRDataError("target param was not set".to_string()))?.as_str(), compression_data, off+4));
-
-        for param in self.params.iter() {
-            buf.extend_from_slice(&param.get_code().to_be_bytes());
-            let param_buf = param.to_bytes();
-            buf.extend_from_slice(&(param_buf.len() as u16).to_be_bytes());
-            buf.extend_from_slice(&param_buf);
-        }
-
-        buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
-
-        Ok(buf)
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {

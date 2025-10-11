@@ -1,11 +1,10 @@
 use std::any::Any;
-use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use std::str::FromStr;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
-use crate::utils::fqdn_utils::{pack_fqdn, pack_fqdn_compressed, unpack_fqdn};
+use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 use crate::utils::base64;
 use crate::utils::time_utils::TimeUtils;
 use crate::zone::inter::zone_rr_data::ZoneRRData;
@@ -77,30 +76,6 @@ impl RRData for RRSigRRData {
             signer_name: Some(signer_name),
             signature
         })
-    }
-
-    fn to_bytes_compressed(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = vec![0u8; 20];
-
-        buf.splice(2..4, self.type_covered.as_ref()
-            .ok_or_else(|| RRDataError("type_covered param was not set".to_string()))?.get_code().to_be_bytes());
-
-        buf[4] = self.algorithm;
-        buf[5] = self.labels;
-
-        buf.splice(6..10, self.original_ttl.to_be_bytes());
-        buf.splice(10..14, self.expiration.to_be_bytes());
-        buf.splice(14..18, self.inception.to_be_bytes());
-        buf.splice(18..20, self.key_tag.to_be_bytes());
-
-        buf.extend_from_slice(&pack_fqdn_compressed(self.signer_name.as_ref()
-            .ok_or_else(|| RRDataError("signer_name param was not set".to_string()))?, compression_data, off+22));
-
-        buf.extend_from_slice(&self.signature);
-
-        buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
-
-        Ok(buf)
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {

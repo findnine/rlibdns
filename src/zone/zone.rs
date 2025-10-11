@@ -76,14 +76,14 @@ impl Zone {
                         set.add_data(ttl, data);
                     }
                     None => {
-                        let mut set = RRSet::new(self.class, _type, ttl);
+                        let mut set = RRSet::new(_type, ttl);
                         set.add_data(ttl, data);
                         sets.push(set);
                     }
                 }
             }
             None => {
-                let mut set = RRSet::new(self.class, _type, ttl);
+                let mut set = RRSet::new(_type, ttl);
                 set.add_data(ttl, data);
                 self.sets.insert(key, vec![set]);
             }
