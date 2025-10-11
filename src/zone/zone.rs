@@ -72,9 +72,7 @@ impl Zone {
                 match sets
                         .iter_mut()
                         .find(|s| s.get_type().eq(&_type)) {
-                    Some(set) => {
-                        set.add_data(ttl, data);
-                    }
+                    Some(set) => set.add_data(ttl, data),
                     None => {
                         let mut set = RRSet::new(_type, ttl);
                         set.add_data(ttl, data);
@@ -90,7 +88,7 @@ impl Zone {
         }
     }
 
-    pub fn remove_record(&mut self, query: &str, data: &Box<dyn RRData>) -> bool {
+    pub fn remove_record(&mut self, query: &str, data: &Box<dyn RRData>, min_records: usize) -> bool {
         let key = encode_fqdn(query);
         let _type = data.get_type();
 
@@ -99,9 +97,7 @@ impl Zone {
                 match sets
                     .iter_mut()
                     .find(|s| s.get_type().eq(&_type)) {
-                    Some(set) => {
-                        set.remove_data(&data)
-                    }
+                    Some(set) => set.remove_data(&data, min_records),
                     None => false
                 }
             }

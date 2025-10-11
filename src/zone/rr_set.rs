@@ -43,8 +43,13 @@ impl RRSet {
         self.data.push(data);
     }
 
-    pub fn remove_data(&mut self, data: &Box<dyn RRData>) -> bool {
+    pub fn remove_data(&mut self, data: &Box<dyn RRData>, min_records: usize) -> bool {
+        if self.data.len() <= min_records {
+            return false;
+        }
+
         if let Some(i) = self.data.iter().position(|b| b.eq(data)) {
+            self.data.remove(i);
             return true;
         }
 
