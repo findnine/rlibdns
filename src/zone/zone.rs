@@ -90,8 +90,23 @@ impl Zone {
         }
     }
 
-    pub fn remove_record(&mut self, query: &str, data: Box<dyn RRData>) {
-        println!("REMOVE RECORD");
+    pub fn remove_record(&mut self, query: &str, data: &Box<dyn RRData>) -> bool {
+        let key = encode_fqdn(query);
+        let _type = data.get_type();
+
+        match self.sets.get_mut(&key) {
+            Some(sets) => {
+                match sets
+                    .iter_mut()
+                    .find(|s| s.get_type().eq(&_type)) {
+                    Some(set) => {
+                        set.remove_data(&data).is_some()
+                    }
+                    None => false
+                }
+            }
+            None => false
+        }
     }
 
     pub fn remove_set(&mut self, query: &str, _type: &RRTypes) -> Option<RRSet> {
