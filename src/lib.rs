@@ -97,16 +97,16 @@ mod tests {
         let (apex, zone) = store.get_deepest_zone("x1.find9.net", &RRClasses::In).unwrap();
         let set = zone.get_set("www", &RRTypes::CName).unwrap();
 
-        let mut compression_data = HashMap::new();
+        //let mut compression_data = HashMap::new();
 
         for data in set.data() {
-            println!("{}", data);
+            //println!("{}", data);
 
-            let buf = data.to_bytes().unwrap();
-            println!("UC {:x?}", buf);
+            //let buf = data.to_bytes().unwrap();
+            //println!("UC {:x?}", buf);
 
-            let buf = compress_data(&RRClasses::In, &RRTypes::CName, buf, &mut compression_data, 0);
-            println!("C {:x?}", buf);
+            //let buf = compress_data(&RRClasses::In, &RRTypes::CName, buf, &mut compression_data, 0);
+            //println!("C {:x?}", buf);
 
             println!("");
         }

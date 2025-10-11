@@ -67,15 +67,17 @@ pub struct RRSetIter<'a> {
 
 impl<'a> Iterator for RRSetIter<'a> {
 
-    type Item = Box<dyn RRData>;
+    type Item = Vec<u8>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.off >= self.set.data.len() {
             return None;
         }
 
-        let data = <dyn RRData>::from_wire(self.set._type, &self.set.class, &self.set.data[self.off..], 0).unwrap();
-        self.off += 2+u16::from_be_bytes([self.set.data[self.off], self.set.data[self.off+1]]) as usize;
+        let length = u16::from_be_bytes([self.set.data[self.off], self.set.data[self.off+1]]) as usize;
+        let data = self.set.data[self.off..self.off+2+length].to_vec();
+        //let data = <dyn RRData>::from_wire(self.set._type, &self.set.class, &self.set.data[self.off..], 0).unwrap();
+        self.off += 2+length;
 
         Some(data)
     }

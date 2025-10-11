@@ -302,8 +302,8 @@ impl Message {
         self.sections[index] = section;
     }
 
-    pub fn add_section(&mut self, index: usize, query: &str, class: RRClasses, ttl: u32, data: Box<dyn RRData>) {
-        self.sections[index].push((query.to_string(), class, data.get_type(), ttl, data.to_bytes().unwrap()));
+    pub fn add_section(&mut self, index: usize, query: &str, class: RRClasses, _type: RRTypes, ttl: u32, data: Vec<u8>) {
+        self.sections[index].push((query.to_string(), class, _type, ttl, data));
     }
 
     pub fn get_section(&self, index: usize) -> &Vec<MessageRecord> {
@@ -503,9 +503,10 @@ fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> Result<Vec<Mes
                 let class = RRClasses::try_from(class & 0x7FFF).map_err(|e| MessageError::RecordError(e.to_string()))?;
                 let ttl = u32::from_be_bytes([buf[*off+4], buf[*off+5], buf[*off+6], buf[*off+7]]);
 
-                let data = <dyn RRData>::from_wire(_type, &class, buf, *off+8).map_err(|e| MessageError::RecordError(e.to_string()))?;
-                section.push((fqdn, class, _type, ttl, data.to_bytes().unwrap()));
-                *off += 10+u16::from_be_bytes([buf[*off+8], buf[*off+9]]) as usize;
+                let length = u16::from_be_bytes([buf[*off+8], buf[*off+9]]) as usize;
+                //let data = <dyn RRData>::from_wire(_type, &class, buf, *off+8).map_err(|e| MessageError::RecordError(e.to_string()))?;
+                section.push((fqdn, class, _type, ttl, buf[*off+8..*off+8+length].to_vec()));
+                *off += 10+length;//u16::from_be_bytes([buf[*off+8], buf[*off+9]]) as usize;
             }
         }
     }
