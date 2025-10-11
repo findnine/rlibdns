@@ -4,7 +4,6 @@ use crate::rr_data::inter::rr_data::RRData;
 
 #[derive(Debug, Clone)]
 pub struct RRSet {
-    class: RRClasses,
     _type: RRTypes,
     ttl: u32,
     data: Vec<Box<dyn RRData>>
@@ -12,9 +11,8 @@ pub struct RRSet {
 
 impl RRSet {
 
-    pub fn new(class: RRClasses, _type: RRTypes, ttl: u32) -> Self {
+    pub fn new(_type: RRTypes, ttl: u32) -> Self {
         Self {
-            class,
             _type,
             ttl,
             data: Vec::new()
@@ -45,12 +43,12 @@ impl RRSet {
         self.data.push(data);
     }
 
-    pub fn remove_data(&mut self, data: &Box<dyn RRData>) -> Option<Box<dyn RRData>> {
+    pub fn remove_data(&mut self, data: &Box<dyn RRData>) -> bool {
         if let Some(i) = self.data.iter().position(|b| b.eq(data)) {
-            return Some(self.data.remove(i));
+            return true;
         }
 
-        None
+        false
     }
 
     pub fn get_data(&self) -> &Vec<Box<dyn RRData>> {
