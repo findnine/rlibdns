@@ -92,6 +92,13 @@ impl ZoneReader {
 
             match self.reader.read_line(&mut line) {
                 Ok(length) => {
+                    if line.ends_with('\n') {
+                        line.pop();
+                        if line.ends_with('\r') {
+                            line.pop();
+                        }
+                    }
+
                     if length == 0 {
                         break;
                     }
