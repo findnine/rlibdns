@@ -1,4 +1,3 @@
-use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::rr_data::inter::rr_data::RRData;
 

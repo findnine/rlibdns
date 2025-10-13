@@ -45,7 +45,19 @@ impl RRSet {
         self.data.extend_from_slice(&data.to_bytes().unwrap());
     }
 
-    pub fn remove_data(&mut self, data: &Box<dyn RRData>) {
+    pub fn remove_data(&mut self, data: &Box<dyn RRData>, min_records: usize) -> bool {
+        if self.data.len() <= min_records {
+            return false;
+        }
+
+        /*
+        if let Some(i) = self.data.iter().position(|b| b.eq(data)) {
+            self.data.remove(i);
+            return true;
+        }
+        */
+
+        false
     }
 
     pub fn data(&self) -> RRSetIter {
