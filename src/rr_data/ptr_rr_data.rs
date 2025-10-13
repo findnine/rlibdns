@@ -60,7 +60,7 @@ impl RRData for PtrRRData {
         buf.splice(0..2, class.to_be_bytes());
         buf.splice(2..6, self.ttl.to_be_bytes());
 
-        buf.extend_from_slice(&pack_fqdn_compressed(self.fqdn.as_ref().unwrap().as_str(), compression_data, off+8));
+        buf.extend_from_slice(&pack_fqdn_compressed(self.fqdn.as_ref().unwrap(), compression_data, off+8));
 
         buf.splice(6..8, ((buf.len()-8) as u16).to_be_bytes());
 
@@ -78,7 +78,7 @@ impl RRData for PtrRRData {
         buf.splice(0..2, class.to_be_bytes());
         buf.splice(2..6, self.ttl.to_be_bytes());
 
-        buf.extend_from_slice(&pack_fqdn(self.fqdn.as_ref().unwrap().as_str()));
+        buf.extend_from_slice(&pack_fqdn(self.fqdn.as_ref().unwrap()));
 
         buf.splice(6..8, ((buf.len()-8) as u16).to_be_bytes());
 

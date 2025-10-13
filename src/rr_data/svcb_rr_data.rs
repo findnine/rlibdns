@@ -88,7 +88,7 @@ impl RRData for SvcbRRData {
         buf.splice(2..4, self.priority.to_be_bytes());
 
         buf.extend_from_slice(&pack_fqdn(self.target.as_ref()
-            .ok_or_else(|| RRDataError("target param was not set".to_string()))?.as_str()));
+            .ok_or_else(|| RRDataError("target param was not set".to_string()))?));
 
         for param in self.params.iter() {
             buf.extend_from_slice(&param.get_code().to_be_bytes());

@@ -88,7 +88,8 @@ impl RRData for TSigRRData {
         buf.splice(0..2, self.class.get_code().to_be_bytes());
         buf.splice(2..6, self.ttl.to_be_bytes());
 
-        buf.extend_from_slice(&pack_fqdn_compressed(self.algorithm_name.as_ref().unwrap().as_str(), compression_data, off+8)); //PROBABLY NO COMPRESS
+        buf.extend_from_slice(&pack_fqdn_compressed(self.algorithm_name.as_ref()
+            .ok_or_else(|| RRDataError("algorithm_name param was not set".to_string()))?, compression_data, off+8)); //PROBABLY NO COMPRESS
 
         buf.extend_from_slice(&[
             ((self.time_signed >> 40) & 0xFF) as u8,
@@ -120,7 +121,8 @@ impl RRData for TSigRRData {
         buf.splice(0..2, self.class.get_code().to_be_bytes());
         buf.splice(2..6, self.ttl.to_be_bytes());
 
-        buf.extend_from_slice(&pack_fqdn(self.algorithm_name.as_ref().unwrap().as_str())); //PROBABLY NO COMPRESS
+        buf.extend_from_slice(&pack_fqdn(self.algorithm_name.as_ref()
+            .ok_or_else(|| RRDataError("algorithm_name param was not set".to_string()))?)); //PROBABLY NO COMPRESS
 
         buf.extend_from_slice(&[
             ((self.time_signed >> 40) & 0xFF) as u8,
