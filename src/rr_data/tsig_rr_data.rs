@@ -82,7 +82,7 @@ impl RRData for TSigRRData {
         })
     }
 
-    fn to_bytes_compressed(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
+    fn to_wire(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
         let mut buf = vec![0u8; 8];
 
         buf.splice(0..2, self.class.get_code().to_be_bytes());

@@ -115,9 +115,9 @@ impl Message {
         }
 
         let sections = [
-            records_from_bytes(buf, &mut off, u16::from_be_bytes([buf[6], buf[7]]))?,
-            records_from_bytes(buf, &mut off, u16::from_be_bytes([buf[8], buf[9]]))?,
-            records_from_bytes(buf, &mut off, u16::from_be_bytes([buf[10], buf[11]]))?
+            section_from_wire(buf, &mut off, u16::from_be_bytes([buf[6], buf[7]]))?,
+            section_from_wire(buf, &mut off, u16::from_be_bytes([buf[8], buf[9]]))?,
+            section_from_wire(buf, &mut off, u16::from_be_bytes([buf[10], buf[11]]))?
         ];
 
         Ok(Self {
@@ -164,7 +164,7 @@ impl Message {
 
         if !truncated {
             for (i, section) in self.sections.iter().enumerate() {
-                let (records, count, t) = records_to_bytes(off, section, &mut compression_data, max_payload_len);
+                let (records, count, t) = section_to_wire(off, section, &mut compression_data, max_payload_len);
                 buf.extend_from_slice(&records);
                 buf.splice(i*2+6..i*2+8, count.to_be_bytes());
 
@@ -464,7 +464,7 @@ impl<'a> Iterator for WireIter<'a> {
                 total += self.message.sections[i].len();
 
                 if self.position < total {
-                    let (records, count, t) = records_to_bytes(off, &records[self.position - before..], &mut compression_data, self.max_payload_len);
+                    let (records, count, t) = section_to_wire(off, &records[self.position - before..], &mut compression_data, self.max_payload_len);
                     buf.extend_from_slice(&records);
                     buf.splice(i*2+6..i*2+8, count.to_be_bytes());
                     self.position += count as usize;
@@ -480,7 +480,7 @@ impl<'a> Iterator for WireIter<'a> {
     }
 }
 
-fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> Result<Vec<MessageRecord>, MessageError> {
+fn section_from_wire(buf: &[u8], off: &mut usize, count: u16) -> Result<Vec<MessageRecord>, MessageError> {
     let mut section = Vec::new();
 
     for _ in 0..count {
@@ -512,7 +512,7 @@ fn records_from_bytes(buf: &[u8], off: &mut usize, count: u16) -> Result<Vec<Mes
     Ok(section)
 }
 
-fn records_to_bytes(off: usize, section: &[MessageRecord], compression_data: &mut HashMap<String, usize>, max_payload_len: usize) -> (Vec<u8>, u16, bool) {
+fn section_to_wire(off: usize, section: &[MessageRecord], compression_data: &mut HashMap<String, usize>, max_payload_len: usize) -> (Vec<u8>, u16, bool) {
     let mut truncated = false;
 
     let mut buf = Vec::new();
@@ -524,7 +524,7 @@ fn records_to_bytes(off: usize, section: &[MessageRecord], compression_data: &mu
 
         off += fqdn.len()+8;
 
-        match data.to_bytes_compressed(compression_data, off) {
+        match data.to_wire(compression_data, off) {
             Ok(r) => {
                 if off+r.len() > max_payload_len {
                     truncated = true;

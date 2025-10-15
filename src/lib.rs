@@ -89,7 +89,7 @@ mod tests {
     #[test]
     fn parsing() {
         let mut store = ZoneStore::new();
-        store.open("/home/brad/Downloads/find9.net.test.zone", "find9.net", RRClasses::In).unwrap();
+        store.open("/home/brad/Downloads/dns/find9.net.test.zone", "find9.net", RRClasses::In).unwrap();
 
         //println!("{:?}", store.get_deepest_zone("x1.find9.net"));
         //println!("{:?}", store.get_deepest_zone_with_name("find9.net"));

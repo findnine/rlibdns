@@ -75,7 +75,7 @@ impl RRData for NSecRRData {
         })
     }
 
-    fn to_bytes_compressed(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
+    fn to_wire(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
         let mut buf = vec![0u8; 2];
 
         buf.extend_from_slice(&pack_fqdn_compressed(self.next_domain.as_ref()

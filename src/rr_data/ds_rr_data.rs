@@ -49,7 +49,7 @@ impl RRData for DsRRData {
         })
     }
 
-    fn to_bytes_compressed(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RRDataError> {
+    fn to_wire(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RRDataError> {
         self.to_bytes()
     }
 
