@@ -141,11 +141,13 @@ impl Message {
 
     //TRUNCATE WILL BE HANDLED BY ITERATOR...
     pub fn to_bytes(&self, max_payload_len: usize) -> Vec<u8> {
-        let mut buf = vec![0u8; DNS_HEADER_LEN];
+        let mut buf = Vec::with_capacity(max_payload_len);
 
-        buf.splice(0..2, self.id.to_be_bytes());
+        //SURE ITS UNSAFE BUT I DONT THINK THERE IS ANY WAY FOR THIS TO TRIGGER UNLESS MAX PAYLOAD IS LESS THAN 12...
+        unsafe { buf.set_len(DNS_HEADER_LEN) };
 
-        buf.splice(4..6, (self.queries.len() as u16).to_be_bytes());
+        buf[0..2].copy_from_slice(&self.id.to_be_bytes());
+        buf[4..6].copy_from_slice(&(self.queries.len() as u16).to_be_bytes());
 
         let mut compression_data = HashMap::new();
         let mut off = DNS_HEADER_LEN;
@@ -164,9 +166,9 @@ impl Message {
 
         if !truncated {
             for (i, section) in self.sections.iter().enumerate() {
-                let (records, count, t) = section_to_wire(off, section, &mut compression_data, max_payload_len);
+                let (records, count, t) = section_to_wire(&mut compression_data, off, section, max_payload_len);
                 buf.extend_from_slice(&records);
-                buf.splice(i*2+6..i*2+8, count.to_be_bytes());
+                buf[i*2+6..i*2+8].copy_from_slice(&count.to_be_bytes());
 
                 if t {
                     truncated = t;
@@ -186,7 +188,7 @@ impl Message {
             (if self.checking_disabled { 0x0010 } else { 0 }) |  // CD bit
             (self.response_code.get_code() as u16 & 0x000F);  // RCODE
 
-        buf.splice(2..4, flags.to_be_bytes());
+        buf[2..4].copy_from_slice(&flags.to_be_bytes());
 
         buf
     }
@@ -464,7 +466,7 @@ impl<'a> Iterator for WireIter<'a> {
                 total += self.message.sections[i].len();
 
                 if self.position < total {
-                    let (records, count, t) = section_to_wire(off, &records[self.position - before..], &mut compression_data, self.max_payload_len);
+                    let (records, count, t) = section_to_wire(&mut compression_data, off, &records[self.position - before..], self.max_payload_len);
                     buf.extend_from_slice(&records);
                     buf.splice(i*2+6..i*2+8, count.to_be_bytes());
                     self.position += count as usize;
@@ -512,7 +514,7 @@ fn section_from_wire(buf: &[u8], off: &mut usize, count: u16) -> Result<Vec<Mess
     Ok(section)
 }
 
-fn section_to_wire(off: usize, section: &[MessageRecord], compression_data: &mut HashMap<String, usize>, max_payload_len: usize) -> (Vec<u8>, u16, bool) {
+fn section_to_wire(compression_data: &mut HashMap<String, usize>, off: usize, section: &[MessageRecord], max_payload_len: usize) -> (Vec<u8>, u16, bool) {
     let mut truncated = false;
 
     let mut buf = Vec::new();
