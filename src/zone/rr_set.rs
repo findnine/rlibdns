@@ -59,7 +59,7 @@ impl RRSet {
         &self.data
     }
 
-    pub fn total_data(&self) -> usize {
-        self.data.len()
+    pub fn is_empty(&self) -> bool {
+        self.data.len() == 0
     }
 }

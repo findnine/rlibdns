@@ -92,10 +92,22 @@ impl Zone {
 
         match self.sets.get_mut(&key) {
             Some(sets) => {
-                match sets
-                    .iter_mut()
-                    .find(|s| s.get_type().eq(&_type)) {
-                    Some(set) => set.remove_data(&data, min_records),
+                match sets.iter().position(|s| s.get_type().eq(_type)) {
+                    Some(idx) => {
+                        let set = sets.get_mut(idx).unwrap();
+
+                        let removed = set.remove_data(&data, min_records);
+
+                        if set.is_empty() {
+                            sets.swap_remove(idx);
+                        }
+
+                        if sets.is_empty() {
+                            self.sets.remove(&key);
+                        }
+
+                        removed
+                    }
                     None => false
                 }
             }
@@ -106,18 +118,23 @@ impl Zone {
     pub fn remove_set(&mut self, query: &str, _type: &RRTypes) -> Option<RRSet> {
         let key = encode_fqdn(query);
 
-        let (removed, became_empty) = {
-            let sets = self.sets.get_mut(&key)?;
-            let idx = sets.iter().position(|s| s.get_type().eq(_type))?;
-            let removed = sets.swap_remove(idx);
-            (Some(removed), sets.is_empty())
-        };
+        match self.sets.get_mut(&key) {
+            Some(sets) => {
+                match sets.iter().position(|s| s.get_type().eq(_type)) {
+                    Some(idx) => {
+                        let removed = sets.swap_remove(idx);
 
-        if became_empty {
-            self.sets.remove(&key);
+                        if sets.is_empty() {
+                            self.sets.remove(&key);
+                        }
+
+                        Some(removed)
+                    }
+                    None => None
+                }
+            }
+            None => None
         }
-
-        removed
     }
 
     pub fn remove_all_records(&mut self, query: &str, protected_types: &[RRTypes]) {
