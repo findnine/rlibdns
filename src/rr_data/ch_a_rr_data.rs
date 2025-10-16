@@ -149,6 +149,5 @@ impl fmt::Display for ChARRData {
 fn test() {
     let buf = vec![ 0x0, 0xb, 0x7, 0x43, 0x48, 0x2d, 0x41, 0x44, 0x44, 0x52, 0x0, 0x6, 0x61 ];
     let record = ChARRData::from_bytes(&buf, 0).unwrap();
-    println!("{}", record);
     assert_eq!(buf, record.to_bytes().unwrap());
 }

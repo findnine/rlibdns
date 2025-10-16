@@ -512,8 +512,6 @@ fn section_from_wire(buf: &[u8], off: &mut usize, count: u16) -> Result<Vec<Reco
         let _type = RRTypes::try_from(u16::from_be_bytes([buf[*off], buf[*off+1]])).map_err(|e| MessageError::RecordError(e.to_string()))?;
 
         match _type {
-            RRTypes::TKey => {}
-            RRTypes::TSig => {}
             RRTypes::Opt => {
                 let data = OptRRData::from_bytes(buf, *off+2).map_err(|e| MessageError::RecordError(e.to_string()))?;
                 *off += 5+u16::from_be_bytes([buf[*off+3], buf[*off+4]]) as usize;

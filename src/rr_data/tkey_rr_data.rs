@@ -2,15 +2,12 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
-use crate::messages::inter::rr_classes::RRClasses;
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::utils::base64;
 use crate::utils::fqdn_utils::{pack_fqdn, pack_fqdn_compressed, unpack_fqdn};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct TKeyRRData {
-    class: RRClasses,
-    ttl: u32,
     algorithm_name: Option<String>,
     inception: u32,
     expiration: u32,
@@ -24,8 +21,6 @@ impl Default for TKeyRRData {
 
     fn default() -> Self {
         Self {
-            class: RRClasses::default(),
-            ttl: 0,
             algorithm_name: None,
             inception: 0,
             expiration: 0,
@@ -42,11 +37,11 @@ impl RRData for TKeyRRData {
     fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RRDataError> {
         let mut off = off;
 
-        let class = RRClasses::try_from(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
-        let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
+        //let class = RRClasses::try_from(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
+        //let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
 
-        let (algorithm_name, algorithm_name_length) = unpack_fqdn(buf, off+8);
-        off += 8+algorithm_name_length;
+        let (algorithm_name, algorithm_name_length) = unpack_fqdn(buf, off+2);
+        off += 2+algorithm_name_length;
 
         let inception = u32::from_be_bytes([buf[off], buf[off+1], buf[off+2], buf[off+3]]);
         let expiration = u32::from_be_bytes([buf[off+4], buf[off+5], buf[off+6], buf[off+7]]);
@@ -62,8 +57,6 @@ impl RRData for TKeyRRData {
         let data = buf[off + 2..data_length].to_vec();
 
         Ok(Self {
-            class,
-            ttl,
             algorithm_name: Some(algorithm_name),
             inception,
             expiration,
@@ -75,13 +68,10 @@ impl RRData for TKeyRRData {
     }
 
     fn to_wire(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = vec![0u8; 8]; //160
-
-        buf.splice(0..2, self.class.get_code().to_be_bytes());
-        buf.splice(2..6, self.ttl.to_be_bytes());
+        let mut buf = vec![0u8; 2]; //160
 
         buf.extend_from_slice(&pack_fqdn_compressed(self.algorithm_name.as_ref()
-            .ok_or_else(|| RRDataError("algorithm_name param was not set".to_string()))?, compression_data, off+8)); //PROBABLY NO COMPRESS
+            .ok_or_else(|| RRDataError("algorithm_name param was not set".to_string()))?, compression_data, off+2)); //PROBABLY NO COMPRESS
 
         buf.extend_from_slice(&self.inception.to_be_bytes());
         buf.extend_from_slice(&self.expiration.to_be_bytes());
@@ -95,16 +85,13 @@ impl RRData for TKeyRRData {
         buf.extend_from_slice(&(self.data.len() as u16).to_be_bytes());
         buf.extend_from_slice(&self.data);
 
-        buf.splice(6..8, ((buf.len()-8) as u16).to_be_bytes());
+        buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
 
         Ok(buf)
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = vec![0u8; 8]; //160
-
-        buf.splice(0..2, self.class.get_code().to_be_bytes());
-        buf.splice(2..6, self.ttl.to_be_bytes());
+        let mut buf = vec![0u8; 2]; //160
 
         buf.extend_from_slice(&pack_fqdn(self.algorithm_name.as_ref()
             .ok_or_else(|| RRDataError("algorithm_name param was not set".to_string()))?)); //PROBABLY NO COMPRESS
@@ -121,7 +108,7 @@ impl RRData for TKeyRRData {
         buf.extend_from_slice(&(self.data.len() as u16).to_be_bytes());
         buf.extend_from_slice(&self.data);
 
-        buf.splice(6..8, ((buf.len()-8) as u16).to_be_bytes());
+        buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
 
         Ok(buf)
     }
@@ -149,28 +136,10 @@ impl RRData for TKeyRRData {
 
 impl TKeyRRData {
 
-    pub fn new(ttl: u32, class: RRClasses) -> Self {
+    pub fn new() -> Self {
         Self {
-            class,
-            ttl,
             ..Self::default()
         }
-    }
-
-    pub fn set_class(&mut self, class: RRClasses) {
-        self.class = class;
-    }
-
-    pub fn get_class(&self) -> RRClasses {
-        self.class
-    }
-
-    pub fn set_ttl(&mut self, ttl: u32) {
-        self.ttl = ttl;
-    }
-
-    pub fn get_ttl(&self) -> u32 {
-        self.ttl
     }
 }
 
@@ -189,7 +158,7 @@ impl fmt::Display for TKeyRRData {
 
 #[test]
 fn test() {
-    let buf = vec![  ];
+    let buf = vec![ 0x0, 0xd4, 0x8, 0x67, 0x73, 0x73, 0x2d, 0x74, 0x73, 0x69, 0x67, 0x0, 0x50, 0xf8, 0xcf, 0xbb, 0x50, 0xfa, 0x21, 0x3b, 0x0, 0x3, 0x0, 0x0, 0x0, 0xba, 0xa1, 0x81, 0xb7, 0x30, 0x81, 0xb4, 0xa0, 0x3, 0xa, 0x1, 0x0, 0xa1, 0xb, 0x6, 0x9, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x12, 0x1, 0x2, 0x2, 0xa2, 0x81, 0x9f, 0x4, 0x81, 0x9c, 0x60, 0x81, 0x99, 0x6, 0x9, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x12, 0x1, 0x2, 0x2, 0x2, 0x0, 0x6f, 0x81, 0x89, 0x30, 0x81, 0x86, 0xa0, 0x3, 0x2, 0x1, 0x5, 0xa1, 0x3, 0x2, 0x1, 0xf, 0xa2, 0x7a, 0x30, 0x78, 0xa0, 0x3, 0x2, 0x1, 0x12, 0xa2, 0x71, 0x4, 0x6f, 0x32, 0x94, 0x40, 0xf8, 0xae, 0xaa, 0xbd, 0xa2, 0x9e, 0x7e, 0x78, 0x1d, 0xf, 0xf0, 0x9b, 0xae, 0x14, 0x5c, 0x99, 0xc1, 0xdc, 0xb6, 0xc7, 0xa0, 0xbd, 0x7a, 0x83, 0xed, 0x18, 0xb, 0xf9, 0xea, 0xa0, 0x29, 0x1f, 0xe, 0x82, 0xd8, 0x2f, 0x1d, 0x59, 0xb9, 0xda, 0x97, 0x41, 0xf2, 0x7b, 0xab, 0xa2, 0xdb, 0x38, 0xe9, 0xcd, 0xfe, 0x27, 0xb3, 0xbf, 0x13, 0xa, 0xeb, 0xde, 0xa7, 0x7e, 0x55, 0x1a, 0x6c, 0xff, 0x2d, 0x64, 0xfb, 0xfc, 0x56, 0x52, 0xb5, 0xc8, 0x28, 0x7, 0x17, 0x6c, 0xe7, 0x57, 0xe5, 0xf5, 0xaa, 0xd5, 0x84, 0x18, 0x80, 0x21, 0xa1, 0xd9, 0xdd, 0x3, 0x82, 0xf1, 0xcf, 0x1b, 0xe6, 0x17, 0x97, 0xee, 0x2b, 0xdd, 0x27, 0x80, 0xea, 0x42, 0xde, 0xc8, 0x57, 0x8a, 0x0, 0x0 ];
     let record = TKeyRRData::from_bytes(&buf, 0).unwrap();
     assert_eq!(buf, record.to_bytes().unwrap());
 }
