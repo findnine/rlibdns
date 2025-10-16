@@ -34,13 +34,11 @@ impl Default for TSigRRData {
 
 impl RRData for TSigRRData {
 
-    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RRDataError> {
+    fn from_bytes(buf: &[u8], off: usize, _len: usize) -> Result<Self, RRDataError> {
         let mut off = off;
 
-        //let length = u16::from_be_bytes([buf[off+6], buf[off+7]]) as usize;
-
-        let (algorithm_name, algorithm_name_length) = unpack_fqdn(buf, off+2);
-        off += 2+algorithm_name_length;
+        let (algorithm_name, algorithm_name_length) = unpack_fqdn(buf, off);
+        off += algorithm_name_length;
 
         let time_signed = ((buf[off] as u64) << 40)
                 | ((buf[off+1] as u64) << 32)
@@ -58,7 +56,7 @@ impl RRData for TSigRRData {
         let error = u16::from_be_bytes([buf[off+2], buf[off+3]]);
 
         let data_length = off+6+u16::from_be_bytes([buf[off+4], buf[off+5]]) as usize;
-        let data = buf[off + 6..data_length].to_vec();
+        let data = buf[off+6..data_length].to_vec();
 
         Ok(Self {
             algorithm_name: Some(algorithm_name),
@@ -72,12 +70,10 @@ impl RRData for TSigRRData {
     }
 
     fn to_wire(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = Vec::with_capacity(160);
-
-        unsafe { buf.set_len(2); };
+        let mut buf = Vec::with_capacity(158);
 
         buf.extend_from_slice(&pack_fqdn_compressed(self.algorithm_name.as_ref()
-            .ok_or_else(|| RRDataError("algorithm_name param was not set".to_string()))?, compression_data, off+2)); //PROBABLY NO COMPRESS
+            .ok_or_else(|| RRDataError("algorithm_name param was not set".to_string()))?, compression_data, off)); //PROBABLY NO COMPRESS
 
         buf.extend_from_slice(&[
             ((self.time_signed >> 40) & 0xFF) as u8,
@@ -98,16 +94,11 @@ impl RRData for TSigRRData {
         buf.extend_from_slice(&(self.data.len() as u16).to_be_bytes());
         buf.extend_from_slice(&self.data);
 
-        let length = (buf.len()-2) as u16;
-        buf[0..2].copy_from_slice(&length.to_be_bytes());
-
         Ok(buf)
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = Vec::with_capacity(160);
-
-        unsafe { buf.set_len(2); };
+        let mut buf = Vec::with_capacity(158);
 
         buf.extend_from_slice(&pack_fqdn(self.algorithm_name.as_ref()
             .ok_or_else(|| RRDataError("algorithm_name param was not set".to_string()))?)); //PROBABLY NO COMPRESS
@@ -130,9 +121,6 @@ impl RRData for TSigRRData {
 
         buf.extend_from_slice(&(self.data.len() as u16).to_be_bytes());
         buf.extend_from_slice(&self.data);
-
-        let length = (buf.len()-2) as u16;
-        buf[0..2].copy_from_slice(&length.to_be_bytes());
 
         Ok(buf)
     }
@@ -188,7 +176,7 @@ impl fmt::Display for TSigRRData {
 
 #[test]
 fn test() {
-    let buf = vec![ 0x0, 0x36, 0x8, 0x67, 0x73, 0x73, 0x2d, 0x74, 0x73, 0x69, 0x67, 0x0, 0x0, 0x0, 0x50, 0xf8, 0xcf, 0xbb, 0x8c, 0xa0, 0x0, 0x1c, 0x4, 0x4, 0x5, 0xff, 0xff, 0xff, 0xff, 0xff, 0x0, 0x0, 0x0, 0x0, 0x73, 0x28, 0x5d, 0xa, 0x2d, 0xf4, 0xa3, 0x34, 0x2f, 0xcf, 0x1, 0x6f, 0x3c, 0x9f, 0x76, 0x82, 0x2, 0x34, 0x0, 0x0, 0x0, 0x0 ];
-    let record = TSigRRData::from_bytes(&buf, 0).unwrap();
+    let buf = vec![ 0x8, 0x67, 0x73, 0x73, 0x2d, 0x74, 0x73, 0x69, 0x67, 0x0, 0x0, 0x0, 0x50, 0xf8, 0xcf, 0xbb, 0x8c, 0xa0, 0x0, 0x1c, 0x4, 0x4, 0x5, 0xff, 0xff, 0xff, 0xff, 0xff, 0x0, 0x0, 0x0, 0x0, 0x73, 0x28, 0x5d, 0xa, 0x2d, 0xf4, 0xa3, 0x34, 0x2f, 0xcf, 0x1, 0x6f, 0x3c, 0x9f, 0x76, 0x82, 0x2, 0x34, 0x0, 0x0, 0x0, 0x0 ];
+    let record = TSigRRData::from_bytes(&buf, 0, buf.len()).unwrap();
     assert_eq!(buf, record.to_bytes().unwrap());
 }

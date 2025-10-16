@@ -23,13 +23,11 @@ impl Default for AaaaRRData {
 
 impl RRData for AaaaRRData {
 
-    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RRDataError> {
-        let length = u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
-
-        let address = match length {
+    fn from_bytes(buf: &[u8], off: usize, len: usize) -> Result<Self, RRDataError> {
+        let address = match len {
             16 => {
                 let mut octets = [0u8; 16];
-                octets.copy_from_slice(&buf[off + 2..off + 2 + length]);
+                octets.copy_from_slice(&buf[off..off+len]);
                 Ipv6Addr::from(octets)
             }
             _ => return Err(RRDataError("invalid inet address".to_string()))
@@ -45,14 +43,9 @@ impl RRData for AaaaRRData {
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = Vec::with_capacity(18);
-
-        unsafe { buf.set_len(2); };
+        let mut buf = Vec::with_capacity(16);
 
         buf.extend_from_slice(&self.address.ok_or_else(|| RRDataError("address param was not set".to_string()))?.octets());
-
-        let length = (buf.len()-2) as u16;
-        buf[0..2].copy_from_slice(&length.to_be_bytes());
 
         Ok(buf)
     }
@@ -118,7 +111,7 @@ impl fmt::Display for AaaaRRData {
 
 #[test]
 fn test() {
-    let buf = vec![ 0x0, 0x10, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1 ];
-    let record = AaaaRRData::from_bytes(&buf, 0).unwrap();
+    let buf = vec![ 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1 ];
+    let record = AaaaRRData::from_bytes(&buf, 0, buf.len()).unwrap();
     assert_eq!(buf, record.to_bytes().unwrap());
 }

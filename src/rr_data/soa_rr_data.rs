@@ -35,11 +35,9 @@ impl Default for SoaRRData {
 
 impl RRData for SoaRRData {
 
-    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RRDataError> {
-        //let length = u16::from_be_bytes([buf[off], buf[off+1]]);
-
-        let (fqdn, fqdn_length) = unpack_fqdn(buf, off+2);
-        let mut off = off+fqdn_length+2;
+    fn from_bytes(buf: &[u8], off: usize, _len: usize) -> Result<Self, RRDataError> {
+        let (fqdn, fqdn_length) = unpack_fqdn(buf, off);
+        let mut off = off+fqdn_length;
 
         let (mailbox, mailbox_length) = unpack_fqdn(buf, off);
         off += mailbox_length;
@@ -62,16 +60,14 @@ impl RRData for SoaRRData {
     }
 
     fn to_wire(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = Vec::with_capacity(96);
-
-        unsafe { buf.set_len(2); };
+        let mut buf = Vec::with_capacity(94);
 
         let fqdn = pack_fqdn_compressed(self.fqdn.as_ref()
-            .ok_or_else(|| RRDataError("fqdn param was not set".to_string()))?, compression_data, off+2);
+            .ok_or_else(|| RRDataError("fqdn param was not set".to_string()))?, compression_data, off);
         buf.extend_from_slice(&fqdn);
 
         buf.extend_from_slice(&pack_fqdn_compressed(self.mailbox.as_ref()
-            .ok_or_else(|| RRDataError("mailbox param was not set".to_string()))?, compression_data, off+2+fqdn.len()));
+            .ok_or_else(|| RRDataError("mailbox param was not set".to_string()))?, compression_data, off+fqdn.len()));
 
         buf.extend_from_slice(&self.serial.to_be_bytes());
         buf.extend_from_slice(&self.refresh.to_be_bytes());
@@ -79,16 +75,11 @@ impl RRData for SoaRRData {
         buf.extend_from_slice(&self.expire.to_be_bytes());
         buf.extend_from_slice(&self.minimum_ttl.to_be_bytes());
 
-        let length = (buf.len()-2) as u16;
-        buf[0..2].copy_from_slice(&length.to_be_bytes());
-
         Ok(buf)
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = Vec::with_capacity(96);
-
-        unsafe { buf.set_len(2); };
+        let mut buf = Vec::with_capacity(94);
 
         let fqdn = pack_fqdn(self.fqdn.as_ref()
             .ok_or_else(|| RRDataError("fqdn param was not set".to_string()))?);
@@ -102,9 +93,6 @@ impl RRData for SoaRRData {
         buf.extend_from_slice(&self.retry.to_be_bytes());
         buf.extend_from_slice(&self.expire.to_be_bytes());
         buf.extend_from_slice(&self.minimum_ttl.to_be_bytes());
-
-        let length = (buf.len()-2) as u16;
-        buf[0..2].copy_from_slice(&length.to_be_bytes());
 
         Ok(buf)
     }
@@ -238,7 +226,7 @@ impl fmt::Display for SoaRRData {
 
 #[test]
 fn test() {
-    let buf = vec![ 0x0, 0x34, 0x3, 0x6e, 0x73, 0x31, 0x5, 0x66, 0x69, 0x6e, 0x64, 0x39, 0x3, 0x6e, 0x65, 0x74, 0x0, 0x5, 0x61, 0x64, 0x6d, 0x69, 0x6e, 0x5, 0x66, 0x69, 0x6e, 0x64, 0x39, 0x3, 0x6e, 0x65, 0x74, 0x0, 0x0, 0x0, 0x0, 0x4, 0x0, 0x9, 0x3a, 0x80, 0x0, 0x1, 0x51, 0x80, 0x0, 0x24, 0xea, 0x0, 0x0, 0x9, 0x3a, 0x80 ];
-    let record = SoaRRData::from_bytes(&buf, 0).unwrap();
+    let buf = vec![ 0x3, 0x6e, 0x73, 0x31, 0x5, 0x66, 0x69, 0x6e, 0x64, 0x39, 0x3, 0x6e, 0x65, 0x74, 0x0, 0x5, 0x61, 0x64, 0x6d, 0x69, 0x6e, 0x5, 0x66, 0x69, 0x6e, 0x64, 0x39, 0x3, 0x6e, 0x65, 0x74, 0x0, 0x0, 0x0, 0x0, 0x4, 0x0, 0x9, 0x3a, 0x80, 0x0, 0x1, 0x51, 0x80, 0x0, 0x24, 0xea, 0x0, 0x0, 0x9, 0x3a, 0x80 ];
+    let record = SoaRRData::from_bytes(&buf, 0, buf.len()).unwrap();
     assert_eq!(buf, record.to_bytes().unwrap());
 }

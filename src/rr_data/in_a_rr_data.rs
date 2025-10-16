@@ -23,11 +23,9 @@ impl Default for InARRData {
 
 impl RRData for InARRData {
 
-    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RRDataError> {
-        let length = u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
-
-        let address = match length {
-            4 => Ipv4Addr::new(buf[off+2], buf[off+3], buf[off+4], buf[off+5]),
+    fn from_bytes(buf: &[u8], off: usize, len: usize) -> Result<Self, RRDataError> {
+        let address = match len {
+            4 => Ipv4Addr::new(buf[off], buf[off+1], buf[off+2], buf[off+3]),
             _ => return Err(RRDataError("invalid inet address".to_string()))
         };
 
@@ -41,14 +39,9 @@ impl RRData for InARRData {
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = Vec::with_capacity(6);
-
-        unsafe { buf.set_len(2); };
+        let mut buf = Vec::with_capacity(4);
 
         buf.extend_from_slice(&self.address.ok_or_else(|| RRDataError("address param was not set".to_string()))?.octets());
-
-        let length = (buf.len()-2) as u16;
-        buf[0..2].copy_from_slice(&length.to_be_bytes());
 
         Ok(buf)
     }
@@ -114,7 +107,7 @@ impl fmt::Display for InARRData {
 
 #[test]
 fn test() {
-    let buf = vec![ 0x0, 0x4, 0x7f, 0x0, 0x0, 0x1 ];
-    let record = InARRData::from_bytes(&buf, 0).unwrap();
+    let buf = vec![ 0x7f, 0x0, 0x0, 0x1 ];
+    let record = InARRData::from_bytes(&buf, 0, buf.len()).unwrap();
     assert_eq!(buf, record.to_bytes().unwrap());
 }

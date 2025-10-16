@@ -32,7 +32,7 @@ impl Default for OptRRData {
 
 impl RRData for OptRRData {
 
-    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RRDataError> {
+    fn from_bytes(buf: &[u8], off: usize, _len: usize) -> Result<Self, RRDataError> {
         let payload_size = u16::from_be_bytes([buf[off], buf[off+1]]);
         let ext_rcode = buf[off+2];
         let version = buf[off+3];

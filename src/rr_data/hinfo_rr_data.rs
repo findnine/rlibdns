@@ -24,12 +24,10 @@ impl Default for HInfoRRData {
 
 impl RRData for HInfoRRData {
 
-    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RRDataError> {
-        //let length = u16::from_be_bytes([buf[off], buf[off+1]]);
-
-        let data_length = buf[off+2] as usize;
-        let cpu = String::from_utf8(buf[off+3..off+3+data_length].to_vec()).unwrap();
-        let off = off+3+data_length;
+    fn from_bytes(buf: &[u8], off: usize, _len: usize) -> Result<Self, RRDataError> {
+        let data_length = buf[off] as usize;
+        let cpu = String::from_utf8(buf[off+1..off+1+data_length].to_vec()).unwrap();
+        let off = off+1+data_length;
 
         let data_length = buf[off] as usize;
         let os = String::from_utf8(buf[off+1..off+1+data_length].to_vec()).unwrap();
@@ -45,9 +43,7 @@ impl RRData for HInfoRRData {
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = Vec::with_capacity(48);
-
-        unsafe { buf.set_len(2); };
+        let mut buf = Vec::with_capacity(46);
 
         let cpu = self.cpu.as_ref().unwrap().as_bytes();
         buf.push(cpu.len() as u8);
@@ -56,9 +52,6 @@ impl RRData for HInfoRRData {
         let os = self.os.as_ref().unwrap().as_bytes();
         buf.push(os.len() as u8);
         buf.extend_from_slice(os);
-
-        let length = (buf.len()-2) as u16;
-        buf[0..2].copy_from_slice(&length.to_be_bytes());
 
         Ok(buf)
     }
@@ -135,7 +128,7 @@ impl fmt::Display for HInfoRRData {
 
 #[test]
 fn test() {
-    let buf = vec![ 0x0, 0x5, 0x3, 0x41, 0x4d, 0x44, 0x0 ];
-    let record = HInfoRRData::from_bytes(&buf, 0).unwrap();
+    let buf = vec![ 0x3, 0x41, 0x4d, 0x44, 0x0 ];
+    let record = HInfoRRData::from_bytes(&buf, 0, buf.len()).unwrap();
     assert_eq!(buf, record.to_bytes().unwrap());
 }

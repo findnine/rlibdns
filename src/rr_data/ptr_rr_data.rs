@@ -30,7 +30,7 @@ impl Default for PtrRRData {
 
 impl RRData for PtrRRData {
 
-    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RRDataError> {
+    fn from_bytes(buf: &[u8], off: usize, _len: usize) -> Result<Self, RRDataError> {
         let class = u16::from_be_bytes([buf[off], buf[off+1]]);
         let cache_flush = (class & 0x8000) != 0;
         let class = RRClasses::try_from(class & 0x7FFF).unwrap();
@@ -49,7 +49,7 @@ impl RRData for PtrRRData {
     }
 
     fn to_wire(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = vec![0u8; 8]; //34
+        let mut buf = vec![0u8; 8]; //32
 
         let mut class = self.class.get_code();
         if self.cache_flush {

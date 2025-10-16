@@ -22,14 +22,11 @@ impl Default for TxtRRData {
 
 impl RRData for TxtRRData {
 
-    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RRDataError> {
-        let mut length = u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
-
-        length += off+2;
-        let mut off = off+2;
+    fn from_bytes(buf: &[u8], off: usize, len: usize) -> Result<Self, RRDataError> {
+        let mut off = off;
         let mut data = Vec::new();
 
-        while off < length {
+        while off < len {
             let data_length = buf[off] as usize;
             let record = String::from_utf8(buf[off + 1..off + 1 + data_length].to_vec())
                 .map_err(|e| RRDataError(e.to_string()))?;
@@ -47,17 +44,12 @@ impl RRData for TxtRRData {
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = Vec::with_capacity(80);
-
-        unsafe { buf.set_len(2); };
+        let mut buf = Vec::with_capacity(78);
 
         for record in &self.data {
             buf.push(record.len() as u8);
             buf.extend_from_slice(record.as_bytes());
         }
-
-        let length = (buf.len()-2) as u16;
-        buf[0..2].copy_from_slice(&length.to_be_bytes());
 
         Ok(buf)
     }
@@ -127,7 +119,7 @@ impl fmt::Display for TxtRRData {
 
 #[test]
 fn test() {
-    let buf = vec![ 0x0, 0xa, 0x9, 0x76, 0x3d, 0x62, 0x6c, 0x61, 0x20, 0x62, 0x6c, 0x61 ];
-    let record = TxtRRData::from_bytes(&buf, 0).unwrap();
+    let buf = vec![ 0x9, 0x76, 0x3d, 0x62, 0x6c, 0x61, 0x20, 0x62, 0x6c, 0x61 ];
+    let record = TxtRRData::from_bytes(&buf, 0, buf.len()).unwrap();
     assert_eq!(buf, record.to_bytes().unwrap());
 }

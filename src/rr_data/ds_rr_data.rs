@@ -29,9 +29,7 @@ impl Default for DsRRData {
 
 impl RRData for DsRRData {
 
-    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RRDataError> {
-        let length = u16::from_be_bytes([buf[off], buf[off+1]]);
-
+    fn from_bytes(buf: &[u8], off: usize, _len: usize) -> Result<Self, RRDataError> {
         let key_tag = 0;
         let algorithm = 0;
         let digest_type = 0;
@@ -50,12 +48,7 @@ impl RRData for DsRRData {
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = Vec::with_capacity(64);
-
-        unsafe { buf.set_len(2); };
-
-        let length = (buf.len()-2) as u16;
-        buf[0..2].copy_from_slice(&length.to_be_bytes());
+        let mut buf = Vec::with_capacity(62);
 
         Ok(buf)
     }
@@ -123,6 +116,6 @@ impl fmt::Display for DsRRData {
 #[test]
 fn test() {
     let buf = vec![ ];
-    let record = DsRRData::from_bytes(&buf, 0).unwrap();
+    let record = DsRRData::from_bytes(&buf, 0, buf.len()).unwrap();
     assert_eq!(buf, record.to_bytes().unwrap());
 }

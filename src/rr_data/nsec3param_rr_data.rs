@@ -29,15 +29,13 @@ impl Default for NSec3ParamRRData {
 
 impl RRData for NSec3ParamRRData {
 
-    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RRDataError> {
-        //let length = u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
+    fn from_bytes(buf: &[u8], off: usize, _len: usize) -> Result<Self, RRDataError> {
+        let algorithm = buf[off];
+        let flags = buf[off+1];
+        let iterations = u16::from_be_bytes([buf[off+2], buf[off+3]]);
 
-        let algorithm = buf[off+2];
-        let flags = buf[off+3];
-        let iterations = u16::from_be_bytes([buf[off+4], buf[off+5]]);
-
-        let salt_length = buf[off+6] as usize;
-        let salt = buf[off + 7..off + 7 + salt_length].to_vec();
+        let salt_length = buf[off+4] as usize;
+        let salt = buf[off + 5..off + 5 + salt_length].to_vec();
 
         Ok(Self {
             algorithm,
@@ -52,9 +50,7 @@ impl RRData for NSec3ParamRRData {
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = Vec::with_capacity(24);
-
-        unsafe { buf.set_len(2); };
+        let mut buf = Vec::with_capacity(22);
 
         buf.push(self.algorithm);
         buf.push(self.flags);
@@ -62,9 +58,6 @@ impl RRData for NSec3ParamRRData {
 
         buf.push(self.salt.len() as u8);
         buf.extend_from_slice(&self.salt);
-
-        let length = (buf.len()-2) as u16;
-        buf[0..2].copy_from_slice(&length.to_be_bytes());
 
         Ok(buf)
     }
@@ -163,7 +156,7 @@ impl fmt::Display for NSec3ParamRRData {
 
 #[test]
 fn test() {
-    let buf = vec![ 0x0, 0x5, 0x1, 0x0, 0x0, 0x0, 0x0 ];
-    let record = NSec3ParamRRData::from_bytes(&buf, 0).unwrap();
+    let buf = vec![ 0x1, 0x0, 0x0, 0x0, 0x0 ];
+    let record = NSec3ParamRRData::from_bytes(&buf, 0, buf.len()).unwrap();
     assert_eq!(buf, record.to_bytes().unwrap());
 }

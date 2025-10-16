@@ -29,14 +29,12 @@ impl Default for SrvRRData {
 
 impl RRData for SrvRRData {
 
-    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RRDataError> {
-        //let length = u16::from_be_bytes([buf[off], buf[off+1]]);
+    fn from_bytes(buf: &[u8], off: usize, _len: usize) -> Result<Self, RRDataError> {
+        let priority = u16::from_be_bytes([buf[off], buf[off+1]]);
+        let weight = u16::from_be_bytes([buf[off+2], buf[off+3]]);
+        let port = u16::from_be_bytes([buf[off+4], buf[off+5]]);
 
-        let priority = u16::from_be_bytes([buf[off+2], buf[off+3]]);
-        let weight = u16::from_be_bytes([buf[off+4], buf[off+5]]);
-        let port = u16::from_be_bytes([buf[off+6], buf[off+7]]);
-
-        let (target, _) = unpack_fqdn(buf, off+8);
+        let (target, _) = unpack_fqdn(buf, off+6);
 
         Ok(Self {
             priority,
@@ -47,27 +45,20 @@ impl RRData for SrvRRData {
     }
 
     fn to_wire(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = Vec::with_capacity(64);
-
-        unsafe { buf.set_len(2); };
+        let mut buf = Vec::with_capacity(62);
 
         buf.extend_from_slice(&self.priority.to_be_bytes());
         buf.extend_from_slice(&self.weight.to_be_bytes());
         buf.extend_from_slice(&self.port.to_be_bytes());
 
         buf.extend_from_slice(&pack_fqdn_compressed(self.target.as_ref()
-            .ok_or_else(|| RRDataError("target param was not set".to_string()))?, compression_data, off+8));
-
-        let length = (buf.len()-2) as u16;
-        buf[0..2].copy_from_slice(&length.to_be_bytes());
+            .ok_or_else(|| RRDataError("target param was not set".to_string()))?, compression_data, off+6));
 
         Ok(buf)
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = Vec::with_capacity(64);
-
-        unsafe { buf.set_len(2); };
+        let mut buf = Vec::with_capacity(62);
 
         buf.extend_from_slice(&self.priority.to_be_bytes());
         buf.extend_from_slice(&self.weight.to_be_bytes());
@@ -75,9 +66,6 @@ impl RRData for SrvRRData {
 
         buf.extend_from_slice(&pack_fqdn(self.target.as_ref()
             .ok_or_else(|| RRDataError("target param was not set".to_string()))?));
-
-        let length = (buf.len()-2) as u16;
-        buf[0..2].copy_from_slice(&length.to_be_bytes());
 
         Ok(buf)
     }
@@ -177,7 +165,7 @@ impl fmt::Display for SrvRRData {
 
 #[test]
 fn test() {
-    let buf = vec![ 0x0, 0x19, 0x0, 0x0, 0x0, 0x0, 0x4, 0xaa, 0x7, 0x6f, 0x70, 0x65, 0x6e, 0x76, 0x70, 0x6e, 0x5, 0x66, 0x69, 0x6e, 0x64, 0x39, 0x3, 0x6e, 0x65, 0x74, 0x0 ];
-    let record = SrvRRData::from_bytes(&buf, 0).unwrap();
+    let buf = vec![ 0x0, 0x0, 0x0, 0x0, 0x4, 0xaa, 0x7, 0x6f, 0x70, 0x65, 0x6e, 0x76, 0x70, 0x6e, 0x5, 0x66, 0x69, 0x6e, 0x64, 0x39, 0x3, 0x6e, 0x65, 0x74, 0x0 ];
+    let record = SrvRRData::from_bytes(&buf, 0, buf.len()).unwrap();
     assert_eq!(buf, record.to_bytes().unwrap());
 }

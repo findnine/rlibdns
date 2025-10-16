@@ -34,16 +34,14 @@ impl Default for NaptrRRData {
 
 impl RRData for NaptrRRData {
 
-    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RRDataError> {
-        //let length = u16::from_be_bytes([buf[off], buf[off+1]]);
+    fn from_bytes(buf: &[u8], off: usize, _len: usize) -> Result<Self, RRDataError> {
+        let order = u16::from_be_bytes([buf[off], buf[off+1]]);
+        let preference = u16::from_be_bytes([buf[off+2], buf[off+3]]);
 
-        let order = u16::from_be_bytes([buf[off+2], buf[off+3]]);
-        let preference = u16::from_be_bytes([buf[off+4], buf[off+5]]);
-
-        let data_length = buf[off+6] as usize;
+        let data_length = buf[off+4] as usize;
         let mut flags = Vec::new();
 
-        for flag in String::from_utf8(buf[off + 7..off + 7 + data_length].to_vec())
+        for flag in String::from_utf8(buf[off + 5..off + 5 + data_length].to_vec())
                 .map_err(|e| RRDataError(e.to_string()))?.split(",") {
             let tok = flag.trim();
             if tok.is_empty() {
@@ -55,7 +53,7 @@ impl RRData for NaptrRRData {
                 .ok_or_else(|| RRDataError("empty NAPTR flag token".to_string()))?).map_err(|e| RRDataError(e.to_string()))?);
         }
 
-        let mut off = off+7+data_length;
+        let mut off = off+5+data_length;
 
         let data_length = buf[off] as usize;
         let service = String::from_utf8(buf[off + 1..off + 1 + data_length].to_vec())
@@ -86,9 +84,7 @@ impl RRData for NaptrRRData {
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = Vec::with_capacity(128);
-
-        unsafe { buf.set_len(2); };
+        let mut buf = Vec::with_capacity(126);
 
         buf.extend_from_slice(&self.order.to_be_bytes());
         buf.extend_from_slice(&self.preference.to_be_bytes());
@@ -112,9 +108,6 @@ impl RRData for NaptrRRData {
 
         buf.extend_from_slice(&pack_fqdn(self.replacement.as_ref()
             .ok_or_else(|| RRDataError("replacement param was not set".to_string()))?));
-
-        let length = (buf.len()-2) as u16;
-        buf[0..2].copy_from_slice(&length.to_be_bytes());
 
         Ok(buf)
     }
@@ -259,7 +252,7 @@ impl fmt::Display for NaptrRRData {
 
 #[test]
 fn test() {
-    let buf = vec![ 0x0, 0x2b, 0x0, 0x64, 0x0, 0xa, 0x3, 0x55, 0x2c, 0x50, 0x7, 0x45, 0x32, 0x55, 0x2b, 0x73, 0x69, 0x70, 0x19, 0x21, 0x5e, 0x2e, 0x2a, 0x24, 0x21, 0x73, 0x69, 0x70, 0x3a, 0x69, 0x6e, 0x66, 0x6f, 0x40, 0x66, 0x69, 0x6e, 0x64, 0x39, 0x2e, 0x6e, 0x65, 0x74, 0x21, 0x0 ];
-    let record = NaptrRRData::from_bytes(&buf, 0).unwrap();
+    let buf = vec![ 0x0, 0x64, 0x0, 0xa, 0x3, 0x55, 0x2c, 0x50, 0x7, 0x45, 0x32, 0x55, 0x2b, 0x73, 0x69, 0x70, 0x19, 0x21, 0x5e, 0x2e, 0x2a, 0x24, 0x21, 0x73, 0x69, 0x70, 0x3a, 0x69, 0x6e, 0x66, 0x6f, 0x40, 0x66, 0x69, 0x6e, 0x64, 0x39, 0x2e, 0x6e, 0x65, 0x74, 0x21, 0x0 ];
+    let record = NaptrRRData::from_bytes(&buf, 0, buf.len()).unwrap();
     assert_eq!(buf, record.to_bytes().unwrap());
 }

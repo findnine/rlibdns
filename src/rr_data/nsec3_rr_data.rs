@@ -35,19 +35,15 @@ impl Default for NSec3RRData {
 
 impl RRData for NSec3RRData {
 
-    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RRDataError> {
-        let mut length = u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
+    fn from_bytes(buf: &[u8], off: usize, len: usize) -> Result<Self, RRDataError> {
+        let algorithm = buf[off];
+        let flags = buf[off+1];
+        let iterations = u16::from_be_bytes([buf[off+2], buf[off+3]]);
 
-        let algorithm = buf[off+2];
-        let flags = buf[off+3];
-        let iterations = u16::from_be_bytes([buf[off+4], buf[off+5]]);
+        let salt_length = buf[off+4] as usize;
+        let salt = buf[off + 5..off + 5 + salt_length].to_vec();
 
-        length += off+2;
-
-        let salt_length = buf[off+6] as usize;
-        let salt = buf[off + 7..off + 7 + salt_length].to_vec();
-
-        let mut off = off+7+salt_length;
+        let mut off = off+5+salt_length;
         let next_hash_length = buf[off+1] as usize;
         let next_hash = buf[off + 1..off + 1 + next_hash_length].to_vec();
         off += 1+next_hash_length;
@@ -55,8 +51,8 @@ impl RRData for NSec3RRData {
 
         let mut types = Vec::new();
 
-        while off < length {
-            if off+2 > length {
+        while off < len {
+            if off+2 > len {
                 return Err(RRDataError("truncated NSEC window header".to_string()));
             }
 
@@ -68,7 +64,7 @@ impl RRData for NSec3RRData {
                 return Err(RRDataError("invalid NSEC window length".to_string()));
             }
 
-            if off + data_length > length {
+            if off + data_length > len {
                 return Err(RRDataError("truncated NSEC bitmap".to_string()));
             }
 
@@ -100,12 +96,7 @@ impl RRData for NSec3RRData {
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = Vec::with_capacity(128);
-
-        unsafe { buf.set_len(2); };
-
-        let length = (buf.len()-2) as u16;
-        buf[0..2].copy_from_slice(&length.to_be_bytes());
+        let mut buf = Vec::with_capacity(126);
 
         Ok(buf)
     }
@@ -237,6 +228,6 @@ impl fmt::Display for NSec3RRData {
 #[test]
 fn test() {
     let buf = vec![ ];
-    let record = NSec3RRData::from_bytes(&buf, 0).unwrap();
+    let record = NSec3RRData::from_bytes(&buf, 0, buf.len()).unwrap();
     assert_eq!(buf, record.to_bytes().unwrap());
 }

@@ -35,16 +35,14 @@ impl Default for LocRRData {
 
 impl RRData for LocRRData {
 
-    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RRDataError> {
-        //let length = u16::from_be_bytes([buf[off], buf[off+1]]);
-
-        let version = buf[off+2];
-        let size = buf[off+3];
-        let h_precision = buf[off+4];
-        let v_precision = buf[off+5];
-        let latitude = u32::from_be_bytes([buf[off+6], buf[off+7], buf[off+8], buf[off+9]]);
-        let longitude = u32::from_be_bytes([buf[off+10], buf[off+11], buf[off+12], buf[off+13]]);
-        let altitude = u32::from_be_bytes([buf[off+14], buf[off+15], buf[off+16], buf[off+17]]);
+    fn from_bytes(buf: &[u8], off: usize, _len: usize) -> Result<Self, RRDataError> {
+        let version = buf[off];
+        let size = buf[off+1];
+        let h_precision = buf[off+2];
+        let v_precision = buf[off+3];
+        let latitude = u32::from_be_bytes([buf[off+4], buf[off+5], buf[off+6], buf[off+7]]);
+        let longitude = u32::from_be_bytes([buf[off+8], buf[off+9], buf[off+10], buf[off+11]]);
+        let altitude = u32::from_be_bytes([buf[off+12], buf[off+13], buf[off+14], buf[off+15]]);
 
         Ok(Self {
             version,
@@ -62,9 +60,7 @@ impl RRData for LocRRData {
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = Vec::with_capacity(18);
-
-        unsafe { buf.set_len(2); };
+        let mut buf = Vec::with_capacity(16);
 
         buf.push(self.version);
         buf.push(self.size);
@@ -73,9 +69,6 @@ impl RRData for LocRRData {
         buf.extend_from_slice(&self.latitude.to_be_bytes());
         buf.extend_from_slice(&self.longitude.to_be_bytes());
         buf.extend_from_slice(&self.altitude.to_be_bytes());
-
-        let length = (buf.len()-2) as u16;
-        buf[0..2].copy_from_slice(&length.to_be_bytes());
 
         Ok(buf)
     }
@@ -249,7 +242,7 @@ impl fmt::Display for LocRRData {
 
 #[test]
 fn test() {
-    let buf = vec![ 0x0, 0x10, 0x0, 0x0, 0x0, 0x0, 0x6e, 0x67, 0x2d, 0xa0, 0x9c, 0xf7, 0xc5, 0x80, 0x0, 0x0, 0x0, 0x0 ];
-    let record = LocRRData::from_bytes(&buf, 0).unwrap();
+    let buf = vec![ 0x0, 0x0, 0x0, 0x0, 0x6e, 0x67, 0x2d, 0xa0, 0x9c, 0xf7, 0xc5, 0x80, 0x0, 0x0, 0x0, 0x0 ];
+    let record = LocRRData::from_bytes(&buf, 0, buf.len()).unwrap();
     assert_eq!(buf, record.to_bytes().unwrap());
 }

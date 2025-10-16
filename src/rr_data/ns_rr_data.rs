@@ -23,10 +23,8 @@ impl Default for NsRRData {
 
 impl RRData for NsRRData {
 
-    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RRDataError> {
-        //let length = u16::from_be_bytes([buf[off], buf[off+1]]);
-
-        let (server, _) = unpack_fqdn(buf, off+2);
+    fn from_bytes(buf: &[u8], off: usize, _len: usize) -> Result<Self, RRDataError> {
+        let (server, _) = unpack_fqdn(buf, off);
 
         Ok(Self {
             server: Some(server)
@@ -34,29 +32,19 @@ impl RRData for NsRRData {
     }
 
     fn to_wire(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = Vec::with_capacity(34);
-
-        unsafe { buf.set_len(2); };
+        let mut buf = Vec::with_capacity(32);
 
         buf.extend_from_slice(&pack_fqdn_compressed(self.server.as_ref()
-            .ok_or_else(|| RRDataError("server param was not set".to_string()))?, compression_data, off+2));
-
-        let length = (buf.len()-2) as u16;
-        buf[0..2].copy_from_slice(&length.to_be_bytes());
+            .ok_or_else(|| RRDataError("server param was not set".to_string()))?, compression_data, off));
 
         Ok(buf)
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = Vec::with_capacity(34);
-
-        unsafe { buf.set_len(2); };
+        let mut buf = Vec::with_capacity(32);
 
         buf.extend_from_slice(&pack_fqdn(self.server.as_ref()
             .ok_or_else(|| RRDataError("server param was not set".to_string()))?));
-
-        let length = (buf.len()-2) as u16;
-        buf[0..2].copy_from_slice(&length.to_be_bytes());
 
         Ok(buf)
     }
@@ -123,7 +111,7 @@ impl fmt::Display for NsRRData {
 
 #[test]
 fn test() {
-    let buf = vec![ 0x0, 0xf, 0x3, 0x6e, 0x73, 0x32, 0x5, 0x66, 0x69, 0x6e, 0x64, 0x39, 0x3, 0x6e, 0x65, 0x74, 0x0 ];
-    let record = NsRRData::from_bytes(&buf, 0).unwrap();
+    let buf = vec![ 0x3, 0x6e, 0x73, 0x32, 0x5, 0x66, 0x69, 0x6e, 0x64, 0x39, 0x3, 0x6e, 0x65, 0x74, 0x0 ];
+    let record = NsRRData::from_bytes(&buf, 0, buf.len()).unwrap();
     assert_eq!(buf, record.to_bytes().unwrap());
 }

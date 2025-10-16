@@ -513,7 +513,7 @@ fn section_from_wire(buf: &[u8], off: &mut usize, count: u16) -> Result<Vec<Reco
 
         match _type {
             RRTypes::Opt => {
-                let data = OptRRData::from_bytes(buf, *off+2).map_err(|e| MessageError::RecordError(e.to_string()))?;
+                let data = OptRRData::from_bytes(buf, *off+2, 0).map_err(|e| MessageError::RecordError(e.to_string()))?;
                 *off += 5+u16::from_be_bytes([buf[*off+3], buf[*off+4]]) as usize;
             }
             _ => {
@@ -522,14 +522,14 @@ fn section_from_wire(buf: &[u8], off: &mut usize, count: u16) -> Result<Vec<Reco
                 let class = RRClasses::try_from(class & 0x7FFF).map_err(|e| MessageError::RecordError(e.to_string()))?;
                 let ttl = u32::from_be_bytes([buf[*off+4], buf[*off+5], buf[*off+6], buf[*off+7]]);
 
-                let length = u16::from_be_bytes([buf[*off+8], buf[*off+9]]);
+                let length = u16::from_be_bytes([buf[*off+8], buf[*off+9]]) as usize;
                 let data = match length {
                     0 => None,
-                    _ => Some(<dyn RRData>::from_wire(&_type, &class, buf, *off+8).map_err(|e| MessageError::RecordError(e.to_string()))?)
+                    _ => Some(<dyn RRData>::from_wire(&_type, &class, buf, *off+10, length).map_err(|e| MessageError::RecordError(e.to_string()))?)
                 };
 
                 section.push(Record::new(&fqdn, class, _type, ttl, data));
-                *off += 10+length as usize;
+                *off += 10+length;
             }
         }
     }
@@ -547,7 +547,7 @@ fn section_to_wire(compression_data: &mut HashMap<String, usize>, off: usize, se
     for record in section.iter() {
         let fqdn = pack_fqdn_compressed(&record.get_fqdn(), compression_data, off);
 
-        off += fqdn.len()+8;
+        off += fqdn.len()+10;
 
         match &record.get_data() {
             Some(data) => {
@@ -564,6 +564,7 @@ fn section_to_wire(compression_data: &mut HashMap<String, usize>, off: usize, se
                         buf.extend_from_slice(&record.get_class().get_code().to_be_bytes());
                         buf.extend_from_slice(&record.get_ttl().to_be_bytes());
 
+                        buf.extend_from_slice(&(r.len() as u16).to_be_bytes());
                         buf.extend_from_slice(&r);
                         off += r.len();
                         i += 1;
@@ -572,7 +573,7 @@ fn section_to_wire(compression_data: &mut HashMap<String, usize>, off: usize, se
                 }
             }
             None => {
-                if off+2 > max_payload_len {
+                if off > max_payload_len {
                     truncated = true;
                     break;
                 }
@@ -585,7 +586,6 @@ fn section_to_wire(compression_data: &mut HashMap<String, usize>, off: usize, se
 
                 buf.extend_from_slice(&0u16.to_be_bytes());
 
-                off += 2;
                 i += 1;
             }
         }

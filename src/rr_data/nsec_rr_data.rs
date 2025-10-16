@@ -27,17 +27,14 @@ impl Default for NSecRRData {
 
 impl RRData for NSecRRData {
 
-    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RRDataError> {
-        let mut length = u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
+    fn from_bytes(buf: &[u8], off: usize, len: usize) -> Result<Self, RRDataError> {
+        let (next_domain, next_domain_length) = unpack_fqdn(buf, off);
 
-        let (next_domain, next_domain_length) = unpack_fqdn(buf, off+2);
-
-        length += off+2;
-        let mut off = off+2+next_domain_length;
+        let mut off = off+next_domain_length;
         let mut types = Vec::new();
 
-        while off < length {
-            if off+2 > length {
+        while off < len {
+            if off+2 > len {
                 return Err(RRDataError("truncated NSEC window header".to_string()));
             }
 
@@ -49,7 +46,7 @@ impl RRData for NSecRRData {
                 return Err(RRDataError("invalid NSEC window length".to_string()));
             }
 
-            if off + data_length > length {
+            if off + data_length > len {
                 return Err(RRDataError("truncated NSEC bitmap".to_string()));
             }
 
@@ -73,12 +70,10 @@ impl RRData for NSecRRData {
     }
 
     fn to_wire(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = Vec::with_capacity(96);
-
-        unsafe { buf.set_len(2); };
+        let mut buf = Vec::with_capacity(94);
 
         buf.extend_from_slice(&pack_fqdn_compressed(self.next_domain.as_ref()
-            .ok_or_else(|| RRDataError("mailbox param was not set".to_string()))?, compression_data, off+2));
+            .ok_or_else(|| RRDataError("mailbox param was not set".to_string()))?, compression_data, off));
 
         let mut windows: Vec<Vec<u8>> = vec![Vec::new(); 256];
 
@@ -96,7 +91,6 @@ impl RRData for NSecRRData {
             bm[byte_i] |= 1 << bit_in_byte;
         }
 
-
         for (win, bm) in windows.into_iter().enumerate() {
             let mut used = bm.len();
             while used > 0 && bm[used - 1] == 0 {
@@ -111,16 +105,11 @@ impl RRData for NSecRRData {
             buf.extend_from_slice(&bm[..used]);
         }
 
-        let length = (buf.len()-2) as u16;
-        buf[0..2].copy_from_slice(&length.to_be_bytes());
-
         Ok(buf)
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = Vec::with_capacity(96);
-
-        unsafe { buf.set_len(2); };
+        let mut buf = Vec::with_capacity(94);
 
         buf.extend_from_slice(&pack_fqdn(self.next_domain.as_ref()
             .ok_or_else(|| RRDataError("mailbox param was not set".to_string()))?));
@@ -141,7 +130,6 @@ impl RRData for NSecRRData {
             bm[byte_i] |= 1 << bit_in_byte;
         }
 
-
         for (win, bm) in windows.into_iter().enumerate() {
             let mut used = bm.len();
             while used > 0 && bm[used - 1] == 0 {
@@ -155,9 +143,6 @@ impl RRData for NSecRRData {
             buf.push(used as u8);
             buf.extend_from_slice(&bm[..used]);
         }
-
-        let length = (buf.len()-2) as u16;
-        buf[0..2].copy_from_slice(&length.to_be_bytes());
 
         Ok(buf)
     }
@@ -242,7 +227,7 @@ impl fmt::Display for NSecRRData {
 
 #[test]
 fn test() {
-    let buf = vec![ 0x0, 0x1b, 0x1, 0x0, 0x5, 0x66, 0x69, 0x6e, 0x64, 0x39, 0x3, 0x6e, 0x65, 0x74, 0x0, 0x0, 0x9, 0x62, 0x5, 0x80, 0xc, 0x54, 0xb, 0x8d, 0x1c, 0xc0, 0x1, 0x1, 0xc0 ];
-    let record = NSecRRData::from_bytes(&buf, 0).unwrap();
+    let buf = vec![ 0x1, 0x0, 0x5, 0x66, 0x69, 0x6e, 0x64, 0x39, 0x3, 0x6e, 0x65, 0x74, 0x0, 0x0, 0x9, 0x62, 0x5, 0x80, 0xc, 0x54, 0xb, 0x8d, 0x1c, 0xc0, 0x1, 0x1, 0xc0 ];
+    let record = NSecRRData::from_bytes(&buf, 0, buf.len()).unwrap();
     assert_eq!(buf, record.to_bytes().unwrap());
 }

@@ -29,16 +29,12 @@ impl Default for SmimeaRRData {
 
 impl RRData for SmimeaRRData {
 
-    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RRDataError> {
-        let mut length = u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
+    fn from_bytes(buf: &[u8], off: usize, len: usize) -> Result<Self, RRDataError> {
+        let usage = buf[off];
+        let selector = buf[off+1];
+        let matching_type = buf[off+2];
 
-        let usage = buf[off+2];
-        let selector = buf[off+3];
-        let matching_type = buf[off+4];
-
-        length += off+2;
-
-        let certificate = buf[off+5..length].to_vec();
+        let certificate = buf[off+3..len].to_vec();
 
         Ok(Self {
             usage,
@@ -53,18 +49,13 @@ impl RRData for SmimeaRRData {
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = Vec::with_capacity(48);
-
-        unsafe { buf.set_len(2); };
+        let mut buf = Vec::with_capacity(46);
 
         buf.push(self.usage);
         buf.push(self.selector);
         buf.push(self.matching_type);
 
         buf.extend_from_slice(&self.certificate);
-
-        let length = (buf.len()-2) as u16;
-        buf[0..2].copy_from_slice(&length.to_be_bytes());
 
         Ok(buf)
     }
@@ -163,7 +154,7 @@ impl fmt::Display for SmimeaRRData {
 
 #[test]
 fn test() {
-    let buf = vec![ 0x0, 0x1a, 0x1, 0x2, 0x3, 0x30, 0x25, 0x1f, 0xd9, 0x47, 0x7c, 0xfd, 0x17, 0x6a, 0x98, 0x3a, 0x34, 0xe1, 0x90, 0xbb, 0x7d, 0xa3, 0xc2, 0xf3, 0x7c, 0xa, 0xba, 0x95 ];
-    let record = SmimeaRRData::from_bytes(&buf, 0).unwrap();
+    let buf = vec![ 0x1, 0x2, 0x3, 0x30, 0x25, 0x1f, 0xd9, 0x47, 0x7c, 0xfd, 0x17, 0x6a, 0x98, 0x3a, 0x34, 0xe1, 0x90, 0xbb, 0x7d, 0xa3, 0xc2, 0xf3, 0x7c, 0xa, 0xba, 0x95 ];
+    let record = SmimeaRRData::from_bytes(&buf, 0, buf.len()).unwrap();
     assert_eq!(buf, record.to_bytes().unwrap());
 }

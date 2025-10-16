@@ -29,10 +29,8 @@ impl Default for DnsKeyRRData {
 
 impl RRData for DnsKeyRRData {
 
-    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RRDataError> {
-        let mut length = u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
-
-        let flags = u16::from_be_bytes([buf[off+2], buf[off+3]]);
+    fn from_bytes(buf: &[u8], off: usize, len: usize) -> Result<Self, RRDataError> {
+        let flags = u16::from_be_bytes([buf[off], buf[off+1]]);
         /*
         Flags: 0x0100
             .... ...1 .... .... = Zone Key: This is the zone key for specified zone
@@ -41,12 +39,10 @@ impl RRData for DnsKeyRRData {
             0000 000. .000 000. = Key Signing Key: 0x0000
         */
 
-        let protocol = buf[off+4];
-        let algorithm = buf[off+5];
+        let protocol = buf[off+2];
+        let algorithm = buf[off+3];
 
-        length = off+2;
-
-        let public_key = buf[off+6..length].to_vec();
+        let public_key = buf[off+4..off+len].to_vec();
 
         Ok(Self {
             flags,
@@ -61,18 +57,13 @@ impl RRData for DnsKeyRRData {
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = Vec::with_capacity(96);
-
-        unsafe { buf.set_len(2); };
+        let mut buf = Vec::with_capacity(94);
 
         buf.extend_from_slice(&self.flags.to_be_bytes());
         buf.push(self.protocol);
         buf.push(self.algorithm);
 
         buf.extend_from_slice(&self.public_key);
-
-        let length = (buf.len()-2) as u16;
-        buf[0..2].copy_from_slice(&length.to_be_bytes());
 
         Ok(buf)
     }
@@ -172,6 +163,6 @@ impl fmt::Display for DnsKeyRRData {
 #[test]
 fn test() {
     let buf = vec![ ];
-    let record = DnsKeyRRData::from_bytes(&buf, 0).unwrap();
+    let record = DnsKeyRRData::from_bytes(&buf, 0, buf.len()).unwrap();
     assert_eq!(buf, record.to_bytes().unwrap());
 }

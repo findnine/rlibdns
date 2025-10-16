@@ -43,25 +43,21 @@ impl Default for RRSigRRData {
 
 impl RRData for RRSigRRData {
 
-    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RRDataError> {
-        let mut length = u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
-
-        let type_covered = RRTypes::try_from(u16::from_be_bytes([buf[off+2], buf[off+3]]))
+    fn from_bytes(buf: &[u8], off: usize, len: usize) -> Result<Self, RRDataError> {
+        let type_covered = RRTypes::try_from(u16::from_be_bytes([buf[off], buf[off+1]]))
             .map_err(|e| RRDataError(e.to_string()))?;
 
-        let algorithm = buf[off+4];
-        let labels = buf[off+5];
+        let algorithm = buf[off+2];
+        let labels = buf[off+3];
 
-        let original_ttl = u32::from_be_bytes([buf[off+6], buf[off+7], buf[off+8], buf[off+9]]);
-        let expiration = u32::from_be_bytes([buf[off+10], buf[off+11], buf[off+12], buf[off+13]]);
-        let inception = u32::from_be_bytes([buf[off+14], buf[off+15], buf[off+16], buf[off+17]]);
-        let key_tag = u16::from_be_bytes([buf[off+18], buf[off+19]]);
+        let original_ttl = u32::from_be_bytes([buf[off+4], buf[off+5], buf[off+6], buf[off+7]]);
+        let expiration = u32::from_be_bytes([buf[off+8], buf[off+9], buf[off+10], buf[off+11]]);
+        let inception = u32::from_be_bytes([buf[off+12], buf[off+13], buf[off+14], buf[off+15]]);
+        let key_tag = u16::from_be_bytes([buf[off+16], buf[off+17]]);
 
-        let (signer_name, signer_name_length) = unpack_fqdn(buf, off+20);
+        let (signer_name, signer_name_length) = unpack_fqdn(buf, off+18);
 
-        length += off+2;
-
-        let signature = buf[off+20+signer_name_length..length].to_vec();
+        let signature = buf[off+18+signer_name_length..len].to_vec();
 
         Ok(Self {
             type_covered: Some(type_covered),
@@ -77,49 +73,45 @@ impl RRData for RRSigRRData {
     }
 
     fn to_wire(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = vec![0u8; 20]; //192 (ECDSA/Ed25519) / 320 (RSA)
+        let mut buf = vec![0u8; 18]; //190 (ECDSA/Ed25519) / 318 (RSA)
 
-        buf.splice(2..4, self.type_covered.as_ref()
+        buf.splice(0..2, self.type_covered.as_ref()
             .ok_or_else(|| RRDataError("type_covered param was not set".to_string()))?.get_code().to_be_bytes());
 
-        buf[4] = self.algorithm;
-        buf[5] = self.labels;
+        buf[2] = self.algorithm;
+        buf[3] = self.labels;
 
-        buf.splice(6..10, self.original_ttl.to_be_bytes());
-        buf.splice(10..14, self.expiration.to_be_bytes());
-        buf.splice(14..18, self.inception.to_be_bytes());
-        buf.splice(18..20, self.key_tag.to_be_bytes());
+        buf.splice(4..8, self.original_ttl.to_be_bytes());
+        buf.splice(8..12, self.expiration.to_be_bytes());
+        buf.splice(12..16, self.inception.to_be_bytes());
+        buf.splice(16..18, self.key_tag.to_be_bytes());
 
         buf.extend_from_slice(&pack_fqdn_compressed(self.signer_name.as_ref()
-            .ok_or_else(|| RRDataError("signer_name param was not set".to_string()))?, compression_data, off+22));
+            .ok_or_else(|| RRDataError("signer_name param was not set".to_string()))?, compression_data, off+20));
 
         buf.extend_from_slice(&self.signature);
-
-        buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
 
         Ok(buf)
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = vec![0u8; 20]; //192 (ECDSA/Ed25519) / 320 (RSA)
+        let mut buf = vec![0u8; 18]; //190 (ECDSA/Ed25519) / 318 (RSA)
 
-        buf.splice(2..4, self.type_covered.as_ref()
+        buf.splice(0..2, self.type_covered.as_ref()
             .ok_or_else(|| RRDataError("type_covered param was not set".to_string()))?.get_code().to_be_bytes());
 
-        buf[4] = self.algorithm;
-        buf[5] = self.labels;
+        buf[2] = self.algorithm;
+        buf[3] = self.labels;
 
-        buf.splice(6..10, self.original_ttl.to_be_bytes());
-        buf.splice(10..14, self.expiration.to_be_bytes());
-        buf.splice(14..18, self.inception.to_be_bytes());
-        buf.splice(18..20, self.key_tag.to_be_bytes());
+        buf.splice(4..8, self.original_ttl.to_be_bytes());
+        buf.splice(8..12, self.expiration.to_be_bytes());
+        buf.splice(12..16, self.inception.to_be_bytes());
+        buf.splice(16..18, self.key_tag.to_be_bytes());
 
         buf.extend_from_slice(&pack_fqdn(self.signer_name.as_ref()
             .ok_or_else(|| RRDataError("signer_name param was not set".to_string()))?));
 
         buf.extend_from_slice(&self.signature);
-
-        buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
 
         Ok(buf)
     }
@@ -274,7 +266,7 @@ impl fmt::Display for RRSigRRData {
 
 #[test]
 fn test() {
-    let buf = vec![ 0x0, 0x5d, 0x0, 0x2f, 0xd, 0x2, 0x0, 0x0, 0x7, 0x8, 0x68, 0xe7, 0x3c, 0x8d, 0x68, 0xe4, 0x7d, 0x6d, 0x86, 0xc9, 0x5, 0x66, 0x69, 0x6e, 0x64, 0x39, 0x3, 0x6e, 0x65, 0x74, 0x0, 0xf4, 0xd0, 0x3b, 0x11, 0x97, 0x31, 0x45, 0x12, 0x23, 0x4c, 0x45, 0x1a, 0xef, 0x28, 0xc0, 0x3c, 0xf7, 0xfc, 0x1b, 0x6b, 0xa7, 0x21, 0x1f, 0xe1, 0xc9, 0xb, 0x2f, 0x76, 0xc7, 0xb8, 0x52, 0x9, 0x83, 0x96, 0xbc, 0x69, 0x10, 0x43, 0x73, 0xe, 0x5c, 0x1, 0xf4, 0x78, 0x4e, 0x49, 0x86, 0xe7, 0xdf, 0xf6, 0xa, 0xa3, 0x1a, 0x75, 0xc2, 0x27, 0x53, 0xfb, 0x59, 0x52, 0x99, 0xb1, 0x44, 0xff ];
-    let record = RRSigRRData::from_bytes(&buf, 0).unwrap();
+    let buf = vec![ 0x0, 0x2f, 0xd, 0x2, 0x0, 0x0, 0x7, 0x8, 0x68, 0xe7, 0x3c, 0x8d, 0x68, 0xe4, 0x7d, 0x6d, 0x86, 0xc9, 0x5, 0x66, 0x69, 0x6e, 0x64, 0x39, 0x3, 0x6e, 0x65, 0x74, 0x0, 0xf4, 0xd0, 0x3b, 0x11, 0x97, 0x31, 0x45, 0x12, 0x23, 0x4c, 0x45, 0x1a, 0xef, 0x28, 0xc0, 0x3c, 0xf7, 0xfc, 0x1b, 0x6b, 0xa7, 0x21, 0x1f, 0xe1, 0xc9, 0xb, 0x2f, 0x76, 0xc7, 0xb8, 0x52, 0x9, 0x83, 0x96, 0xbc, 0x69, 0x10, 0x43, 0x73, 0xe, 0x5c, 0x1, 0xf4, 0x78, 0x4e, 0x49, 0x86, 0xe7, 0xdf, 0xf6, 0xa, 0xa3, 0x1a, 0x75, 0xc2, 0x27, 0x53, 0xfb, 0x59, 0x52, 0x99, 0xb1, 0x44, 0xff ];
+    let record = RRSigRRData::from_bytes(&buf, 0, buf.len()).unwrap();
     assert_eq!(buf, record.to_bytes().unwrap());
 }

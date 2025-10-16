@@ -47,7 +47,7 @@ impl Display for RRDataError {
 
 pub trait RRData: Display + Debug + Send + Sync {
 
-    fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RRDataError> where Self: Sized;
+    fn from_bytes(buf: &[u8], off: usize, len: usize) -> Result<Self, RRDataError> where Self: Sized;
 
     fn to_wire(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError>;
 
@@ -129,42 +129,42 @@ impl dyn RRData {
         })
     }
 
-    pub fn from_wire(_type: &RRTypes, class: &RRClasses, buf: &[u8], off: usize) -> Result<Box<dyn RRData>, RRDataError> {
+    pub fn from_wire(_type: &RRTypes, class: &RRClasses, buf: &[u8], off: usize, len: usize) -> Result<Box<dyn RRData>, RRDataError> {
         Ok(match _type {
             RRTypes::A      => {
                 match class {
-                    RRClasses::Ch => ChARRData::from_bytes(buf, off)?.upcast(),
-                    _ => InARRData::from_bytes(buf, off)?.upcast()
+                    RRClasses::Ch => ChARRData::from_bytes(buf, off, len)?.upcast(),
+                    _ => InARRData::from_bytes(buf, off, len)?.upcast()
                 }
             }
-            RRTypes::Aaaa   => AaaaRRData::from_bytes(buf, off)?.upcast(),
-            RRTypes::Ns     => NsRRData::from_bytes(buf, off)?.upcast(),
-            RRTypes::CName  => CNameRRData::from_bytes(buf, off)?.upcast(),
-            RRTypes::Soa    => SoaRRData::from_bytes(buf, off)?.upcast(),
-            RRTypes::Ptr    => PtrRRData::from_bytes(buf, off)?.upcast(),
-            RRTypes::HInfo  => HInfoRRData::from_bytes(buf, off)?.upcast(),
-            RRTypes::Mx     => MxRRData::from_bytes(buf, off)?.upcast(),
-            RRTypes::Txt    => TxtRRData::from_bytes(buf, off)?.upcast(),
-            RRTypes::Loc    => LocRRData::from_bytes(buf, off)?.upcast(),
-            RRTypes::Srv    => SrvRRData::from_bytes(buf, off)?.upcast(),
-            RRTypes::Naptr  => NaptrRRData::from_bytes(buf, off)?.upcast(),
-            RRTypes::SshFp  => SshFpRRData::from_bytes(buf, off)?.upcast(),
-            RRTypes::RRSig  => RRSigRRData::from_bytes(buf, off)?.upcast(),
-            RRTypes::NSec   => NSecRRData::from_bytes(buf, off)?.upcast(),
-            RRTypes::DnsKey => DnsKeyRRData::from_bytes(buf, off)?.upcast(),
-            RRTypes::Ds     => DsRRData::from_bytes(buf, off)?.upcast(),
-            RRTypes::NSec3Param   => NSec3ParamRRData::from_bytes(buf, off)?.upcast(),
-            RRTypes::NSec3   => NSec3RRData::from_bytes(buf, off)?.upcast(),
-            RRTypes::Smimea => SmimeaRRData::from_bytes(buf, off)?.upcast(),
-            RRTypes::Svcb   => SvcbRRData::from_bytes(buf, off)?.upcast(),
-            RRTypes::Https  => HttpsRRData::from_bytes(buf, off)?.upcast(),
+            RRTypes::Aaaa   => AaaaRRData::from_bytes(buf, off, len)?.upcast(),
+            RRTypes::Ns     => NsRRData::from_bytes(buf, off, len)?.upcast(),
+            RRTypes::CName  => CNameRRData::from_bytes(buf, off, len)?.upcast(),
+            RRTypes::Soa    => SoaRRData::from_bytes(buf, off, len)?.upcast(),
+            RRTypes::Ptr    => PtrRRData::from_bytes(buf, off, len)?.upcast(),
+            RRTypes::HInfo  => HInfoRRData::from_bytes(buf, off, len)?.upcast(),
+            RRTypes::Mx     => MxRRData::from_bytes(buf, off, len)?.upcast(),
+            RRTypes::Txt    => TxtRRData::from_bytes(buf, off, len)?.upcast(),
+            RRTypes::Loc    => LocRRData::from_bytes(buf, off, len)?.upcast(),
+            RRTypes::Srv    => SrvRRData::from_bytes(buf, off, len)?.upcast(),
+            RRTypes::Naptr  => NaptrRRData::from_bytes(buf, off, len)?.upcast(),
+            RRTypes::SshFp  => SshFpRRData::from_bytes(buf, off, len)?.upcast(),
+            RRTypes::RRSig  => RRSigRRData::from_bytes(buf, off, len)?.upcast(),
+            RRTypes::NSec   => NSecRRData::from_bytes(buf, off, len)?.upcast(),
+            RRTypes::DnsKey => DnsKeyRRData::from_bytes(buf, off, len)?.upcast(),
+            RRTypes::Ds     => DsRRData::from_bytes(buf, off, len)?.upcast(),
+            RRTypes::NSec3Param   => NSec3ParamRRData::from_bytes(buf, off, len)?.upcast(),
+            RRTypes::NSec3   => NSec3RRData::from_bytes(buf, off, len)?.upcast(),
+            RRTypes::Smimea => SmimeaRRData::from_bytes(buf, off, len)?.upcast(),
+            RRTypes::Svcb   => SvcbRRData::from_bytes(buf, off, len)?.upcast(),
+            RRTypes::Https  => HttpsRRData::from_bytes(buf, off, len)?.upcast(),
             /*
             RRTypes::Spf => {
                 todo!()
             }*/
-            RRTypes::TKey   => TKeyRRData::from_bytes(buf, off)?.upcast(),
-            RRTypes::TSig   => TSigRRData::from_bytes(buf, off)?.upcast(),
-            RRTypes::Uri    => UriRRData::from_bytes(buf, off)?.upcast(),
+            RRTypes::TKey   => TKeyRRData::from_bytes(buf, off, len)?.upcast(),
+            RRTypes::TSig   => TSigRRData::from_bytes(buf, off, len)?.upcast(),
+            RRTypes::Uri    => UriRRData::from_bytes(buf, off, len)?.upcast(),
             /*RRTypes::Caa => {
                 todo!()
             }
