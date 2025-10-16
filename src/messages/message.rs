@@ -154,7 +154,7 @@ impl Message {
         let mut truncated = false;
 
         for query in &self.queries {
-            let q = query.to_bytes_compressed(&mut compression_data, off);
+            let q = query.to_wire(&mut compression_data, off);
             if off+q.len() > max_payload_len {
                 truncated = true;
                 break;
@@ -453,7 +453,7 @@ impl<'a> Iterator for WireIter<'a> {
         let mut truncated = false;
 
         for query in &self.message.queries {
-            let q = query.to_bytes_compressed(&mut compression_data, off);
+            let q = query.to_wire(&mut compression_data, off);
             if off+q.len() > self.max_payload_len {
                 truncated = true;
                 break;

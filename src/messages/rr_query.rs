@@ -38,7 +38,7 @@ impl RRQuery {
         })
     }
 
-    pub fn to_bytes_compressed(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Vec<u8> {
+    pub fn to_wire(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Vec<u8> {
         let mut buf = pack_fqdn_compressed(&self.fqdn, compression_data, off);
 
         buf.extend_from_slice(&self._type.get_code().to_be_bytes());
