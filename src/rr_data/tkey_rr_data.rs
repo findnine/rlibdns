@@ -136,9 +136,15 @@ impl RRData for TKeyRRData {
 
 impl TKeyRRData {
 
-    pub fn new() -> Self {
+    pub fn new(algorithm_name: &str, inception: u32, expiration: u32, mode: u16, error: u16, key: Vec<u8>, data: Vec<u8>) -> Self {
         Self {
-            ..Self::default()
+            algorithm_name: Some(algorithm_name.to_string()),
+            inception,
+            expiration,
+            mode,
+            error,
+            key,
+            data
         }
     }
 }
