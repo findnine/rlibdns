@@ -51,14 +51,17 @@ impl RRData for UriRRData {
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = vec![0u8; 6];
+        let mut buf = Vec::with_capacity(96);
 
-        buf.splice(2..4, self.priority.to_be_bytes());
-        buf.splice(4..6, self.weight.to_be_bytes());
+        unsafe { buf.set_len(2); };
+
+        buf.extend_from_slice(&self.priority.to_be_bytes());
+        buf.extend_from_slice(&self.weight.to_be_bytes());
 
         buf.extend_from_slice(self.target.as_ref().ok_or_else(|| RRDataError("target param was not set".to_string()))?.as_bytes());
 
-        buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
+        let length = (buf.len()-2) as u16;
+        buf[0..2].copy_from_slice(&length.to_be_bytes());
 
         Ok(buf)
     }

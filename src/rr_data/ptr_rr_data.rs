@@ -50,7 +50,7 @@ impl RRData for PtrRRData {
     }
 
     fn to_wire(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = vec![0u8; 8];
+        let mut buf = vec![0u8; 8]; //34
 
         let mut class = self.class.get_code();
         if self.cache_flush {
@@ -68,7 +68,7 @@ impl RRData for PtrRRData {
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = vec![0u8; 8];
+        let mut buf = vec![0u8; 8]; //34
 
         let mut class = self.class.get_code();
         if self.cache_flush {

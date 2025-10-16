@@ -57,15 +57,18 @@ impl RRData for SmimeaRRData {
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = vec![0u8; 5];
+        let mut buf = Vec::with_capacity(48);
 
-        buf[2] = self.usage;
-        buf[3] = self.selector;
-        buf[4] = self.matching_type;
+        unsafe { buf.set_len(2); };
+
+        buf.push(self.usage);
+        buf.push(self.selector);
+        buf.push(self.matching_type);
 
         buf.extend_from_slice(&self.certificate);
 
-        buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
+        let length = (buf.len()-2) as u16;
+        buf[0..2].copy_from_slice(&length.to_be_bytes());
 
         Ok(buf)
     }

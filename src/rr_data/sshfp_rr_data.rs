@@ -58,7 +58,7 @@ impl RRData for SshFpRRData {
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = vec![0u8; 10];
+        let mut buf = vec![0u8; 10]; //40
 
         buf.splice(0..2, self.class.get_code().to_be_bytes());
         buf.splice(2..6, self.ttl.to_be_bytes());

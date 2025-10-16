@@ -38,23 +38,29 @@ impl RRData for CNameRRData {
     }
 
     fn to_wire(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = vec![0u8; 2];
+        let mut buf = Vec::with_capacity(34);
+
+        unsafe { buf.set_len(2); };
 
         buf.extend_from_slice(&pack_fqdn_compressed(self.target.as_ref()
             .ok_or_else(|| RRDataError("target param was not set".to_string()))?, compression_data, off+2));
 
-        buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
+        let length = (buf.len()-2) as u16;
+        buf[0..2].copy_from_slice(&length.to_be_bytes());
 
         Ok(buf)
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = vec![0u8; 2];
+        let mut buf = Vec::with_capacity(34);
+
+        unsafe { buf.set_len(2); };
 
         buf.extend_from_slice(&pack_fqdn(self.target.as_ref()
             .ok_or_else(|| RRDataError("target param was not set".to_string()))?));
 
-        buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
+        let length = (buf.len()-2) as u16;
+        buf[0..2].copy_from_slice(&length.to_be_bytes());
 
         Ok(buf)
     }

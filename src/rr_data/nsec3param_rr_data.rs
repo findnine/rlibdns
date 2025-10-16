@@ -56,16 +56,19 @@ impl RRData for NSec3ParamRRData {
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = vec![0u8; 7];
+        let mut buf = Vec::with_capacity(24);
 
-        buf[2] = self.algorithm;
-        buf[3] = self.flags;
-        buf.splice(4..6, self.iterations.to_be_bytes());
+        unsafe { buf.set_len(2); };
 
-        buf[6] = self.salt.len() as u8;
+        buf.push(self.algorithm);
+        buf.push(self.flags);
+        buf.extend_from_slice(&self.iterations.to_be_bytes());
+
+        buf.push(self.salt.len() as u8);
         buf.extend_from_slice(&self.salt);
 
-        buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
+        let length = (buf.len()-2) as u16;
+        buf[0..2].copy_from_slice(&length.to_be_bytes());
 
         Ok(buf)
     }

@@ -66,17 +66,20 @@ impl RRData for LocRRData {
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = vec![0u8; 18];
+        let mut buf = Vec::with_capacity(18);
 
-        buf[3] = self.version;
-        buf[4] = self.size;
-        buf[5] = self.h_precision;
-        buf[6] = self.v_precision;
-        buf.splice(6..10, self.latitude.to_be_bytes());
-        buf.splice(10..14, self.longitude.to_be_bytes());
-        buf.splice(14..18, self.altitude.to_be_bytes());
+        unsafe { buf.set_len(2); };
 
-        buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
+        buf.push(self.version);
+        buf.push(self.size);
+        buf.push(self.h_precision);
+        buf.push(self.v_precision);
+        buf.extend_from_slice(&self.latitude.to_be_bytes());
+        buf.extend_from_slice(&self.longitude.to_be_bytes());
+        buf.extend_from_slice(&self.altitude.to_be_bytes());
+
+        let length = (buf.len()-2) as u16;
+        buf[0..2].copy_from_slice(&length.to_be_bytes());
 
         Ok(buf)
     }

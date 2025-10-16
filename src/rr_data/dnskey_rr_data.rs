@@ -65,15 +65,18 @@ impl RRData for DnsKeyRRData {
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = vec![0u8; 6];
+        let mut buf = Vec::with_capacity(96);
 
-        buf.splice(2..4, self.flags.to_be_bytes());
-        buf[4] = self.protocol;
-        buf[5] = self.algorithm;
+        unsafe { buf.set_len(2); };
+
+        buf.extend_from_slice(&self.flags.to_be_bytes());
+        buf.push(self.protocol);
+        buf.push(self.algorithm);
 
         buf.extend_from_slice(&self.public_key);
 
-        buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
+        let length = (buf.len()-2) as u16;
+        buf[0..2].copy_from_slice(&length.to_be_bytes());
 
         Ok(buf)
     }

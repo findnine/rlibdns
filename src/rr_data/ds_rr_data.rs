@@ -54,9 +54,12 @@ impl RRData for DsRRData {
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = vec![0u8; 2];
+        let mut buf = Vec::with_capacity(64);
 
-        buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
+        unsafe { buf.set_len(2); };
+
+        let length = (buf.len()-2) as u16;
+        buf[0..2].copy_from_slice(&length.to_be_bytes());
 
         Ok(buf)
     }

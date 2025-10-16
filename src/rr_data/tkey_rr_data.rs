@@ -76,7 +76,7 @@ impl RRData for TKeyRRData {
     }
 
     fn to_wire(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = vec![0u8; 8];
+        let mut buf = vec![0u8; 8]; //160
 
         buf.splice(0..2, self.class.get_code().to_be_bytes());
         buf.splice(2..6, self.ttl.to_be_bytes());
@@ -102,7 +102,7 @@ impl RRData for TKeyRRData {
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = vec![0u8; 8];
+        let mut buf = vec![0u8; 8]; //160
 
         buf.splice(0..2, self.class.get_code().to_be_bytes());
         buf.splice(2..6, self.ttl.to_be_bytes());

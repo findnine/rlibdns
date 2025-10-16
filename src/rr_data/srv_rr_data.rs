@@ -51,31 +51,37 @@ impl RRData for SrvRRData {
     }
 
     fn to_wire(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = vec![0u8; 8];
+        let mut buf = Vec::with_capacity(64);
 
-        buf.splice(2..4, self.priority.to_be_bytes());
-        buf.splice(4..6, self.weight.to_be_bytes());
-        buf.splice(6..8, self.port.to_be_bytes());
+        unsafe { buf.set_len(2); };
+
+        buf.extend_from_slice(&self.priority.to_be_bytes());
+        buf.extend_from_slice(&self.weight.to_be_bytes());
+        buf.extend_from_slice(&self.port.to_be_bytes());
 
         buf.extend_from_slice(&pack_fqdn_compressed(self.target.as_ref()
             .ok_or_else(|| RRDataError("target param was not set".to_string()))?, compression_data, off+8));
 
-        buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
+        let length = (buf.len()-2) as u16;
+        buf[0..2].copy_from_slice(&length.to_be_bytes());
 
         Ok(buf)
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = vec![0u8; 8];
+        let mut buf = Vec::with_capacity(64);
 
-        buf.splice(2..4, self.priority.to_be_bytes());
-        buf.splice(4..6, self.weight.to_be_bytes());
-        buf.splice(6..8, self.port.to_be_bytes());
+        unsafe { buf.set_len(2); };
+
+        buf.extend_from_slice(&self.priority.to_be_bytes());
+        buf.extend_from_slice(&self.weight.to_be_bytes());
+        buf.extend_from_slice(&self.port.to_be_bytes());
 
         buf.extend_from_slice(&pack_fqdn(self.target.as_ref()
             .ok_or_else(|| RRDataError("target param was not set".to_string()))?));
 
-        buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
+        let length = (buf.len()-2) as u16;
+        buf[0..2].copy_from_slice(&length.to_be_bytes());
 
         Ok(buf)
     }

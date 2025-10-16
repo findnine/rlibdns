@@ -43,27 +43,33 @@ impl RRData for MxRRData {
     }
 
     fn to_wire(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = vec![0u8; 4];
+        let mut buf = Vec::with_capacity(48);
 
-        buf.splice(2..4, self.priority.to_be_bytes());
+        unsafe { buf.set_len(2); };
+
+        buf.extend_from_slice(&self.priority.to_be_bytes());
 
         buf.extend_from_slice(&pack_fqdn_compressed(self.server.as_ref()
             .ok_or_else(|| RRDataError("server param was not set".to_string()))?, compression_data, off+4));
 
-        buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
+        let length = (buf.len()-2) as u16;
+        buf[0..2].copy_from_slice(&length.to_be_bytes());
 
         Ok(buf)
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = vec![0u8; 4];
+        let mut buf = Vec::with_capacity(48);
 
-        buf.splice(2..4, self.priority.to_be_bytes());
+        unsafe { buf.set_len(2); };
+
+        buf.extend_from_slice(&self.priority.to_be_bytes());
 
         buf.extend_from_slice(&pack_fqdn(self.server.as_ref()
             .ok_or_else(|| RRDataError("server param was not set".to_string()))?));
 
-        buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
+        let length = (buf.len()-2) as u16;
+        buf[0..2].copy_from_slice(&length.to_be_bytes());
 
         Ok(buf)
     }

@@ -80,7 +80,7 @@ impl RRData for RRSigRRData {
     }
 
     fn to_wire(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = vec![0u8; 20];
+        let mut buf = vec![0u8; 20]; //192 (ECDSA/Ed25519) / 320 (RSA)
 
         buf.splice(2..4, self.type_covered.as_ref()
             .ok_or_else(|| RRDataError("type_covered param was not set".to_string()))?.get_code().to_be_bytes());
@@ -104,7 +104,7 @@ impl RRData for RRSigRRData {
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = vec![0u8; 20];
+        let mut buf = vec![0u8; 20]; //192 (ECDSA/Ed25519) / 320 (RSA)
 
         buf.splice(2..4, self.type_covered.as_ref()
             .ok_or_else(|| RRDataError("type_covered param was not set".to_string()))?.get_code().to_be_bytes());
