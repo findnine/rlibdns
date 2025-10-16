@@ -25,10 +25,7 @@ impl Default for HInfoRRData {
 impl RRData for HInfoRRData {
 
     fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RRDataError> {
-        let length = u16::from_be_bytes([buf[off], buf[off+1]]);
-        if length == 0 {
-            return Ok(Default::default());
-        }
+        //let length = u16::from_be_bytes([buf[off], buf[off+1]]);
 
         let data_length = buf[off+2] as usize;
         let cpu = String::from_utf8(buf[off+3..off+3+data_length].to_vec()).unwrap();

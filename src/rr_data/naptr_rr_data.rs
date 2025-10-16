@@ -35,10 +35,7 @@ impl Default for NaptrRRData {
 impl RRData for NaptrRRData {
 
     fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RRDataError> {
-        let length = u16::from_be_bytes([buf[off], buf[off+1]]);
-        if length == 0 {
-            return Ok(Default::default());
-        }
+        //let length = u16::from_be_bytes([buf[off], buf[off+1]]);
 
         let order = u16::from_be_bytes([buf[off+2], buf[off+3]]);
         let preference = u16::from_be_bytes([buf[off+4], buf[off+5]]);

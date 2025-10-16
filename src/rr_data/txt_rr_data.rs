@@ -24,9 +24,6 @@ impl RRData for TxtRRData {
 
     fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RRDataError> {
         let mut length = u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
-        if length == 0 {
-            return Ok(Default::default());
-        }
 
         length += off+2;
         let mut off = off+2;

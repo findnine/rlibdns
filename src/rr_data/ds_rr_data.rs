@@ -30,10 +30,7 @@ impl Default for DsRRData {
 impl RRData for DsRRData {
 
     fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RRDataError> {
-        let length = u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
-        if length == 0 {
-            return Ok(Default::default());
-        }
+        let length = u16::from_be_bytes([buf[off], buf[off+1]]);
 
         let key_tag = 0;
         let algorithm = 0;

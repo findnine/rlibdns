@@ -36,10 +36,7 @@ impl Default for SoaRRData {
 impl RRData for SoaRRData {
 
     fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RRDataError> {
-        let length = u16::from_be_bytes([buf[off], buf[off+1]]);
-        if length == 0 {
-            return Ok(Default::default());
-        }
+        //let length = u16::from_be_bytes([buf[off], buf[off+1]]);
 
         let (fqdn, fqdn_length) = unpack_fqdn(buf, off+2);
         let mut off = off+fqdn_length+2;

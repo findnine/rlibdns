@@ -30,10 +30,7 @@ impl Default for NSec3ParamRRData {
 impl RRData for NSec3ParamRRData {
 
     fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RRDataError> {
-        let length = u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
-        if length == 0 {
-            return Ok(Default::default());
-        }
+        //let length = u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
 
         let algorithm = buf[off+2];
         let flags = buf[off+3];

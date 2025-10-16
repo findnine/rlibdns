@@ -27,14 +27,11 @@ impl Default for ChARRData {
 impl RRData for ChARRData {
 
     fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RRDataError> {
-        let length = u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
-        if length == 0 {
-            return Ok(Default::default());
-        }
+        //let length = u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
 
-        let (network, length) = unpack_fqdn(buf, off+2);
+        let (network, network_length) = unpack_fqdn(buf, off+2);
 
-        let address = u16::from_be_bytes([buf[off+2+length], buf[off+3+length]]);
+        let address = u16::from_be_bytes([buf[off+2+network_length], buf[off+3+network_length]]);
 
         Ok(Self {
             network: Some(network),

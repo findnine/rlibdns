@@ -24,10 +24,7 @@ impl Default for CNameRRData {
 impl RRData for CNameRRData {
 
     fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RRDataError> {
-        let length = u16::from_be_bytes([buf[off], buf[off+1]]);
-        if length == 0 {
-            return Ok(Default::default());
-        }
+        //let length = u16::from_be_bytes([buf[off], buf[off+1]]);
 
         let (target, _) = unpack_fqdn(buf, off+2);
 

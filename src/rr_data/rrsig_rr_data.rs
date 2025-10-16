@@ -45,9 +45,6 @@ impl RRData for RRSigRRData {
 
     fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RRDataError> {
         let mut length = u16::from_be_bytes([buf[off], buf[off+1]]) as usize;
-        if length == 0 {
-            return Ok(Default::default());
-        }
 
         let type_covered = RRTypes::try_from(u16::from_be_bytes([buf[off+2], buf[off+3]]))
             .map_err(|e| RRDataError(e.to_string()))?;
