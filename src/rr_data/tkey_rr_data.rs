@@ -186,3 +186,10 @@ impl fmt::Display for TKeyRRData {
                base64::encode(&self.data)) //IF EMPTY USE -
     }
 }
+
+#[test]
+fn test() {
+    let buf = vec![  ];
+    let record = TKeyRRData::from_bytes(&buf, 0).unwrap();
+    assert_eq!(buf, record.to_bytes().unwrap());
+}

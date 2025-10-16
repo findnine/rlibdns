@@ -2,15 +2,12 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
-use crate::messages::inter::rr_classes::RRClasses;
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::utils::fqdn_utils::{pack_fqdn, pack_fqdn_compressed, unpack_fqdn};
 use crate::utils::hex;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct TSigRRData {
-    class: RRClasses,
-    ttl: u32,
     algorithm_name: Option<String>,
     time_signed: u64,
     fudge: u16,
@@ -24,8 +21,6 @@ impl Default for TSigRRData {
 
     fn default() -> Self {
         Self {
-            class: RRClasses::default(),
-            ttl: 0,
             algorithm_name: None,
             time_signed: 0,
             fudge: 0,
@@ -42,13 +37,13 @@ impl RRData for TSigRRData {
     fn from_bytes(buf: &[u8], off: usize) -> Result<Self, RRDataError> {
         let mut off = off;
 
-        let class = RRClasses::try_from(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
-        let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
+        //let class = RRClasses::try_from(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
+        //let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
 
         //let length = u16::from_be_bytes([buf[off+6], buf[off+7]]) as usize;
 
-        let (algorithm_name, algorithm_name_length) = unpack_fqdn(buf, off+8);
-        off += 8+algorithm_name_length;
+        let (algorithm_name, algorithm_name_length) = unpack_fqdn(buf, off+2);
+        off += 2+algorithm_name_length;
 
         let time_signed = ((buf[off] as u64) << 40)
                 | ((buf[off+1] as u64) << 32)
@@ -69,8 +64,6 @@ impl RRData for TSigRRData {
         let data = buf[off + 6..data_length].to_vec();
 
         Ok(Self {
-            class,
-            ttl,
             algorithm_name: Some(algorithm_name),
             time_signed,
             fudge,
@@ -82,13 +75,10 @@ impl RRData for TSigRRData {
     }
 
     fn to_wire(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = vec![0u8; 8]; //160
-
-        buf.splice(0..2, self.class.get_code().to_be_bytes());
-        buf.splice(2..6, self.ttl.to_be_bytes());
+        let mut buf = vec![0u8; 2]; //160
 
         buf.extend_from_slice(&pack_fqdn_compressed(self.algorithm_name.as_ref()
-            .ok_or_else(|| RRDataError("algorithm_name param was not set".to_string()))?, compression_data, off+8)); //PROBABLY NO COMPRESS
+            .ok_or_else(|| RRDataError("algorithm_name param was not set".to_string()))?, compression_data, off+2)); //PROBABLY NO COMPRESS
 
         buf.extend_from_slice(&[
             ((self.time_signed >> 40) & 0xFF) as u8,
@@ -109,16 +99,13 @@ impl RRData for TSigRRData {
         buf.extend_from_slice(&(self.data.len() as u16).to_be_bytes());
         buf.extend_from_slice(&self.data);
 
-        buf.splice(6..8, ((buf.len()-8) as u16).to_be_bytes());
+        buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
 
         Ok(buf)
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = vec![0u8; 8]; //160
-
-        buf.splice(0..2, self.class.get_code().to_be_bytes());
-        buf.splice(2..6, self.ttl.to_be_bytes());
+        let mut buf = vec![0u8; 2]; //160
 
         buf.extend_from_slice(&pack_fqdn(self.algorithm_name.as_ref()
             .ok_or_else(|| RRDataError("algorithm_name param was not set".to_string()))?)); //PROBABLY NO COMPRESS
@@ -142,7 +129,7 @@ impl RRData for TSigRRData {
         buf.extend_from_slice(&(self.data.len() as u16).to_be_bytes());
         buf.extend_from_slice(&self.data);
 
-        buf.splice(6..8, ((buf.len()-8) as u16).to_be_bytes());
+        buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
 
         Ok(buf)
     }
@@ -170,28 +157,16 @@ impl RRData for TSigRRData {
 
 impl TSigRRData {
 
-    pub fn new(ttl: u32, class: RRClasses) -> Self {
+    pub fn new(algorithm_name: &str, time_signed: u64, fudge: u16, mac: Vec<u8>, original_id: u16, error: u16, data: Vec<u8>) -> Self {
         Self {
-            class,
-            ttl,
-            ..Self::default()
+            algorithm_name: Some(algorithm_name.to_string()),
+            time_signed,
+            fudge,
+            mac,
+            original_id,
+            error,
+            data
         }
-    }
-
-    pub fn set_class(&mut self, class: RRClasses) {
-        self.class = class;
-    }
-
-    pub fn get_class(&self) -> RRClasses {
-        self.class
-    }
-
-    pub fn set_ttl(&mut self, ttl: u32) {
-        self.ttl = ttl;
-    }
-
-    pub fn get_ttl(&self) -> u32 {
-        self.ttl
     }
 }
 
@@ -206,4 +181,11 @@ impl fmt::Display for TSigRRData {
                self.error,
                hex::encode(&self.data))
     }
+}
+
+#[test]
+fn test() {
+    let buf = vec![  ];
+    let record = TSigRRData::from_bytes(&buf, 0).unwrap();
+    assert_eq!(buf, record.to_bytes().unwrap());
 }
