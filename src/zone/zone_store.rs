@@ -29,8 +29,8 @@ impl ZoneStore {
 
         for record in reader.records() {
             match record {
-                Ok((query, ttl, data)) => {
-                    zone.add_record(&query, ttl, data);
+                Ok((query, _type, ttl, data)) => {
+                    zone.add_record(&query, _type, ttl, data);
                 }
                 Err(e) => {
                     println!("{}", e);
@@ -47,8 +47,8 @@ impl ZoneStore {
         let mut reader = ZoneReader::open(file_path, fqdn, class)?;
         for record in reader.records() {
             match record {
-                Ok((query, ttl, data)) => {
-                    zone.add_record(&query, ttl, data);
+                Ok((query, _type, ttl, data)) => {
+                    zone.add_record(&query, _type, ttl, data);
                 }
                 Err(e) => {
                     println!("{}", e);

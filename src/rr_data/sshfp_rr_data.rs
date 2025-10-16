@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_classes::RRClasses;
-use crate::messages::inter::rr_types::RRTypes;
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::utils::hex;
 use crate::zone::inter::zone_rr_data::ZoneRRData;
@@ -71,10 +70,6 @@ impl RRData for SshFpRRData {
         buf.splice(6..8, ((buf.len()-8) as u16).to_be_bytes());
 
         Ok(buf)
-    }
-
-    fn get_type(&self) -> RRTypes {
-        RRTypes::SshFp
     }
 
     fn upcast(self) -> Box<dyn RRData> {
@@ -153,10 +148,10 @@ impl ZoneRRData for SshFpRRData {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
         Ok(match index {
-            0 => self.algorithm = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse algorithm param for record type {}", self.get_type())))?,
-            1 => self.fingerprint_type = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse fingerprint_type param for record type {}", self.get_type())))?,
-            2 => self.fingerprint = hex::decode(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse fingerprint param for record type {}", self.get_type())))?,
-            _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, &format!("extra record data found for record type {}", self.get_type())))
+            0 => self.algorithm = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse algorithm param for record type SSHFP"))?,
+            1 => self.fingerprint_type = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse fingerprint_type param for record type SSHFP"))?,
+            2 => self.fingerprint = hex::decode(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse fingerprint param for record type SSHFP"))?,
+            _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found for record type SSHFP"))
         })
     }
 
@@ -168,10 +163,7 @@ impl ZoneRRData for SshFpRRData {
 impl fmt::Display for SshFpRRData {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:<8}{:<8}{:<8}{} {} {}", self.ttl,
-               self.class.to_string(),
-               self.get_type().to_string(),
-               self.algorithm,
+        write!(f, "{} {} {}", self.algorithm,
                self.fingerprint_type,
                hex::encode(&self.fingerprint))
     }

@@ -63,9 +63,8 @@ impl Zone {
         self._type.eq(&ZoneTypes::Master) || self._type.eq(&ZoneTypes::Slave)
     }
 
-    pub fn add_record(&mut self, query: &str, ttl: u32, data: Box<dyn RRData>) {
+    pub fn add_record(&mut self, query: &str, _type: RRTypes, ttl: u32, data: Box<dyn RRData>) {
         let key = encode_fqdn(query);
-        let _type = data.get_type();
 
         match self.sets.get_mut(&key) {
             Some(sets) => {
@@ -88,9 +87,8 @@ impl Zone {
         }
     }
 
-    pub fn remove_record(&mut self, query: &str, data: &Box<dyn RRData>, min_records: usize) -> bool {
+    pub fn remove_record(&mut self, query: &str, _type: &RRTypes, data: &Box<dyn RRData>, min_records: usize) -> bool {
         let key = encode_fqdn(query);
-        let _type = data.get_type();
 
         match self.sets.get_mut(&key) {
             Some(sets) => {

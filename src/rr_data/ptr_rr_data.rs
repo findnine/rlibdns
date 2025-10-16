@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_classes::RRClasses;
-use crate::messages::inter::rr_types::RRTypes;
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::utils::fqdn_utils::{pack_fqdn, pack_fqdn_compressed, unpack_fqdn};
 use crate::zone::inter::zone_rr_data::ZoneRRData;
@@ -85,10 +84,6 @@ impl RRData for PtrRRData {
         Ok(buf)
     }
 
-    fn get_type(&self) -> RRTypes {
-        RRTypes::Ptr
-    }
-
     fn upcast(self) -> Box<dyn RRData> {
         Box::new(self)
     }
@@ -150,8 +145,8 @@ impl ZoneRRData for PtrRRData {
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
         Ok(match index {
             0 => self.fqdn = Some(value.strip_suffix('.')
-                .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, &format!("fqdn param is not fully qualified (missing trailing dot) for record type {}", self.get_type())))?.to_string()),
-            _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, &format!("extra record data found for record type {}", self.get_type())))
+                .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "fqdn param is not fully qualified (missing trailing dot) for record type PTR"))?.to_string()),
+            _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found for record type PTR"))
         })
     }
 
@@ -163,9 +158,6 @@ impl ZoneRRData for PtrRRData {
 impl fmt::Display for PtrRRData {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:<8}{:<8}{:<8}{}", self.ttl,
-               self.class.to_string(),
-               self.get_type().to_string(),
-               format!("{}.", self.fqdn.as_ref().unwrap()))
+        write!(f, "{}", format!("{}.", self.fqdn.as_ref().unwrap()))
     }
 }

@@ -27,4 +27,3 @@ pub mod uri_rr_data;
 pub mod loc_rr_data;
 pub mod sshfp_rr_data;
 pub mod smimea_rr_data;
-pub mod any_rr_data;

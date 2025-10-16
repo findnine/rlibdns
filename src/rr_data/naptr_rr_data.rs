@@ -2,7 +2,6 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
-use crate::messages::inter::rr_types::RRTypes;
 use crate::rr_data::inter::naptr_flags::NaptrFlags;
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
@@ -116,15 +115,11 @@ impl RRData for NaptrRRData {
 
         buf.extend_from_slice(&pack_fqdn(self.replacement.as_ref()
             .ok_or_else(|| RRDataError("replacement param was not set".to_string()))?));
-        
+
         let length = (buf.len()-2) as u16;
         buf[0..2].copy_from_slice(&length.to_be_bytes());
 
         Ok(buf)
-    }
-
-    fn get_type(&self) -> RRTypes {
-        RRTypes::Naptr
     }
 
     fn upcast(self) -> Box<dyn RRData> {
@@ -218,8 +213,8 @@ impl ZoneRRData for NaptrRRData {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
         Ok(match index {
-            0 => self.order = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse order param for record type {}", self.get_type())))?,
-            1 => self.preference = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse preference param for record type {}", self.get_type())))?,
+            0 => self.order = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse order param for record type NAPTR"))?,
+            1 => self.preference = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse preference param for record type NAPTR"))?,
             2 => {
                 let mut flags = Vec::new();
 
@@ -231,7 +226,7 @@ impl ZoneRRData for NaptrRRData {
 
                     flags.push(NaptrFlags::try_from(flag.chars()
                         .next()
-                        .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, &format!("empty NAPTR flag token for record type {}", self.get_type())))?)
+                        .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "empty NAPTR flag token for record type NAPTR"))?)
                         .map_err(|e|ZoneReaderError::new(ErrorKind::FormErr, &e.to_string()))?);
                 }
 
@@ -240,8 +235,8 @@ impl ZoneRRData for NaptrRRData {
             3 => self.service = Some(value.to_string()),
             4 => self.regex = Some(value.to_string()),
             5 => self.replacement = Some(value.strip_suffix('.')
-                .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, &format!("replacement param is not fully qualified (missing trailing dot) for record type {}", self.get_type())))?.to_string()),
-            _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, &format!("extra record data found for record type {}", self.get_type())))
+                .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "replacement param is not fully qualified (missing trailing dot) for record type NAPTR"))?.to_string()),
+            _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found for record type NAPTR"))
         })
     }
 
@@ -253,8 +248,7 @@ impl ZoneRRData for NaptrRRData {
 impl fmt::Display for NaptrRRData {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:<8}{} {} \"{}\" \"{}\" \"{}\" {}", self.get_type().to_string(),
-               self.order,
+        write!(f, "{} {} \"{}\" \"{}\" \"{}\" {}", self.order,
                self.preference,
                self.flags.iter()
                    .map(|f| f.to_string())

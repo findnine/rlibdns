@@ -2,7 +2,6 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
-use crate::messages::inter::rr_types::RRTypes;
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::utils::hex;
 use crate::zone::inter::zone_rr_data::ZoneRRData;
@@ -71,10 +70,6 @@ impl RRData for SmimeaRRData {
         buf[0..2].copy_from_slice(&length.to_be_bytes());
 
         Ok(buf)
-    }
-
-    fn get_type(&self) -> RRTypes {
-        RRTypes::Smimea
     }
 
     fn upcast(self) -> Box<dyn RRData> {
@@ -146,11 +141,11 @@ impl ZoneRRData for SmimeaRRData {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
         Ok(match index {
-            0 => self.usage = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse usage param for record type {}", self.get_type())))?,
-            1 => self.selector = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse selector param for record type {}", self.get_type())))?,
-            2 => self.matching_type = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse matching_type param for record type {}", self.get_type())))?,
-            3 => self.certificate = hex::decode(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse certificate param for record type {}", self.get_type())))?,
-            _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, &format!("extra record data found for record type {}", self.get_type())))
+            0 => self.usage = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse usage param for record type SMIMEA"))?,
+            1 => self.selector = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse selector param for record type SMIMEA"))?,
+            2 => self.matching_type = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse matching_type param for record type SMIMEA"))?,
+            3 => self.certificate = hex::decode(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse certificate param for record type SMIMEA"))?,
+            _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found for record type SMIMEA"))
         })
     }
 
@@ -162,8 +157,7 @@ impl ZoneRRData for SmimeaRRData {
 impl fmt::Display for SmimeaRRData {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:<8}{} {} {} {}", self.get_type().to_string(),
-               self.usage,
+        write!(f, "{} {} {} {}", self.usage,
                self.selector,
                self.matching_type,
                hex::encode(&self.certificate))

@@ -113,10 +113,6 @@ impl RRData for NSec3RRData {
         Ok(buf)
     }
 
-    fn get_type(&self) -> RRTypes {
-        RRTypes::NSec3
-    }
-
     fn upcast(self) -> Box<dyn RRData> {
         Box::new(self)
     }
@@ -208,17 +204,17 @@ impl ZoneRRData for NSec3RRData {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
         Ok(match index {
-            0 => self.algorithm = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse algorithm param for record type {}", self.get_type())))?,
-            1 => self.flags = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse flags param for record type {}", self.get_type())))?,
-            2 => self.iterations = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse iterations param for record type {}", self.get_type())))?,
+            0 => self.algorithm = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse algorithm param for record type NSEC3"))?,
+            1 => self.flags = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse flags param for record type NSEC3"))?,
+            2 => self.iterations = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse iterations param for record type NSEC3"))?,
             3 => {
                 if !value.eq("-") {
-                    self.salt = hex::decode(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse salt param for record type {}", self.get_type())))?
+                    self.salt = hex::decode(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse salt param for record type NSEC3"))?
                 }
             }
-            4 => self.next_hash = base32::hex_decode(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse next_hash param for record type {}", self.get_type())))?,
+            4 => self.next_hash = base32::hex_decode(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse next_hash param for record type NSEC3"))?,
             _ => self.types.push(RRTypes::from_str(value)
-                .map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse types param for record type {}", self.get_type())))?)
+                .map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse types param for record type NSEC3"))?)
         })
     }
 
@@ -230,8 +226,7 @@ impl ZoneRRData for NSec3RRData {
 impl fmt::Display for NSec3RRData {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:<8}{} {} {} {} {}", self.get_type().to_string(),
-               self.algorithm,
+        write!(f, "{} {} {} {} {}", self.algorithm,
                self.flags,
                self.iterations,
                base32::hex_encode_nopad(&self.salt),

@@ -2,7 +2,6 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
-use crate::messages::inter::rr_types::RRTypes;
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::utils::base64;
 use crate::zone::inter::zone_rr_data::ZoneRRData;
@@ -81,10 +80,6 @@ impl RRData for DnsKeyRRData {
         Ok(buf)
     }
 
-    fn get_type(&self) -> RRTypes {
-        RRTypes::DnsKey
-    }
-
     fn upcast(self) -> Box<dyn RRData> {
         Box::new(self)
     }
@@ -154,11 +149,11 @@ impl ZoneRRData for DnsKeyRRData {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
         Ok(match index {
-            0 => self.flags = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse flags param for record type {}", self.get_type())))?,
-            1 => self.protocol = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse protocol param for record type {}", self.get_type())))?,
-            2 => self.algorithm = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse algorithm param for record type {}", self.get_type())))?,
-            3 => self.public_key = base64::decode(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse public_key param for record type {}", self.get_type())))?,
-            _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, &format!("extra record data found for record type {}", self.get_type())))
+            0 => self.flags = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse flags param for record type DNSKEY"))?,
+            1 => self.protocol = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse protocol param for record type DNSKEY"))?,
+            2 => self.algorithm = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse algorithm param for record type DNSKEY"))?,
+            3 => self.public_key = base64::decode(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse public_key param for record type DNSKEY"))?,
+            _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found for record type DNSKEY"))
         })
     }
 
@@ -170,8 +165,7 @@ impl ZoneRRData for DnsKeyRRData {
 impl fmt::Display for DnsKeyRRData {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:<8}{} {} {} {}", self.get_type().to_string(),
-               self.flags,
+        write!(f, "{} {} {} {}", self.flags,
                self.protocol,
                self.algorithm,
                base64::encode(&self.public_key))

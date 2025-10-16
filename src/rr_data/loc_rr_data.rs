@@ -2,7 +2,6 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
-use crate::messages::inter::rr_types::RRTypes;
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::utils::coord_utils::{encode_loc_precision, CoordUtils};
 use crate::zone::inter::zone_rr_data::ZoneRRData;
@@ -82,10 +81,6 @@ impl RRData for LocRRData {
         buf[0..2].copy_from_slice(&length.to_be_bytes());
 
         Ok(buf)
-    }
-
-    fn get_type(&self) -> RRTypes {
-        RRTypes::Loc
     }
 
     fn upcast(self) -> Box<dyn RRData> {
@@ -185,32 +180,32 @@ impl ZoneRRData for LocRRData {
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
         Ok(match index {
             0 => self.latitude = value.parse::<u32>()
-                .map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse latitude 1 param for record type {}", self.get_type())))? * 3_600_000,
+                .map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse latitude 1 param for record type LOC"))? * 3_600_000,
             1 => self.latitude = self.latitude + value.parse::<u32>()
-                .map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse latitude 2 param for record type {}", self.get_type())))? * 60_000,
+                .map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse latitude 2 param for record type LOC"))? * 60_000,
             2 => self.latitude += (value.parse::<f64>()
-                .map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse latitude 3 param for record type {}", self.get_type())))? * 1000.0).round() as u32,
+                .map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse latitude 3 param for record type LOC"))? * 1000.0).round() as u32,
             3 => {
                 let sign = match value {
                     "S" | "W" => -1,
                     "N" | "E" => 1,
-                    _ => return Err(ZoneReaderError::new(ErrorKind::FormErr, &format!("invalid direction for record type {}", self.get_type())))
+                    _ => return Err(ZoneReaderError::new(ErrorKind::FormErr, "invalid direction for record type LOC"))
                 };
 
                 let val = (sign * (self.latitude as i64)) + (1 << 31);
                 self.latitude = val as u32
             }
             4 => self.longitude = value.parse::<u32>()
-                .map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse longitude 1 param for record type {}", self.get_type())))? * 3_600_000,
+                .map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse longitude 1 param for record type LOC"))? * 3_600_000,
             5 => self.longitude = self.longitude + value.parse::<u32>()
-                .map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse longitude 2 param for record type {}", self.get_type())))? * 60_000,
+                .map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse longitude 2 param for record type LOC"))? * 60_000,
             6 => self.longitude += (value.parse::<f64>()
-                .map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse longitude 3 param for record type {}", self.get_type())))? * 1000.0).round() as u32,
+                .map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse longitude 3 param for record type LOC"))? * 1000.0).round() as u32,
             7 => {
                 let sign = match value {
                     "S" | "W" => -1,
                     "N" | "E" => 1,
-                    _ => return Err(ZoneReaderError::new(ErrorKind::FormErr, &format!("invalid direction for record type {}", self.get_type())))
+                    _ => return Err(ZoneReaderError::new(ErrorKind::FormErr, "invalid direction for record type LOC"))
                 };
 
                 let val = (sign * (self.longitude as i64)) + (1 << 31);
@@ -219,12 +214,12 @@ impl ZoneRRData for LocRRData {
             8 => {
                 let clean = value.trim_end_matches('m');
                 self.altitude = (clean.parse::<f64>()
-                    .map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse altitude param for record type {}", self.get_type())))? * 100.0).round() as u32;
+                    .map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse altitude param for record type LOC"))? * 100.0).round() as u32;
             }
             9 => self.size = encode_loc_precision(value).map_err(|e| ZoneReaderError::new(ErrorKind::FormErr, &e.to_string()))?,
             10 => self.h_precision = encode_loc_precision(value).map_err(|e| ZoneReaderError::new(ErrorKind::FormErr, &e.to_string()))?,
             11 => self.v_precision = encode_loc_precision(value).map_err(|e| ZoneReaderError::new(ErrorKind::FormErr, &e.to_string()))?,
-            _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, &format!("extra record data found for record type {}", self.get_type())))
+            _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found for record type LOC"))
         })
     }
 
@@ -240,8 +235,7 @@ impl fmt::Display for LocRRData {
         let (lon_deg, lon_min, lon_sec, lon_dir) = self.longitude.to_coord(false);
         let alt = (self.altitude as f64 - 100_000.0 * 100.0) / 100.0;
 
-        write!(f, "{:<8}{} {} {:.3} {} {} {} {:.3} {} {:.2}m {:.2}m {:.2}m {:.2}m", self.get_type().to_string(),
-               lat_deg,
+        write!(f, "{} {} {:.3} {} {} {} {:.3} {} {:.2}m {:.2}m {:.2}m {:.2}m", lat_deg,
                lat_min,
                lat_sec,
                lat_dir,

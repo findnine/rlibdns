@@ -2,7 +2,6 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
-use crate::messages::inter::rr_types::RRTypes;
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::utils::fqdn_utils::{pack_fqdn, pack_fqdn_compressed, unpack_fqdn};
 use crate::zone::inter::zone_rr_data::ZoneRRData;
@@ -65,10 +64,6 @@ impl RRData for NsRRData {
         Ok(buf)
     }
 
-    fn get_type(&self) -> RRTypes {
-        RRTypes::Ns
-    }
-
     fn upcast(self) -> Box<dyn RRData> {
         Box::new(self)
     }
@@ -112,8 +107,8 @@ impl ZoneRRData for NsRRData {
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
         Ok(match index {
             0 => self.server = Some(value.strip_suffix('.')
-                .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, &format!("server param is not fully qualified (missing trailing dot) for record type {}", self.get_type())))?.to_string()),
-            _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, &format!("extra record data found for record type {}", self.get_type())))
+                .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "server param is not fully qualified (missing trailing dot) for record type NS"))?.to_string()),
+            _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found for record type NS"))
         })
     }
 
@@ -125,8 +120,7 @@ impl ZoneRRData for NsRRData {
 impl fmt::Display for NsRRData {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:<8}{}", self.get_type().to_string(),
-               format!("{}.", self.server.as_ref().unwrap_or(&String::new())))
+        write!(f, "{}", format!("{}.", self.server.as_ref().unwrap_or(&String::new())))
     }
 }
 

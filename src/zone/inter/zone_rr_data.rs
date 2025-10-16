@@ -27,8 +27,7 @@ use crate::rr_data::{
     svcb_rr_data::SvcbRRData,
     txt_rr_data::TxtRRData,
     opt_rr_data::OptRRData,
-    uri_rr_data::UriRRData,
-    any_rr_data::AnyRRData
+    uri_rr_data::UriRRData
 };
 
 use crate::rr_data::inter::rr_data::RRData;

@@ -2,7 +2,6 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
-use crate::messages::inter::rr_types::RRTypes;
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::zone::inter::zone_rr_data::ZoneRRData;
 use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
@@ -67,10 +66,6 @@ impl RRData for HInfoRRData {
         Ok(buf)
     }
 
-    fn get_type(&self) -> RRTypes {
-        RRTypes::HInfo
-    }
-
     fn upcast(self) -> Box<dyn RRData> {
         Box::new(self)
     }
@@ -124,7 +119,7 @@ impl ZoneRRData for HInfoRRData {
         Ok(match index {
             0 => self.cpu = Some(value.to_string()),
             1 => self.os = Some(value.to_string()),
-            _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, &format!("extra record data found for record type {}", self.get_type())))
+            _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found for record type HINFO"))
         })
     }
 
@@ -136,8 +131,7 @@ impl ZoneRRData for HInfoRRData {
 impl fmt::Display for HInfoRRData {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:<8}\"{}\" \"{}\"", self.get_type().to_string(),
-               self.cpu.as_ref().unwrap_or(&String::new()),
+        write!(f, "\"{}\" \"{}\"", self.cpu.as_ref().unwrap_or(&String::new()),
                self.os.as_ref().unwrap_or(&String::new()))
     }
 }

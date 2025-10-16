@@ -2,7 +2,6 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
-use crate::messages::inter::rr_types::RRTypes;
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::utils::fqdn_utils::{pack_fqdn, pack_fqdn_compressed, unpack_fqdn};
 use crate::zone::inter::zone_rr_data::ZoneRRData;
@@ -113,10 +112,6 @@ impl RRData for SoaRRData {
         Ok(buf)
     }
 
-    fn get_type(&self) -> RRTypes {
-        RRTypes::Soa
-    }
-
     fn upcast(self) -> Box<dyn RRData> {
         Box::new(self)
     }
@@ -214,15 +209,15 @@ impl ZoneRRData for SoaRRData {
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
         Ok(match index {
             0 => self.fqdn = Some(value.strip_suffix('.')
-                .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, &format!("fqdn param is not fully qualified (missing trailing dot) for record type {}", self.get_type())))?.to_string()),
+                .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "fqdn param is not fully qualified (missing trailing dot) for record type SOA"))?.to_string()),
             1 => self.mailbox = Some(value.strip_suffix('.')
-                .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, &format!("mailbox param is not fully qualified (missing trailing dot) for record type {}", self.get_type())))?.to_string()),
-            2 => self.serial = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse serial param for record type {}", self.get_type())))?,
-            3 => self.refresh = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse refresh param for record type {}", self.get_type())))?,
-            4 => self.retry = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse retry param for record type {}", self.get_type())))?,
-            5 => self.expire = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse expire param for record type {}", self.get_type())))?,
-            6 => self.minimum_ttl = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse minimum_ttl param for record type {}", self.get_type())))?,
-            _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, &format!("extra record data found for record type {}", self.get_type())))
+                .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "mailbox param is not fully qualified (missing trailing dot) for record type SOA"))?.to_string()),
+            2 => self.serial = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse serial param for record type SOA"))?,
+            3 => self.refresh = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse refresh param for record type SOA"))?,
+            4 => self.retry = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse retry param for record type SOA"))?,
+            5 => self.expire = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse expire param for record type SOA"))?,
+            6 => self.minimum_ttl = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse minimum_ttl param for record type SOA"))?,
+            _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found for record type SOA"))
         })
     }
 
@@ -234,8 +229,7 @@ impl ZoneRRData for SoaRRData {
 impl fmt::Display for SoaRRData {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:<8}{} {} {} {} {} {} {}", self.get_type().to_string(),
-               format!("{}.", self.fqdn.as_ref().unwrap_or(&String::new())),
+        write!(f, "{} {} {} {} {} {} {}", format!("{}.", self.fqdn.as_ref().unwrap_or(&String::new())),
                format!("{}.", self.mailbox.as_ref().unwrap_or(&String::new())),
                self.serial,
                self.refresh,

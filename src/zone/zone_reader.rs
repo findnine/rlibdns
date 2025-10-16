@@ -73,7 +73,7 @@ impl ZoneReader {
         })
     }
 
-    pub fn read_record(&mut self) -> Result<Option<(String, u32, Box<dyn ZoneRRData>)>, ZoneReaderError> {
+    pub fn read_record(&mut self) -> Result<Option<(String, RRTypes, u32, Box<dyn ZoneRRData>)>, ZoneReaderError> {
         let mut state = ParserState::Init;
         let mut paren_count: u8 = 0;
 
@@ -83,7 +83,7 @@ impl ZoneReader {
 
         let mut directive_buf = String::new();
 
-        let mut record: Option<(String, u32, Box<dyn ZoneRRData>)> = None;
+        let mut record: Option<(String, RRTypes, u32, Box<dyn ZoneRRData>)> = None;
         let mut data_count = 0;
 
         let mut line = String::new();
@@ -165,7 +165,7 @@ impl ZoneReader {
                                     _type = t;
                                     state = ParserState::Data;
                                     data_count = 0;
-                                    record = Some((self.absolute_name(&name), ttl, <dyn ZoneRRData>::new(_type, &self.class)
+                                    record = Some((self.absolute_name(&name), _type, ttl, <dyn ZoneRRData>::new(_type, &self.class)
                                         .ok_or_else(|| ZoneReaderError::new(ErrorKind::TypeNotFound, &format!("record type {} not found", _type)))?));
 
                                 } else {
@@ -189,7 +189,7 @@ impl ZoneReader {
                             ParserState::Data => {
                                 if part[0] == b'"' {
                                     if part[word_len - 1] == b'"' {
-                                        record.as_mut().unwrap().2.set_data(data_count, &String::from_utf8(part[1..word_len - 1].to_vec())
+                                        record.as_mut().unwrap().3.set_data(data_count, &String::from_utf8(part[1..word_len - 1].to_vec())
                                             .map_err(|_| ZoneReaderError::new(ErrorKind::ParseErr, "unable to parse string"))?)?;
 
                                         data_count += 1;
@@ -201,7 +201,7 @@ impl ZoneReader {
                                     }
 
                                 } else {
-                                    record.as_mut().unwrap().2.set_data(data_count, &String::from_utf8(part[0..word_len].to_vec())
+                                    record.as_mut().unwrap().3.set_data(data_count, &String::from_utf8(part[0..word_len].to_vec())
                                         .map_err(|_| ZoneReaderError::new(ErrorKind::ParseErr, "unable to parse string"))?)?;
 
                                     data_count += 1;
@@ -212,7 +212,7 @@ impl ZoneReader {
                                     quoted_buf.push_str(&format!("{}", String::from_utf8(part[0..word_len - 1].to_vec())
                                         .map_err(|_| ZoneReaderError::new(ErrorKind::ParseErr, "unable to parse string"))?));
 
-                                    record.as_mut().unwrap().2.set_data(data_count, &quoted_buf)?;
+                                    record.as_mut().unwrap().3.set_data(data_count, &quoted_buf)?;
 
                                     data_count += 1;
                                     state = ParserState::Data;
@@ -267,7 +267,7 @@ pub struct ZoneReaderIter<'a> {
 
 impl<'a> Iterator for ZoneReaderIter<'a> {
 
-    type Item = Result<(String, u32, Box<dyn ZoneRRData>), ZoneReaderError>;
+    type Item = Result<(String, RRTypes, u32, Box<dyn ZoneRRData>), ZoneReaderError>;
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.reader.read_record() {

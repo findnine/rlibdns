@@ -2,7 +2,6 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
-use crate::messages::inter::rr_types::RRTypes;
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::zone::inter::zone_rr_data::ZoneRRData;
 use crate::zone::zone_reader::ZoneReaderError;
@@ -59,15 +58,11 @@ impl RRData for TxtRRData {
             buf.push(record.len() as u8);
             buf.extend_from_slice(record.as_bytes());
         }
-        
+
         let length = (buf.len()-2) as u16;
         buf[0..2].copy_from_slice(&length.to_be_bytes());
 
         Ok(buf)
-    }
-
-    fn get_type(&self) -> RRTypes {
-        RRTypes::Txt
     }
 
     fn upcast(self) -> Box<dyn RRData> {
@@ -126,8 +121,7 @@ impl ZoneRRData for TxtRRData {
 impl fmt::Display for TxtRRData {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:<8}{}", self.get_type().to_string(),
-               self.data.iter()
+        write!(f, "{}", self.data.iter()
                     .map(|s| format!("\"{}\"", s))
                     .collect::<Vec<_>>()
                     .join(" "))

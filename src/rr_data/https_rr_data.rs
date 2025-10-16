@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use std::str::FromStr;
-use crate::messages::inter::rr_types::RRTypes;
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::rr_data::inter::svc_param::SvcParams;
 use crate::rr_data::inter::svc_param_keys::SvcParamKeys;
@@ -108,10 +107,6 @@ impl RRData for HttpsRRData {
         Ok(buf)
     }
 
-    fn get_type(&self) -> RRTypes {
-        RRTypes::Https
-    }
-
     fn upcast(self) -> Box<dyn RRData> {
         Box::new(self)
     }
@@ -176,11 +171,11 @@ impl ZoneRRData for HttpsRRData {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
         Ok(match index {
-            0 => self.priority = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse priority param for record type {}", self.get_type())))?,
+            0 => self.priority = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse priority param for record type HTTPS"))?,
             1 => self.target = Some(value.strip_suffix('.')
-                .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, &format!("target param is not fully qualified (missing trailing dot) for record type {}", self.get_type())))?.to_string()),
+                .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "target param is not fully qualified (missing trailing dot) for record type HTTPS"))?.to_string()),
             _ => self.params.push(SvcParams::from_str(value)
-                .map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse svc_params param for record type {}", self.get_type())))?)
+                .map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse svc_params param for record type HTTPS"))?)
         })
     }
 
@@ -192,8 +187,7 @@ impl ZoneRRData for HttpsRRData {
 impl fmt::Display for HttpsRRData {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:<8}{} {} {}", self.get_type().to_string(),
-               self.priority,
+        write!(f, "{} {} {}", self.priority,
                format!("{}.", self.target.as_ref().unwrap_or(&String::new())),
                self.params.iter()
                    .map(|s| s.to_string())

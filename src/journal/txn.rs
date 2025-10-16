@@ -1,13 +1,14 @@
 use crate::journal::inter::txn_op_codes::TxnOpCodes;
 use crate::messages::inter::rr_classes::RRClasses;
-use crate::messages::message::MessageRecord;
+use crate::messages::inter::rr_types::RRTypes;
+use crate::messages::record::Record;
 use crate::rr_data::inter::rr_data::RRData;
 
 #[derive(Default, Debug, Clone)]
 pub struct Txn {
     serial_0: u32,
     serial_1: u32,
-    records: [Vec<MessageRecord>; 2]
+    records: [Vec<Record>; 2]
 }
 
 impl Txn {
@@ -36,11 +37,11 @@ impl Txn {
         self.serial_1
     }
 
-    pub fn add_record(&mut self, op_code: TxnOpCodes, query: &str, class: RRClasses, ttl: u32, record: Box<dyn RRData>) {
-        self.records[op_code as usize].push((query.to_string(), class, ttl, record));
+    pub fn add_record(&mut self, op_code: TxnOpCodes, query: &str, class: RRClasses, _type: RRTypes, ttl: u32, record: Option<Box<dyn RRData>>) {
+        self.records[op_code as usize].push(Record::new(query, class, _type, ttl, record));
     }
 
-    pub fn get_records(&self, op_code: TxnOpCodes) -> &Vec<MessageRecord> {
+    pub fn get_records(&self, op_code: TxnOpCodes) -> &Vec<Record> {
         &self.records[op_code as usize]
     }
 }

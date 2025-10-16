@@ -165,10 +165,6 @@ impl RRData for NSecRRData {
         Ok(buf)
     }
 
-    fn get_type(&self) -> RRTypes {
-        RRTypes::NSec
-    }
-
     fn upcast(self) -> Box<dyn RRData> {
         Box::new(self)
     }
@@ -225,9 +221,9 @@ impl ZoneRRData for NSecRRData {
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
         Ok(match index {
             0 => self.next_domain = Some(value.strip_suffix('.')
-                .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, &format!("next_domain param is not fully qualified (missing trailing dot) for record type {}", self.get_type())))?.to_string()),
+                .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "next_domain param is not fully qualified (missing trailing dot) for record type NSEC"))?.to_string()),
             _ => self.types.push(RRTypes::from_str(value)
-                .map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse types param for record type {}", self.get_type())))?)
+                .map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse types param for record type NSEC"))?)
         })
     }
 
@@ -239,8 +235,7 @@ impl ZoneRRData for NSecRRData {
 impl fmt::Display for NSecRRData {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:<8}{} {}", self.get_type().to_string(),
-               format!("{}.", self.next_domain.as_ref().unwrap_or(&String::new())),
+        write!(f, "{} {}", format!("{}.", self.next_domain.as_ref().unwrap_or(&String::new())),
                self.types.iter()
                    .map(|t| t.to_string())
                    .collect::<Vec<_>>()

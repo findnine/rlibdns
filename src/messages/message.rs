@@ -8,6 +8,7 @@ use crate::messages::inter::rr_classes::RRClasses;
 use crate::rr_data::inter::rr_data::RRData;
 use crate::messages::rr_query::RRQuery;
 use crate::messages::inter::rr_types::RRTypes;
+use crate::messages::record::Record;
 use crate::rr_data::opt_rr_data::OptRRData;
 use crate::utils::fqdn_utils::{pack_fqdn_compressed, unpack_fqdn};
 /*
@@ -30,7 +31,7 @@ use crate::utils::fqdn_utils::{pack_fqdn_compressed, unpack_fqdn};
 
 pub const DNS_HEADER_LEN: usize = 12;
 
-pub type MessageRecord = (String, RRClasses, u32, Box<dyn RRData>);
+//pub type MessageRecord = (String, RRClasses, RRTypes, u32, Box<dyn RRData>);
 
 #[derive(Debug, Clone)]
 pub struct Message {
@@ -47,7 +48,7 @@ pub struct Message {
     origin: Option<SocketAddr>,
     destination: Option<SocketAddr>,
     queries: Vec<RRQuery>,
-    sections: [Vec<MessageRecord>; 3],
+    sections: [Vec<Record>; 3],
     option: Option<OpCodes>
 }
 
@@ -301,19 +302,19 @@ impl Message {
         !self.sections[index].is_empty()
     }
 
-    pub fn set_section(&mut self, index: usize, section: Vec<MessageRecord>) {
+    pub fn set_section(&mut self, index: usize, section: Vec<Record>) {
         self.sections[index] = section;
     }
 
-    pub fn add_section(&mut self, index: usize, query: &str, class: RRClasses, ttl: u32, data: Box<dyn RRData>) {
-        self.sections[index].push((query.to_string(), class, ttl, data));
+    pub fn add_section(&mut self, index: usize, query: &str, class: RRClasses, _type: RRTypes, ttl: u32, data: Option<Box<dyn RRData>>) {
+        self.sections[index].push(Record::new(query, class, _type, ttl, data));
     }
 
-    pub fn get_section(&self, index: usize) -> &Vec<MessageRecord> {
+    pub fn get_section(&self, index: usize) -> &Vec<Record> {
         self.sections[index].as_ref()
     }
 
-    pub fn get_section_mut(&mut self, index: usize) -> &mut Vec<MessageRecord> {
+    pub fn get_section_mut(&mut self, index: usize) -> &mut Vec<Record> {
         self.sections[index].as_mut()
     }
 
@@ -321,15 +322,15 @@ impl Message {
         self.sections[index].len()
     }
 
-    pub fn set_sections(&mut self, section: [Vec<MessageRecord>; 3]) {
+    pub fn set_sections(&mut self, section: [Vec<Record>; 3]) {
         self.sections = section;
     }
 
-    pub fn get_sections(&self) -> &[Vec<MessageRecord>; 3] {
+    pub fn get_sections(&self) -> &[Vec<Record>; 3] {
         &self.sections
     }
 
-    pub fn get_sections_mut(&mut self) -> &mut [Vec<MessageRecord>; 3] {
+    pub fn get_sections_mut(&mut self) -> &mut [Vec<Record>; 3] {
         &mut self.sections
     }
 
@@ -385,24 +386,39 @@ impl fmt::Display for Message {
         if !self.sections[0].is_empty() {
             writeln!(f, "\r\n;; ANSWER SECTION:")?;
 
-            for (fqdn, class, ttl, record) in self.sections[0].iter() {
-                writeln!(f, "{:<24}{:<8}{:<8}{}", format!("{}.", fqdn), ttl, class.to_string(), record)?;
+            for record in self.sections[0].iter() {
+                writeln!(f, "{:<24}{:<8}{:<8}{:<8}{}",
+                         format!("{}.", record.get_fqdn()),
+                         record.get_type(),
+                         record.get_type(),
+                         record.get_class().to_string(),
+                         record.get_data().as_ref().map(|d| d.to_string()).unwrap_or(String::new()))?;
             }
         }
 
         if !self.sections[1].is_empty() {
             writeln!(f, "\r\n;; AUTHORITATIVE SECTION:")?;
 
-            for (fqdn, class, ttl, record) in self.sections[1].iter() {
-                writeln!(f, "{:<24}{:<8}{:<8}{}", format!("{}.", fqdn), ttl, class.to_string(), record)?;
+            for record in self.sections[1].iter() {
+                writeln!(f, "{:<24}{:<8}{:<8}{:<8}{}",
+                         format!("{}.", record.get_fqdn()),
+                         record.get_type(),
+                         record.get_type(),
+                         record.get_class().to_string(),
+                         record.get_data().as_ref().map(|d| d.to_string()).unwrap_or(String::new()))?;
             }
         }
 
         if !self.sections[2].is_empty() {
             writeln!(f, "\r\n;; ADDITIONAL SECTION:")?;
 
-            for (fqdn, class, ttl, record) in self.sections[2].iter() {
-                writeln!(f, "{:<24}{:<8}{:<8}{}", format!("{}.", fqdn), ttl, class.to_string(), record)?;
+            for record in self.sections[2].iter() {
+                writeln!(f, "{:<24}{:<8}{:<8}{:<8}{}",
+                         format!("{}.", record.get_fqdn()),
+                         record.get_type(),
+                         record.get_type(),
+                         record.get_class().to_string(),
+                         record.get_data().as_ref().map(|d| d.to_string()).unwrap_or(String::new()))?;
             }
         }
 
@@ -486,7 +502,7 @@ impl<'a> Iterator for WireIter<'a> {
     }
 }
 
-fn section_from_wire(buf: &[u8], off: &mut usize, count: u16) -> Result<Vec<MessageRecord>, MessageError> {
+fn section_from_wire(buf: &[u8], off: &mut usize, count: u16) -> Result<Vec<Record>, MessageError> {
     let mut section = Vec::new();
 
     for _ in 0..count {
@@ -508,9 +524,14 @@ fn section_from_wire(buf: &[u8], off: &mut usize, count: u16) -> Result<Vec<Mess
                 let class = RRClasses::try_from(class & 0x7FFF).map_err(|e| MessageError::RecordError(e.to_string()))?;
                 let ttl = u32::from_be_bytes([buf[*off+4], buf[*off+5], buf[*off+6], buf[*off+7]]);
 
-                let data = <dyn RRData>::from_wire(_type, &class, buf, *off+8).map_err(|e| MessageError::RecordError(e.to_string()))?;
-                section.push((fqdn, class, ttl, data));
-                *off += 10+u16::from_be_bytes([buf[*off+8], buf[*off+9]]) as usize;
+                let length = u16::from_be_bytes([buf[*off+8], buf[*off+9]]);
+                let data = match length {
+                    0 => None,
+                    _ => Some(<dyn RRData>::from_wire(&_type, &class, buf, *off+8).map_err(|e| MessageError::RecordError(e.to_string()))?)
+                };
+
+                section.push(Record::new(&fqdn, class, _type, ttl, data));
+                *off += 10+length as usize;
             }
         }
     }
@@ -518,36 +539,57 @@ fn section_from_wire(buf: &[u8], off: &mut usize, count: u16) -> Result<Vec<Mess
     Ok(section)
 }
 
-fn section_to_wire(compression_data: &mut HashMap<String, usize>, off: usize, section: &[MessageRecord], max_payload_len: usize) -> (Vec<u8>, u16, bool) {
+fn section_to_wire(compression_data: &mut HashMap<String, usize>, off: usize, section: &[Record], max_payload_len: usize) -> (Vec<u8>, u16, bool) {
     let mut truncated = false;
 
     let mut buf = Vec::new();
     let mut i = 0;
     let mut off = off;
 
-    for (fqdn, class, ttl, data) in section.iter() {
-        let fqdn = pack_fqdn_compressed(&fqdn, compression_data, off);
+    for record in section.iter() {
+        let fqdn = pack_fqdn_compressed(&record.get_fqdn(), compression_data, off);
 
         off += fqdn.len()+8;
 
-        match data.to_wire(compression_data, off) {
-            Ok(r) => {
-                if off+r.len() > max_payload_len {
+        match &record.get_data() {
+            Some(data) => {
+                match data.to_wire(compression_data, off) {
+                    Ok(r) => {
+                        if off+r.len() > max_payload_len {
+                            truncated = true;
+                            break;
+                        }
+
+                        buf.extend_from_slice(&fqdn);
+                        buf.extend_from_slice(&record.get_type().get_code().to_be_bytes());
+
+                        buf.extend_from_slice(&record.get_class().get_code().to_be_bytes());
+                        buf.extend_from_slice(&record.get_ttl().to_be_bytes());
+
+                        buf.extend_from_slice(&r);
+                        off += r.len();
+                        i += 1;
+                    }
+                    Err(_) => continue
+                }
+            }
+            None => {
+                if off+2 > max_payload_len {
                     truncated = true;
                     break;
                 }
 
                 buf.extend_from_slice(&fqdn);
-                buf.extend_from_slice(&data.get_type().get_code().to_be_bytes());
+                buf.extend_from_slice(&record.get_type().get_code().to_be_bytes());
 
-                buf.extend_from_slice(&class.get_code().to_be_bytes());
-                buf.extend_from_slice(&ttl.to_be_bytes());
+                buf.extend_from_slice(&record.get_class().get_code().to_be_bytes());
+                buf.extend_from_slice(&record.get_ttl().to_be_bytes());
 
-                buf.extend_from_slice(&r);
-                off += r.len();
+                buf.extend_from_slice(&0u16.to_be_bytes());
+
+                off += 2;
                 i += 1;
             }
-            Err(_) => continue
         }
     }
 

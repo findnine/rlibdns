@@ -2,7 +2,6 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
-use crate::messages::inter::rr_types::RRTypes;
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::utils::fqdn_utils::{pack_fqdn, pack_fqdn_compressed, unpack_fqdn};
 use crate::utils::octal;
@@ -75,10 +74,6 @@ impl RRData for ChARRData {
         Ok(buf)
     }
 
-    fn get_type(&self) -> RRTypes {
-        RRTypes::A
-    }
-
     fn upcast(self) -> Box<dyn RRData> {
         Box::new(self)
     }
@@ -131,9 +126,9 @@ impl ZoneRRData for ChARRData {
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
         Ok(match index {
             0 => self.network = Some(value.strip_suffix('.')
-                .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, &format!("network param is not fully qualified (missing trailing dot) for record type {}", self.get_type())))?.to_string()),
-            1 => self.address = octal::from_octal(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, &format!("unable to parse address param for record type {}", self.get_type())))?,
-            _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, &format!("extra record data found for record type {}", self.get_type())))
+                .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "network param is not fully qualified (missing trailing dot) for record type CH A"))?.to_string()),
+            1 => self.address = octal::from_octal(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse address param for record type CH A"))?,
+            _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found for record type CH A"))
         })
     }
 
@@ -145,8 +140,7 @@ impl ZoneRRData for ChARRData {
 impl fmt::Display for ChARRData {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:<8}{} {}", self.get_type().to_string(),
-               format!("{}.", self.network.as_ref().unwrap_or(&String::new())),
+        write!(f, "{} {}", format!("{}.", self.network.as_ref().unwrap_or(&String::new())),
                octal::to_octal(self.address))
     }
 }

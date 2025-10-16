@@ -25,8 +25,7 @@ use crate::rr_data::{
     svcb_rr_data::SvcbRRData,
     txt_rr_data::TxtRRData,
     opt_rr_data::OptRRData,
-    uri_rr_data::UriRRData,
-    any_rr_data::AnyRRData
+    uri_rr_data::UriRRData
 };
 
 use std::any::Any;
@@ -53,8 +52,6 @@ pub trait RRData: Display + Debug + Send + Sync {
     fn to_wire(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError>;
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError>;
-
-    fn get_type(&self) -> RRTypes;
 
     fn upcast(self) -> Box<dyn RRData>;
 
@@ -84,7 +81,7 @@ impl Eq for dyn RRData {}
 
 impl dyn RRData {
 
-    pub fn new(_type: RRTypes, class: &RRClasses) -> Option<Box<dyn RRData>> {
+    pub fn new(_type: &RRTypes, class: &RRClasses) -> Option<Box<dyn RRData>> {
         Some(match _type {
             RRTypes::A      => {
                 match class {
@@ -132,7 +129,7 @@ impl dyn RRData {
         })
     }
 
-    pub fn from_wire(_type: RRTypes, class: &RRClasses, buf: &[u8], off: usize) -> Result<Box<dyn RRData>, RRDataError> {
+    pub fn from_wire(_type: &RRTypes, class: &RRClasses, buf: &[u8], off: usize) -> Result<Box<dyn RRData>, RRDataError> {
         Ok(match _type {
             RRTypes::A      => {
                 match class {
@@ -175,7 +172,6 @@ impl dyn RRData {
                 todo!()
             }
             */
-            RRTypes::Any    => AnyRRData::from_bytes(buf, off)?.upcast(),
             //RRTypes::Opt    => OptRecord::from_bytes(buf, off)?.upcast(),
             _ => return Err(RRDataError("type could not produce a record".to_string()))
         })

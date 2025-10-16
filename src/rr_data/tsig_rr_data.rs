@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_classes::RRClasses;
-use crate::messages::inter::rr_types::RRTypes;
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::utils::fqdn_utils::{pack_fqdn, pack_fqdn_compressed, unpack_fqdn};
 use crate::utils::hex;
@@ -148,10 +147,6 @@ impl RRData for TSigRRData {
         Ok(buf)
     }
 
-    fn get_type(&self) -> RRTypes {
-        RRTypes::TSig
-    }
-
     fn upcast(self) -> Box<dyn RRData> {
         Box::new(self)
     }
@@ -203,10 +198,7 @@ impl TSigRRData {
 impl fmt::Display for TSigRRData {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:<8}{:<8}{:<8}{} {} {} {} {} {} {}", self.ttl,
-               self.class.to_string(),
-               self.get_type().to_string(),
-               format!("{}.", self.algorithm_name.as_ref().unwrap()),
+        write!(f, "{} {} {} {} {} {} {}", format!("{}.", self.algorithm_name.as_ref().unwrap()),
                self.time_signed,
                self.fudge,
                hex::encode(&self.mac),

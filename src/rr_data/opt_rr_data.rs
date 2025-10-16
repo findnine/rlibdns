@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use std::net::{Ipv4Addr, Ipv6Addr};
-use crate::messages::inter::rr_types::RRTypes;
 use crate::rr_data::inter::opt_codes::OptCodes;
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::utils::hex;
@@ -83,10 +82,6 @@ impl RRData for OptRRData {
         buf.splice(6..8, ((buf.len()-8) as u16).to_be_bytes());
 
         Ok(buf)
-    }
-
-    fn get_type(&self) -> RRTypes {
-        RRTypes::Opt
     }
 
     fn upcast(self) -> Box<dyn RRData> {
