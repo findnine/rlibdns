@@ -425,9 +425,13 @@ impl<'a> Iterator for WireIter<'a> {
             return None;
         }
 
-        let mut buf = vec![0u8; DNS_HEADER_LEN];
 
-        buf.splice(0..2, self.message.id.to_be_bytes());
+        let mut buf = Vec::with_capacity(self.max_payload_len);
+
+        //SURE ITS UNSAFE BUT I DONT THINK THERE IS ANY WAY FOR THIS TO TRIGGER UNLESS MAX PAYLOAD IS LESS THAN 12...
+        unsafe { buf.set_len(DNS_HEADER_LEN) };
+
+        buf[0..2].copy_from_slice(&self.message.id.to_be_bytes());
 
         let flags = (if self.message.qr { 0x8000 } else { 0 }) |  // QR bit
             ((self.message.op_code.get_code() as u16 & 0x0F) << 11) |  // Opcode
@@ -440,9 +444,9 @@ impl<'a> Iterator for WireIter<'a> {
             (if self.message.checking_disabled { 0x0010 } else { 0 }) |  // CD bit
             (self.message.response_code.get_code() as u16 & 0x000F);  // RCODE
 
-        buf.splice(2..4, flags.to_be_bytes());
+        buf[2..4].copy_from_slice(&flags.to_be_bytes());
 
-        buf.splice(4..6, (self.message.queries.len() as u16).to_be_bytes());
+        buf[4..6].copy_from_slice(&(self.message.queries.len() as u16).to_be_bytes());
 
         let mut compression_data = HashMap::new();
         let mut off = DNS_HEADER_LEN;
@@ -468,7 +472,7 @@ impl<'a> Iterator for WireIter<'a> {
                 if self.position < total {
                     let (records, count, t) = section_to_wire(&mut compression_data, off, &records[self.position - before..], self.max_payload_len);
                     buf.extend_from_slice(&records);
-                    buf.splice(i*2+6..i*2+8, count.to_be_bytes());
+                    buf[i*2+6..i*2+8].copy_from_slice(&count.to_be_bytes());
                     self.position += count as usize;
 
                     if t {

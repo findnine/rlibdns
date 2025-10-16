@@ -47,9 +47,11 @@ impl RRData for InARRData {
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
         let mut buf = vec![0u8; 6];
 
-        buf.splice(2..6, self.address.ok_or_else(|| RRDataError("address param was not set".to_string()))?.octets().to_vec());
+        let addr = self.address.ok_or_else(|| RRDataError("address param was not set".to_string()))?.octets();
+        buf[2..6].copy_from_slice(&addr);
 
-        buf.splice(0..2, ((buf.len()-2) as u16).to_be_bytes());
+        let length = (buf.len()-2) as u16;
+        buf[0..2].copy_from_slice(&length.to_be_bytes());
 
         Ok(buf)
     }
