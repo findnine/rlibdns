@@ -389,8 +389,8 @@ impl fmt::Display for Message {
             for record in self.sections[0].iter() {
                 writeln!(f, "{:<24}{:<8}{:<8}{:<8}{}",
                          format!("{}.", record.get_fqdn()),
-                         record.get_type(),
-                         record.get_type(),
+                         record.get_ttl(),
+                         record.get_type().to_string(),
                          record.get_class().to_string(),
                          record.get_data().as_ref().map(|d| d.to_string()).unwrap_or(String::new()))?;
             }
@@ -402,8 +402,8 @@ impl fmt::Display for Message {
             for record in self.sections[1].iter() {
                 writeln!(f, "{:<24}{:<8}{:<8}{:<8}{}",
                          format!("{}.", record.get_fqdn()),
-                         record.get_type(),
-                         record.get_type(),
+                         record.get_ttl(),
+                         record.get_type().to_string(),
                          record.get_class().to_string(),
                          record.get_data().as_ref().map(|d| d.to_string()).unwrap_or(String::new()))?;
             }
@@ -415,8 +415,8 @@ impl fmt::Display for Message {
             for record in self.sections[2].iter() {
                 writeln!(f, "{:<24}{:<8}{:<8}{:<8}{}",
                          format!("{}.", record.get_fqdn()),
-                         record.get_type(),
-                         record.get_type(),
+                         record.get_ttl(),
+                         record.get_type().to_string(),
                          record.get_class().to_string(),
                          record.get_data().as_ref().map(|d| d.to_string()).unwrap_or(String::new()))?;
             }
