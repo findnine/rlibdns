@@ -159,6 +159,62 @@ impl TSigRRData {
             data
         }
     }
+
+    pub fn set_algorithm_name(&mut self, algorithm_name: &str) {
+        self.algorithm_name = Some(algorithm_name.to_string());
+    }
+
+    pub fn get_algorithm_name(&self) -> Option<&String> {
+        self.algorithm_name.as_ref()
+    }
+
+    pub fn set_time_signed(&mut self, time_signed: u64) {
+        self.time_signed = time_signed;
+    }
+
+    pub fn get_time_signed(&self) -> u64 {
+        self.time_signed
+    }
+
+    pub fn set_fudge(&mut self, fudge: u16) {
+        self.fudge = fudge;
+    }
+
+    pub fn get_fudge(&self) -> u16 {
+        self.fudge
+    }
+
+    pub fn set_mac(&mut self, mac: &[u8]) {
+        self.mac = mac.to_vec();
+    }
+
+    pub fn get_mac(&self) -> &[u8] {
+        self.mac.as_ref()
+    }
+
+    pub fn set_original_id(&mut self, original_id: u16) {
+        self.original_id = original_id;
+    }
+
+    pub fn get_original_id(&self) -> u16 {
+        self.original_id
+    }
+
+    pub fn set_error(&mut self, error: u16) {
+        self.error = error;
+    }
+
+    pub fn get_error(&self) -> u16 {
+        self.error
+    }
+
+    pub fn set_data(&mut self, data: &[u8]) {
+        self.data = data.to_vec();
+    }
+
+    pub fn get_data(&self) -> &[u8] {
+        self.data.as_ref()
+    }
 }
 
 impl fmt::Display for TSigRRData {

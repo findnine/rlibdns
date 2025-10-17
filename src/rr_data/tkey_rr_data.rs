@@ -140,6 +140,62 @@ impl TKeyRRData {
             data
         }
     }
+
+    pub fn set_algorithm_name(&mut self, algorithm_name: &str) {
+        self.algorithm_name = Some(algorithm_name.to_string());
+    }
+
+    pub fn get_algorithm_name(&self) -> Option<&String> {
+        self.algorithm_name.as_ref()
+    }
+
+    pub fn set_inception(&mut self, inception: u32) {
+        self.inception = inception;
+    }
+
+    pub fn get_inception(&self) -> u32 {
+        self.inception
+    }
+
+    pub fn set_expiration(&mut self, expiration: u32) {
+        self.expiration = expiration;
+    }
+
+    pub fn get_expiration(&self) -> u32 {
+        self.expiration
+    }
+
+    pub fn set_mode(&mut self, mode: u16) {
+        self.mode = mode;
+    }
+
+    pub fn get_mode(&self) -> u16 {
+        self.mode
+    }
+
+    pub fn set_error(&mut self, error: u16) {
+        self.error = error;
+    }
+
+    pub fn get_error(&self) -> u16 {
+        self.error
+    }
+
+    pub fn set_key(&mut self, key: &[u8]) {
+        self.key = key.to_vec();
+    }
+
+    pub fn get_key(&self) -> &[u8] {
+        self.key.as_ref()
+    }
+
+    pub fn set_data(&mut self, data: &[u8]) {
+        self.data = data.to_vec();
+    }
+
+    pub fn get_data(&self) -> &[u8] {
+        self.data.as_ref()
+    }
 }
 
 impl fmt::Display for TKeyRRData {
