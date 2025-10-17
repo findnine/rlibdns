@@ -31,8 +31,6 @@ use crate::utils::fqdn_utils::{pack_fqdn_compressed, unpack_fqdn};
 
 pub const DNS_HEADER_LEN: usize = 12;
 
-//pub type MessageRecord = (String, RRClasses, RRTypes, u32, Box<dyn RRData>);
-
 #[derive(Debug, Clone)]
 pub struct Message {
     id: u16,
