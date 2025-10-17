@@ -61,7 +61,7 @@ impl RRData for SvcbRRData {
         buf.extend_from_slice(&self.priority.to_be_bytes());
 
         buf.extend_from_slice(&pack_fqdn_compressed(self.target.as_ref()
-            .ok_or_else(|| RRDataError("target param was not set".to_string()))?.as_str(), compression_data, off+4));
+            .ok_or_else(|| RRDataError("target param was not set".to_string()))?.as_str(), compression_data, off+2));
 
         for param in self.params.iter() {
             buf.extend_from_slice(&param.get_code().to_be_bytes());

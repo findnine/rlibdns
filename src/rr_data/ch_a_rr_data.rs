@@ -41,7 +41,7 @@ impl RRData for ChARRData {
         let mut buf = Vec::with_capacity(34);
 
         buf.extend_from_slice(&pack_fqdn_compressed(self.network.as_ref()
-            .ok_or_else(|| RRDataError("network param was not set".to_string()))?, compression_data, off+2));
+            .ok_or_else(|| RRDataError("network param was not set".to_string()))?, compression_data, off));
 
         buf.extend_from_slice(&self.address.to_be_bytes());
 

@@ -45,11 +45,13 @@ impl RRData for HInfoRRData {
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
         let mut buf = Vec::with_capacity(46);
 
-        let cpu = self.cpu.as_ref().unwrap().as_bytes();
+        let cpu = self.cpu.as_ref()
+            .ok_or_else(|| RRDataError("cpu param was not set".to_string()))?.as_bytes();
         buf.push(cpu.len() as u8);
         buf.extend_from_slice(cpu);
 
-        let os = self.os.as_ref().unwrap().as_bytes();
+        let os = self.os.as_ref()
+            .ok_or_else(|| RRDataError("os param was not set".to_string()))?.as_bytes();
         buf.push(os.len() as u8);
         buf.extend_from_slice(os);
 
