@@ -92,7 +92,7 @@ impl MxRRData {
         self.priority = priority;
     }
 
-    pub fn get_priority(&self) -> u16 {
+    pub fn priority(&self) -> u16 {
         self.priority
     }
 
@@ -100,7 +100,7 @@ impl MxRRData {
         self.server = Some(server.to_string());
     }
 
-    pub fn get_server(&self) -> Option<&String> {
+    pub fn server(&self) -> Option<&String> {
         self.server.as_ref()
     }
 }

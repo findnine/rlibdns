@@ -104,7 +104,7 @@ impl DnsKeyRRData {
         self.flags = flags;
     }
 
-    pub fn get_flags(&self) -> u16 {
+    pub fn flags(&self) -> u16 {
         self.flags
     }
 
@@ -112,7 +112,7 @@ impl DnsKeyRRData {
         self.protocol = protocol;
     }
 
-    pub fn get_protocol(&self) -> u8 {
+    pub fn protocol(&self) -> u8 {
         self.protocol
     }
 
@@ -120,7 +120,7 @@ impl DnsKeyRRData {
         self.algorithm = algorithm;
     }
 
-    pub fn get_algorithm(&self) -> u8 {
+    pub fn algorithm(&self) -> u8 {
         self.algorithm
     }
 
@@ -128,7 +128,7 @@ impl DnsKeyRRData {
         self.public_key = public_key.to_vec();
     }
 
-    pub fn get_public_key(&self) -> &[u8] {
+    pub fn public_key(&self) -> &[u8] {
         &self.public_key
     }
 }

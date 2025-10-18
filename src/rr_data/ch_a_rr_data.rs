@@ -93,7 +93,7 @@ impl ChARRData {
         self.network = Some(network.to_string());
     }
 
-    pub fn get_network(&self) -> Option<&String> {
+    pub fn network(&self) -> Option<&String> {
         self.network.as_ref()
     }
 
@@ -101,7 +101,7 @@ impl ChARRData {
         self.address = address;
     }
 
-    pub fn get_address(&self) -> u16 {
+    pub fn address(&self) -> u16 {
         self.address
     }
 }

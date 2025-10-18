@@ -78,7 +78,7 @@ impl RRData for NSecRRData {
         let mut windows: Vec<Vec<u8>> = vec![Vec::new(); 256];
 
         for _type in self.types.iter() {
-            let code = _type.get_code();
+            let code = _type.code();
             let w = (code >> 8) as usize;
             let low = (code & 0xFF) as u8;
             let byte_i = (low >> 3) as usize;
@@ -117,7 +117,7 @@ impl RRData for NSecRRData {
         let mut windows: Vec<Vec<u8>> = vec![Vec::new(); 256];
 
         for _type in self.types.iter() {
-            let code = _type.get_code();
+            let code = _type.code();
             let w = (code >> 8) as usize;
             let low = (code & 0xFF) as u8;
             let byte_i = (low >> 3) as usize;
@@ -181,7 +181,7 @@ impl NSecRRData {
         self.next_domain = Some(next_domain.to_string());
     }
 
-    pub fn get_next_domain(&self) -> Option<&String> {
+    pub fn next_domain(&self) -> Option<&String> {
         self.next_domain.as_ref()
     }
 
@@ -189,11 +189,11 @@ impl NSecRRData {
         self.types.push(_type);
     }
 
-    pub fn get_types(&self) -> &Vec<RRTypes> {
+    pub fn types(&self) -> &Vec<RRTypes> {
         self.types.as_ref()
     }
 
-    pub fn get_types_mut(&mut self) -> &mut Vec<RRTypes> {
+    pub fn types_mut(&mut self) -> &mut Vec<RRTypes> {
         self.types.as_mut()
     }
 }

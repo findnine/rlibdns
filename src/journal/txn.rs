@@ -25,7 +25,7 @@ impl Txn {
         self.serial_0 = serial_0;
     }
 
-    pub fn get_serial_0(&self) -> u32 {
+    pub fn serial_0(&self) -> u32 {
         self.serial_0
     }
 
@@ -33,7 +33,7 @@ impl Txn {
         self.serial_1 = serial_1;
     }
 
-    pub fn get_serial_1(&self) -> u32 {
+    pub fn serial_1(&self) -> u32 {
         self.serial_1
     }
 
@@ -41,7 +41,7 @@ impl Txn {
         self.records[op_code as usize].push(Record::new(query, class, _type, ttl, record));
     }
 
-    pub fn get_records(&self, op_code: TxnOpCodes) -> &Vec<Record> {
+    pub fn records(&self, op_code: TxnOpCodes) -> &Vec<Record> {
         &self.records[op_code as usize]
     }
 }

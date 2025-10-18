@@ -65,7 +65,7 @@ impl SvcParams {
             Self::Mandatory(list) => {
                 let mut out = Vec::with_capacity(list.len() * 2);
                 for v in list {
-                    out.extend_from_slice(&v.get_code().to_be_bytes());
+                    out.extend_from_slice(&v.code().to_be_bytes());
                 }
                 out
             }
@@ -93,7 +93,7 @@ impl SvcParams {
         }
     }
 
-    pub fn get_key(&self) -> SvcParamKeys {
+    pub fn key(&self) -> SvcParamKeys {
         match self {
             Self::Mandatory(_)    => SvcParamKeys::Mandatory,
             Self::Alpn(_)         => SvcParamKeys::Alpn,
@@ -105,8 +105,8 @@ impl SvcParams {
         }
     }
 
-    pub fn get_code(&self) -> u16 {
-        self.get_key().get_code()
+    pub fn code(&self) -> u16 {
+        self.key().code()
     }
 }
 
@@ -184,7 +184,7 @@ impl fmt::Display for SvcParams {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             Self::Mandatory(list) => {
-                write!(f, "{}={}", self.get_key(), list.iter().map(|p| p.to_string()).collect::<Vec<_>>().join(","))
+                write!(f, "{}={}", self.key(), list.iter().map(|p| p.to_string()).collect::<Vec<_>>().join(","))
             }
             Self::Alpn(ids) => {
                 let mut alpn_strs = Vec::new();
@@ -197,15 +197,15 @@ impl fmt::Display for SvcParams {
 
                     alpn_strs.push(hex::encode(id));
                 }
-                write!(f, "{}=\"{}\"", self.get_key(), alpn_strs.join(","))
+                write!(f, "{}=\"{}\"", self.key(), alpn_strs.join(","))
             }
             Self::NoDefaultAlpn => write!(f, "no-default-alpn"),
-            Self::Port(p) => write!(f, "{}={}", self.get_key(), p),
+            Self::Port(p) => write!(f, "{}={}", self.key(), p),
             Self::Ipv4Hint(addrs) => {
                 let ips: Vec<String> = addrs.iter().map(|ip| ip.to_string()).collect();
-                write!(f, "{}={}", self.get_key(), ips.join(","))
+                write!(f, "{}={}", self.key(), ips.join(","))
             }
-            Self::Ech(data) => write!(f, "{}={}", self.get_key(), base64::encode(data)),
+            Self::Ech(data) => write!(f, "{}={}", self.key(), base64::encode(data)),
             Self::Ipv6Hint(_, raw) => {
                 if raw.len() % 16 == 0 {
                     let mut ips = Vec::new();
@@ -213,10 +213,10 @@ impl fmt::Display for SvcParams {
                         let arr: [u8; 16] = chunk.try_into().unwrap();
                         ips.push(Ipv6Addr::from(arr).to_string());
                     }
-                    return write!(f, "{}={}", self.get_key(), ips.join(","));
+                    return write!(f, "{}={}", self.key(), ips.join(","));
                 }
 
-                write!(f, "{}={}", self.get_key(), hex::encode(raw))
+                write!(f, "{}={}", self.key(), hex::encode(raw))
             }
         }
     }

@@ -178,7 +178,7 @@ impl Message {
         }
 
         let flags = (if self.qr { 0x8000 } else { 0 }) |  // QR bit
-            ((self.op_code.get_code() as u16 & 0x0F) << 11) |  // Opcode
+            ((self.op_code.code() as u16 & 0x0F) << 11) |  // Opcode
             (if self.authoritative { 0x0400 } else { 0 }) |  // AA bit
             (if truncated { 0x0200 } else { 0 }) |  // TC bit
             (if self.recursion_desired { 0x0100 } else { 0 }) |  // RD bit
@@ -186,7 +186,7 @@ impl Message {
             //(if self.z { 0x0040 } else { 0 }) |  // Z bit (always 0)
             (if self.authenticated_data { 0x0020 } else { 0 }) |  // AD bit
             (if self.checking_disabled { 0x0010 } else { 0 }) |  // CD bit
-            (self.response_code.get_code() as u16 & 0x000F);  // RCODE
+            (self.response_code.code() as u16 & 0x000F);  // RCODE
 
         buf[2..4].copy_from_slice(&flags.to_be_bytes());
 
@@ -205,7 +205,7 @@ impl Message {
         self.id = id;
     }
 
-    pub fn get_id(&self) -> u16 {
+    pub fn id(&self) -> u16 {
         self.id
     }
 
@@ -221,7 +221,7 @@ impl Message {
         self.op_code = op_code;
     }
 
-    pub fn get_op_code(&self) -> OpCodes {
+    pub fn op_code(&self) -> OpCodes {
         self.op_code.clone()
     }
 
@@ -229,7 +229,7 @@ impl Message {
         self.origin = Some(origin);
     }
 
-    pub fn get_origin(&self) -> Option<SocketAddr> {
+    pub fn origin(&self) -> Option<SocketAddr> {
         self.origin
     }
 
@@ -237,7 +237,7 @@ impl Message {
         self.destination = Some(destination);
     }
 
-    pub fn get_destination(&self) -> Option<SocketAddr> {
+    pub fn destination(&self) -> Option<SocketAddr> {
         self.destination
     }
 
@@ -277,7 +277,7 @@ impl Message {
         self.response_code = response_code;
     }
 
-    pub fn get_response_code(&self) -> ResponseCodes {
+    pub fn response_code(&self) -> ResponseCodes {
         self.response_code
     }
 
@@ -289,11 +289,11 @@ impl Message {
         self.queries.push(query);
     }
 
-    pub fn get_queries(&self) -> &Vec<RRQuery> {
+    pub fn queries(&self) -> &Vec<RRQuery> {
         self.queries.as_ref()
     }
 
-    pub fn get_queries_mut(&mut self) -> &mut Vec<RRQuery> {
+    pub fn queries_mut(&mut self) -> &mut Vec<RRQuery> {
         self.queries.as_mut()
     }
 
@@ -305,15 +305,15 @@ impl Message {
         self.sections[index] = section;
     }
 
-    pub fn add_section(&mut self, index: usize, query: &str, class: RRClasses, _type: RRTypes, ttl: u32, data: Option<Box<dyn RRData>>) {
-        self.sections[index].push(Record::new(query, class, _type, ttl, data));
+    pub fn add_section(&mut self, index: usize, query: &str, class: RRClasses, rtype: RRTypes, ttl: u32, data: Option<Box<dyn RRData>>) {
+        self.sections[index].push(Record::new(query, class, rtype, ttl, data));
     }
 
-    pub fn get_section(&self, index: usize) -> &Vec<Record> {
+    pub fn section(&self, index: usize) -> &Vec<Record> {
         self.sections[index].as_ref()
     }
 
-    pub fn get_section_mut(&mut self, index: usize) -> &mut Vec<Record> {
+    pub fn section_mut(&mut self, index: usize) -> &mut Vec<Record> {
         self.sections[index].as_mut()
     }
 
@@ -325,11 +325,11 @@ impl Message {
         self.sections = section;
     }
 
-    pub fn get_sections(&self) -> &[Vec<Record>; 3] {
+    pub fn sections(&self) -> &[Vec<Record>; 3] {
         &self.sections
     }
 
-    pub fn get_sections_mut(&mut self) -> &mut [Vec<Record>; 3] {
+    pub fn sections_mut(&mut self) -> &mut [Vec<Record>; 3] {
         &mut self.sections
     }
 
@@ -367,7 +367,7 @@ impl fmt::Display for Message {
         /*
         if let Some(r) = self.additional_records.get(&String::new()) {
             for r in r {
-                if r.get_type().eq(&RRTypes::Opt) {
+                if r.type().eq(&RRTypes::Opt) {
                     writeln!(f, "\r\n;; OPT PSEUDOSECTION:")?;
                     writeln!(f, "{}", self.additional_records.get(&String::new()).unwrap().get(0).unwrap())?;
                 }
@@ -387,11 +387,11 @@ impl fmt::Display for Message {
 
             for record in self.sections[0].iter() {
                 writeln!(f, "{:<24}{:<8}{:<8}{:<8}{}",
-                         format!("{}.", record.get_fqdn()),
-                         record.get_ttl(),
-                         record.get_type().to_string(),
-                         record.get_class().to_string(),
-                         record.get_data().as_ref().map(|d| d.to_string()).unwrap_or(String::new()))?;
+                         format!("{}.", record.fqdn()),
+                         record.ttl(),
+                         record.rtype().to_string(),
+                         record.class().to_string(),
+                         record.data().as_ref().map(|d| d.to_string()).unwrap_or(String::new()))?;
             }
         }
 
@@ -400,11 +400,11 @@ impl fmt::Display for Message {
 
             for record in self.sections[1].iter() {
                 writeln!(f, "{:<24}{:<8}{:<8}{:<8}{}",
-                         format!("{}.", record.get_fqdn()),
-                         record.get_ttl(),
-                         record.get_type().to_string(),
-                         record.get_class().to_string(),
-                         record.get_data().as_ref().map(|d| d.to_string()).unwrap_or(String::new()))?;
+                         format!("{}.", record.fqdn()),
+                         record.ttl(),
+                         record.rtype().to_string(),
+                         record.class().to_string(),
+                         record.data().as_ref().map(|d| d.to_string()).unwrap_or(String::new()))?;
             }
         }
 
@@ -413,11 +413,11 @@ impl fmt::Display for Message {
 
             for record in self.sections[2].iter() {
                 writeln!(f, "{:<24}{:<8}{:<8}{:<8}{}",
-                         format!("{}.", record.get_fqdn()),
-                         record.get_ttl(),
-                         record.get_type().to_string(),
-                         record.get_class().to_string(),
-                         record.get_data().as_ref().map(|d| d.to_string()).unwrap_or(String::new()))?;
+                         format!("{}.", record.fqdn()),
+                         record.ttl(),
+                         record.rtype().to_string(),
+                         record.class().to_string(),
+                         record.data().as_ref().map(|d| d.to_string()).unwrap_or(String::new()))?;
             }
         }
 
@@ -449,7 +449,7 @@ impl<'a> Iterator for WireIter<'a> {
         buf[0..2].copy_from_slice(&self.message.id.to_be_bytes());
 
         let flags = (if self.message.qr { 0x8000 } else { 0 }) |  // QR bit
-            ((self.message.op_code.get_code() as u16 & 0x0F) << 11) |  // Opcode
+            ((self.message.op_code.code() as u16 & 0x0F) << 11) |  // Opcode
             (if self.message.authoritative { 0x0400 } else { 0 }) |  // AA bit
             0 |  // TC bit
             (if self.message.recursion_desired { 0x0100 } else { 0 }) |  // RD bit
@@ -457,7 +457,7 @@ impl<'a> Iterator for WireIter<'a> {
             //(if self.z { 0x0040 } else { 0 }) |  // Z bit (always 0)
             (if self.message.authenticated_data { 0x0020 } else { 0 }) |  // AD bit
             (if self.message.checking_disabled { 0x0010 } else { 0 }) |  // CD bit
-            (self.message.response_code.get_code() as u16 & 0x000F);  // RCODE
+            (self.message.response_code.code() as u16 & 0x000F);  // RCODE
 
         buf[2..4].copy_from_slice(&flags.to_be_bytes());
 
@@ -508,9 +508,9 @@ fn section_from_wire(buf: &[u8], off: &mut usize, count: u16) -> Result<Vec<Reco
         let (fqdn, length) = unpack_fqdn(buf, *off);
         *off += length;
 
-        let _type = RRTypes::try_from(u16::from_be_bytes([buf[*off], buf[*off+1]])).map_err(|e| MessageError::RecordError(e.to_string()))?;
+        let rtype = RRTypes::try_from(u16::from_be_bytes([buf[*off], buf[*off+1]])).map_err(|e| MessageError::RecordError(e.to_string()))?;
 
-        match _type {
+        match rtype {
             RRTypes::Opt => {
                 let length = u16::from_be_bytes([buf[*off+2], buf[*off+3]]) as usize;
                 let data = OptRRData::from_bytes(buf, *off+2, length).map_err(|e| MessageError::RecordError(e.to_string()))?;
@@ -528,10 +528,10 @@ fn section_from_wire(buf: &[u8], off: &mut usize, count: u16) -> Result<Vec<Reco
                 let length = u16::from_be_bytes([buf[*off+8], buf[*off+9]]) as usize;
                 let data = match length {
                     0 => None,
-                    _ => Some(<dyn RRData>::from_wire(&_type, &class, buf, *off+10, length).map_err(|e| MessageError::RecordError(e.to_string()))?)
+                    _ => Some(<dyn RRData>::from_wire(&rtype, &class, buf, *off+10, length).map_err(|e| MessageError::RecordError(e.to_string()))?)
                 };
 
-                section.push(Record::new(&fqdn, class, _type, ttl, data));
+                section.push(Record::new(&fqdn, class, rtype, ttl, data));
                 *off += 10+length;
             }
         }
@@ -548,11 +548,11 @@ fn section_to_wire(compression_data: &mut HashMap<String, usize>, off: usize, se
     let mut off = off;
 
     for record in section.iter() {
-        let fqdn = pack_fqdn_compressed(&record.get_fqdn(), compression_data, off);
+        let fqdn = pack_fqdn_compressed(&record.fqdn(), compression_data, off);
 
         off += fqdn.len()+10;
 
-        match &record.get_data() {
+        match &record.data() {
             Some(data) => {
                 match data.to_wire(compression_data, off) {
                     Ok(r) => {
@@ -562,10 +562,10 @@ fn section_to_wire(compression_data: &mut HashMap<String, usize>, off: usize, se
                         }
 
                         buf.extend_from_slice(&fqdn);
-                        buf.extend_from_slice(&record.get_type().get_code().to_be_bytes());
+                        buf.extend_from_slice(&record.rtype().code().to_be_bytes());
 
-                        buf.extend_from_slice(&record.get_class().get_code().to_be_bytes());
-                        buf.extend_from_slice(&record.get_ttl().to_be_bytes());
+                        buf.extend_from_slice(&record.class().code().to_be_bytes());
+                        buf.extend_from_slice(&record.ttl().to_be_bytes());
 
                         buf.extend_from_slice(&(r.len() as u16).to_be_bytes());
                         buf.extend_from_slice(&r);
@@ -582,10 +582,10 @@ fn section_to_wire(compression_data: &mut HashMap<String, usize>, off: usize, se
                 }
 
                 buf.extend_from_slice(&fqdn);
-                buf.extend_from_slice(&record.get_type().get_code().to_be_bytes());
+                buf.extend_from_slice(&record.rtype().code().to_be_bytes());
 
-                buf.extend_from_slice(&record.get_class().get_code().to_be_bytes());
-                buf.extend_from_slice(&record.get_ttl().to_be_bytes());
+                buf.extend_from_slice(&record.class().code().to_be_bytes());
+                buf.extend_from_slice(&record.ttl().to_be_bytes());
 
                 buf.extend_from_slice(&0u16.to_be_bytes());
 

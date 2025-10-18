@@ -81,8 +81,8 @@ impl Eq for dyn RRData {}
 
 impl dyn RRData {
 
-    pub fn new(_type: &RRTypes, class: &RRClasses) -> Option<Box<dyn RRData>> {
-        Some(match _type {
+    pub fn new(rtype: &RRTypes, class: &RRClasses) -> Option<Box<dyn RRData>> {
+        Some(match rtype {
             RRTypes::A      => {
                 match class {
                     RRClasses::Ch => ChARRData::default().upcast(),
@@ -129,8 +129,8 @@ impl dyn RRData {
         })
     }
 
-    pub fn from_wire(_type: &RRTypes, class: &RRClasses, buf: &[u8], off: usize, len: usize) -> Result<Box<dyn RRData>, RRDataError> {
-        Ok(match _type {
+    pub fn from_wire(rtype: &RRTypes, class: &RRClasses, buf: &[u8], off: usize, len: usize) -> Result<Box<dyn RRData>, RRDataError> {
+        Ok(match rtype {
             RRTypes::A      => {
                 match class {
                     RRClasses::Ch => ChARRData::from_bytes(buf, off, len)?.upcast(),

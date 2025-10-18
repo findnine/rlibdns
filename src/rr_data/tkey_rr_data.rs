@@ -145,7 +145,7 @@ impl TKeyRRData {
         self.algorithm_name = Some(algorithm_name.to_string());
     }
 
-    pub fn get_algorithm_name(&self) -> Option<&String> {
+    pub fn algorithm_name(&self) -> Option<&String> {
         self.algorithm_name.as_ref()
     }
 
@@ -153,7 +153,7 @@ impl TKeyRRData {
         self.inception = inception;
     }
 
-    pub fn get_inception(&self) -> u32 {
+    pub fn inception(&self) -> u32 {
         self.inception
     }
 
@@ -161,7 +161,7 @@ impl TKeyRRData {
         self.expiration = expiration;
     }
 
-    pub fn get_expiration(&self) -> u32 {
+    pub fn expiration(&self) -> u32 {
         self.expiration
     }
 
@@ -169,7 +169,7 @@ impl TKeyRRData {
         self.mode = mode;
     }
 
-    pub fn get_mode(&self) -> u16 {
+    pub fn mode(&self) -> u16 {
         self.mode
     }
 
@@ -177,7 +177,7 @@ impl TKeyRRData {
         self.error = error;
     }
 
-    pub fn get_error(&self) -> u16 {
+    pub fn error(&self) -> u16 {
         self.error
     }
 
@@ -185,7 +185,7 @@ impl TKeyRRData {
         self.key = key.to_vec();
     }
 
-    pub fn get_key(&self) -> &[u8] {
+    pub fn key(&self) -> &[u8] {
         self.key.as_ref()
     }
 
@@ -193,7 +193,7 @@ impl TKeyRRData {
         self.data = data.to_vec();
     }
 
-    pub fn get_data(&self) -> &[u8] {
+    pub fn data(&self) -> &[u8] {
         self.data.as_ref()
     }
 }

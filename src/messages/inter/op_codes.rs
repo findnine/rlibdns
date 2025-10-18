@@ -14,7 +14,7 @@ pub enum OpCodes {
 
 impl OpCodes {
 
-    pub fn get_code(&self) -> u8 {
+    pub fn code(&self) -> u8 {
         match self {
             Self::Query => 0,
             Self::IQuery => 1,

@@ -59,7 +59,7 @@ impl RRData for SshFpRRData {
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
         let mut buf = vec![0u8; 10]; //40
 
-        buf.splice(0..2, self.class.get_code().to_be_bytes());
+        buf.splice(0..2, self.class.code().to_be_bytes());
         buf.splice(2..6, self.ttl.to_be_bytes());
 
         buf[8] = self.algorithm;
@@ -107,7 +107,7 @@ impl SshFpRRData {
         self.class = class;
     }
 
-    pub fn get_class(&self) -> RRClasses {
+    pub fn class(&self) -> RRClasses {
         self.class
     }
 
@@ -115,7 +115,7 @@ impl SshFpRRData {
         self.ttl = ttl;
     }
 
-    pub fn get_ttl(&self) -> u32 {
+    pub fn ttl(&self) -> u32 {
         self.ttl
     }
 
@@ -123,7 +123,7 @@ impl SshFpRRData {
         self.algorithm = algorithm;
     }
 
-    pub fn get_algorithm(&self) -> u8 {
+    pub fn algorithm(&self) -> u8 {
         self.algorithm
     }
 
@@ -131,7 +131,7 @@ impl SshFpRRData {
         self.fingerprint_type = fingerprint_type;
     }
 
-    pub fn get_fingerprint_type(&self) -> u8 {
+    pub fn fingerprint_type(&self) -> u8 {
         self.fingerprint_type
     }
 
@@ -139,7 +139,7 @@ impl SshFpRRData {
         self.fingerprint = fingerprint.to_vec();
     }
 
-    pub fn get_fingerprint(&self) -> &[u8] {
+    pub fn fingerprint(&self) -> &[u8] {
         self.fingerprint.as_ref()
     }
 }

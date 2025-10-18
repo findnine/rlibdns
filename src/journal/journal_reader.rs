@@ -23,31 +23,31 @@ pub struct JournalHeader {
 
 impl JournalHeader {
 
-    pub fn get_begin_serial(&self) -> u32 {
+    pub fn begin_serial(&self) -> u32 {
         self.begin_serial
     }
 
-    pub fn get_begin_offset(&self) -> u32 {
+    pub fn begin_offset(&self) -> u32 {
         self.begin_offset
     }
 
-    pub fn get_end_serial(&self) -> u32 {
+    pub fn end_serial(&self) -> u32 {
         self.end_serial
     }
 
-    pub fn get_end_offset(&self) -> u32 {
+    pub fn end_offset(&self) -> u32 {
         self.end_offset
     }
 
-    pub fn get_index_size(&self) -> u32 {
+    pub fn index_size(&self) -> u32 {
         self.index_size
     }
 
-    pub fn get_source_serial(&self) -> u32 {
+    pub fn source_serial(&self) -> u32 {
         self.source_serial
     }
 
-    pub fn get_flags(&self) -> u8 {
+    pub fn flags(&self) -> u8 {
         self.flags
     }
 }

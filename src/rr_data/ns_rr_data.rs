@@ -82,7 +82,7 @@ impl NsRRData {
         self.server = Some(server.to_string());
     }
 
-    pub fn get_server(&self) -> Option<&String> {
+    pub fn server(&self) -> Option<&String> {
         self.server.as_ref()
     }
 }

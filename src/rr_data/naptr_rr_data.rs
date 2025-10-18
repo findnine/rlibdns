@@ -92,7 +92,7 @@ impl RRData for NaptrRRData {
         let length = self.flags.len();
         buf.push(((length * 2) - 1) as u8);
         for (i, flag) in self.flags.iter().enumerate() {
-            buf.push(flag.get_code());
+            buf.push(flag.code());
             if i < length - 1 {
                 buf.push(b',');
             }
@@ -150,7 +150,7 @@ impl NaptrRRData {
         self.order = order;
     }
 
-    pub fn get_order(&self) -> u16 {
+    pub fn order(&self) -> u16 {
         self.order
     }
 
@@ -158,7 +158,7 @@ impl NaptrRRData {
         self.preference = preference;
     }
 
-    pub fn get_preference(&self) -> u16 {
+    pub fn preference(&self) -> u16 {
         self.preference
     }
 
@@ -166,11 +166,11 @@ impl NaptrRRData {
         self.flags.push(flags);
     }
 
-    pub fn get_flags(&self) -> &Vec<NaptrFlags> {
+    pub fn flags(&self) -> &Vec<NaptrFlags> {
         self.flags.as_ref()
     }
 
-    pub fn get_flags_mut(&mut self) -> &mut Vec<NaptrFlags> {
+    pub fn flags_mut(&mut self) -> &mut Vec<NaptrFlags> {
         self.flags.as_mut()
     }
 
@@ -178,7 +178,7 @@ impl NaptrRRData {
         self.service = Some(service.to_string());
     }
 
-    pub fn get_service(&self) -> Option<&String> {
+    pub fn service(&self) -> Option<&String> {
         self.service.as_ref()
     }
 
@@ -186,7 +186,7 @@ impl NaptrRRData {
         self.regex = Some(regex.to_string());
     }
 
-    pub fn get_regex(&self) -> Option<&String> {
+    pub fn regex(&self) -> Option<&String> {
         self.regex.as_ref()
     }
 
@@ -194,7 +194,7 @@ impl NaptrRRData {
         self.replacement = Some(replacement.to_string());
     }
 
-    pub fn get_replacement(&self) -> Option<&String> {
+    pub fn replacement(&self) -> Option<&String> {
         self.replacement.as_ref()
     }
 }

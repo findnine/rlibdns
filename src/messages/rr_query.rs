@@ -9,16 +9,16 @@ use crate::utils::fqdn_utils::{pack_fqdn, pack_fqdn_compressed, unpack_fqdn};
 #[derive(Debug, Clone)]
 pub struct RRQuery {
     fqdn: String,
-    _type: RRTypes,
+    rtype: RRTypes,
     class: RRClasses
 }
 
 impl RRQuery {
 
-    pub fn new(fqdn: &str, _type: RRTypes, class: RRClasses) -> Self {
+    pub fn new(fqdn: &str, rtype: RRTypes, class: RRClasses) -> Self {
         Self {
             fqdn: fqdn.to_string(),
-            _type,
+            rtype,
             class
         }
     }
@@ -27,13 +27,13 @@ impl RRQuery {
         let (fqdn, len) = unpack_fqdn(buf, *off);
         *off += len;
 
-        let _type = RRTypes::try_from(u16::from_be_bytes([buf[*off], buf[*off+1]])).map_err(|e| MessageError::RecordError(e.to_string()))?;
+        let rtype = RRTypes::try_from(u16::from_be_bytes([buf[*off], buf[*off+1]])).map_err(|e| MessageError::RecordError(e.to_string()))?;
         let class = RRClasses::try_from(u16::from_be_bytes([buf[*off+2], buf[*off+3]])).map_err(|e| MessageError::RecordError(e.to_string()))?;
         *off += 4;
 
         Ok(Self {
             fqdn,
-            _type,
+            rtype,
             class
         })
     }
@@ -41,8 +41,8 @@ impl RRQuery {
     pub fn to_wire(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Vec<u8> {
         let mut buf = pack_fqdn_compressed(&self.fqdn, compression_data, off);
 
-        buf.extend_from_slice(&self._type.get_code().to_be_bytes());
-        buf.extend_from_slice(&self.class.get_code().to_be_bytes());
+        buf.extend_from_slice(&self.rtype.code().to_be_bytes());
+        buf.extend_from_slice(&self.class.code().to_be_bytes());
 
         buf
     }
@@ -50,8 +50,8 @@ impl RRQuery {
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut buf = pack_fqdn(&self.fqdn);
 
-        buf.extend_from_slice(&self._type.get_code().to_be_bytes());
-        buf.extend_from_slice(&self.class.get_code().to_be_bytes());
+        buf.extend_from_slice(&self.rtype.code().to_be_bytes());
+        buf.extend_from_slice(&self.class.code().to_be_bytes());
 
         buf
     }
@@ -60,23 +60,23 @@ impl RRQuery {
         self.fqdn = fqdn.to_string();
     }
 
-    pub fn get_fqdn(&self) -> &str {
+    pub fn fqdn(&self) -> &str {
         &self.fqdn
     }
 
-    pub fn set_type(&mut self, _type: RRTypes) {
-        self._type = _type;
+    pub fn set_rtype(&mut self, rtype: RRTypes) {
+        self.rtype = rtype;
     }
 
-    pub fn get_type(&self) -> RRTypes {
-        self._type
+    pub fn rtype(&self) -> RRTypes {
+        self.rtype
     }
 
     pub fn set_class(&mut self, class: RRClasses) {
         self.class = class;
     }
 
-    pub fn get_class(&self) -> RRClasses {
+    pub fn class(&self) -> RRClasses {
         self.class
     }
 
@@ -92,6 +92,6 @@ impl RRQuery {
 impl fmt::Display for RRQuery {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:<31}{:<8}{}", format!("{}.", self.fqdn), self.class.to_string(), self._type)
+        write!(f, "{:<31}{:<8}{}", format!("{}.", self.fqdn), self.class.to_string(), self.rtype)
     }
 }

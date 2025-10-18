@@ -51,7 +51,7 @@ impl RRData for PtrRRData {
     fn to_wire(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
         let mut buf = vec![0u8; 8]; //32
 
-        let mut class = self.class.get_code();
+        let mut class = self.class.code();
         if self.cache_flush {
             class = class | 0x8000;
         }
@@ -69,7 +69,7 @@ impl RRData for PtrRRData {
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
         let mut buf = vec![0u8; 8]; //34
 
-        let mut class = self.class.get_code();
+        let mut class = self.class.code();
         if self.cache_flush {
             class = class | 0x8000;
         }
@@ -119,7 +119,7 @@ impl PtrRRData {
         self.class = class;
     }
 
-    pub fn get_class(&self) -> RRClasses {
+    pub fn class(&self) -> RRClasses {
         self.class
     }
 
@@ -127,7 +127,7 @@ impl PtrRRData {
         self.ttl = ttl;
     }
 
-    pub fn get_ttl(&self) -> u32 {
+    pub fn ttl(&self) -> u32 {
         self.ttl
     }
 
@@ -135,7 +135,7 @@ impl PtrRRData {
         self.fqdn = Some(fqdn.to_string());
     }
 
-    pub fn get_fqdn(&self) -> Option<&String> {
+    pub fn fqdn(&self) -> Option<&String> {
         self.fqdn.as_ref()
     }
 }

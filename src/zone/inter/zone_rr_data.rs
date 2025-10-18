@@ -42,8 +42,8 @@ pub trait ZoneRRData: RRData {
 
 impl dyn ZoneRRData {
 
-    pub fn new(_type: RRTypes, class: &RRClasses) -> Option<Box<dyn ZoneRRData>> {
-        Some(match _type {
+    pub fn new(rtype: RRTypes, class: &RRClasses) -> Option<Box<dyn ZoneRRData>> {
+        Some(match rtype {
             RRTypes::A      => {
                 match class {
                     RRClasses::Ch => <ChARRData as ZoneRRData>::upcast(ChARRData::default()),

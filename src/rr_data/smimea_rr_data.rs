@@ -96,7 +96,7 @@ impl SmimeaRRData {
         self.usage = usage;
     }
 
-    pub fn get_usage(&self) -> u8 {
+    pub fn usage(&self) -> u8 {
         self.usage
     }
 
@@ -104,7 +104,7 @@ impl SmimeaRRData {
         self.selector = selector;
     }
 
-    pub fn get_selector(&self) -> u8 {
+    pub fn selector(&self) -> u8 {
         self.selector
     }
 
@@ -112,7 +112,7 @@ impl SmimeaRRData {
         self.matching_type = matching_type;
     }
 
-    pub fn get_matching_type(&self) -> u8 {
+    pub fn matching_type(&self) -> u8 {
         self.matching_type
     }
 
@@ -120,7 +120,7 @@ impl SmimeaRRData {
         self.certificate = certificate.to_vec();
     }
 
-    pub fn get_certificate(&self) -> &[u8] {
+    pub fn certificate(&self) -> &[u8] {
         self.certificate.as_ref()
     }
 }

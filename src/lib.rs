@@ -83,7 +83,7 @@ mod tests {
 
         println!("{}", message);
 
-        println!("{:x?}", message.get_section(2).get(0).unwrap().get_data().unwrap().to_bytes().unwrap());
+        println!("{:x?}", message.section(2).get(0).unwrap().data().unwrap().to_bytes().unwrap());
 
         assert_eq!(x, message.to_bytes(512));
     }

@@ -47,7 +47,7 @@ pub enum RRTypes {
 
 impl RRTypes {
 
-    pub fn get_code(&self) -> u16 {
+    pub fn code(&self) -> u16 {
         match self {
             Self::A => 1,
             Self::Aaaa => 28,

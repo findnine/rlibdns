@@ -238,7 +238,7 @@ impl ZoneReader {
         Ok(record)
     }
 
-    pub fn get_origin(&self) -> &str {
+    pub fn origin(&self) -> &str {
         &self.origin
     }
 

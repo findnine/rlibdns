@@ -11,7 +11,7 @@ pub enum NaptrFlags {
 
 impl NaptrFlags {
 
-    pub fn get_code(&self) -> u8 {
+    pub fn code(&self) -> u8 {
         match self {
             Self::S => b'S',
             Self::A => b'A',

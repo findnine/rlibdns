@@ -106,7 +106,7 @@ impl SrvRRData {
         self.priority = priority;
     }
 
-    pub fn get_priority(&self) -> u16 {
+    pub fn priority(&self) -> u16 {
         self.priority
     }
 
@@ -114,7 +114,7 @@ impl SrvRRData {
         self.weight = weight;
     }
 
-    pub fn get_weight(&self) -> u16 {
+    pub fn weight(&self) -> u16 {
         self.weight
     }
 
@@ -122,7 +122,7 @@ impl SrvRRData {
         self.port = port;
     }
 
-    pub fn get_port(&self) -> u16 {
+    pub fn port(&self) -> u16 {
         self.port
     }
 
@@ -130,7 +130,7 @@ impl SrvRRData {
         self.target = Some(target.to_string());
     }
 
-    pub fn get_target(&self) -> Option<&String> {
+    pub fn target(&self) -> Option<&String> {
         self.target.as_ref()
     }
 }

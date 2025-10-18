@@ -112,7 +112,7 @@ impl LocRRData {
         self.version = version;
     }
 
-    pub fn get_version(&self) -> u8 {
+    pub fn version(&self) -> u8 {
         self.version
     }
 
@@ -120,7 +120,7 @@ impl LocRRData {
         self.size = size;
     }
 
-    pub fn get_size(&self) -> u8 {
+    pub fn size(&self) -> u8 {
         self.size
     }
 
@@ -128,7 +128,7 @@ impl LocRRData {
         self.h_precision = h_precision;
     }
 
-    pub fn get_h_precision(&self) -> u8 {
+    pub fn h_precision(&self) -> u8 {
         self.h_precision
     }
 
@@ -136,7 +136,7 @@ impl LocRRData {
         self.v_precision = h_precision;
     }
 
-    pub fn get_v_precision(&self) -> u8 {
+    pub fn v_precision(&self) -> u8 {
         self.v_precision
     }
     
@@ -144,7 +144,7 @@ impl LocRRData {
         self.latitude = latitude;
     }
     
-    pub fn get_latitude(&self) -> u32 {
+    pub fn latitude(&self) -> u32 {
         self.latitude
     }
     
@@ -152,7 +152,7 @@ impl LocRRData {
         self.longitude = longitude;
     }
     
-    pub fn get_longitude(&self) -> u32 {
+    pub fn longitude(&self) -> u32 {
         self.longitude
     }
     
@@ -160,7 +160,7 @@ impl LocRRData {
         self.altitude = altitude;
     }
     
-    pub fn get_altitude(&self) -> u32 {
+    pub fn altitude(&self) -> u32 {
         self.altitude
     }
 }

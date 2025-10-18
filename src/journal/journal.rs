@@ -1,5 +1,4 @@
 use std::io;
-use crate::journal::journal_reader::JournalReader;
 use crate::journal::txn::Txn;
 use crate::utils::index_map::IndexMap;
 
@@ -22,7 +21,7 @@ impl Journal {
 
         let mut reader = JournalReader::open(file_path)?;
         for txn in reader.txns() {
-            txns.insert(txn.get_serial_0(), txn);
+            txns.insert(txn.serial_0(), txn);
         }
 
         Ok(Self {
@@ -32,15 +31,15 @@ impl Journal {
         todo!()
     }
 
-    pub fn get_txns(&self) -> &IndexMap<u32, Txn> {
+    pub fn txns(&self) -> &IndexMap<u32, Txn> {
         self.txns.as_ref()
     }
 
-    pub fn get_txn(&self, index: u32) -> Option<&Txn> {
+    pub fn txn(&self, index: u32) -> Option<&Txn> {
         self.txns.get(&index)
     }
 
-    pub fn get_txns_from(&self, start: u32) -> impl Iterator<Item = (&u32, &Txn)> {
+    pub fn txns_from(&self, start: u32) -> impl Iterator<Item = (&u32, &Txn)> {
         self.txns.range(start..)
     }
 

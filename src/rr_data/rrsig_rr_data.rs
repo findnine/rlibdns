@@ -76,7 +76,7 @@ impl RRData for RRSigRRData {
         let mut buf = vec![0u8; 18]; //190 (ECDSA/Ed25519) / 318 (RSA)
 
         buf.splice(0..2, self.type_covered.as_ref()
-            .ok_or_else(|| RRDataError("type_covered param was not set".to_string()))?.get_code().to_be_bytes());
+            .ok_or_else(|| RRDataError("type_covered param was not set".to_string()))?.code().to_be_bytes());
 
         buf[2] = self.algorithm;
         buf[3] = self.labels;
@@ -98,7 +98,7 @@ impl RRData for RRSigRRData {
         let mut buf = vec![0u8; 18]; //190 (ECDSA/Ed25519) / 318 (RSA)
 
         buf.splice(0..2, self.type_covered.as_ref()
-            .ok_or_else(|| RRDataError("type_covered param was not set".to_string()))?.get_code().to_be_bytes());
+            .ok_or_else(|| RRDataError("type_covered param was not set".to_string()))?.code().to_be_bytes());
 
         buf[2] = self.algorithm;
         buf[3] = self.labels;
@@ -157,7 +157,7 @@ impl RRSigRRData {
         self.type_covered = Some(type_covered);
     }
 
-    pub fn get_type_covered(&self) -> Option<&RRTypes> {
+    pub fn type_covered(&self) -> Option<&RRTypes> {
         self.type_covered.as_ref()
     }
 
@@ -165,7 +165,7 @@ impl RRSigRRData {
         self.algorithm = algorithm;
     }
 
-    pub fn get_algorithm(&self) -> u8 {
+    pub fn algorithm(&self) -> u8 {
         self.algorithm
     }
 
@@ -173,7 +173,7 @@ impl RRSigRRData {
         self.labels = labels;
     }
 
-    pub fn get_labels(&self) -> u8 {
+    pub fn labels(&self) -> u8 {
         self.labels
     }
 
@@ -181,7 +181,7 @@ impl RRSigRRData {
         self.original_ttl = original_ttl;
     }
 
-    pub fn get_original_ttl(&self) -> u32 {
+    pub fn original_ttl(&self) -> u32 {
         self.original_ttl
     }
 
@@ -189,7 +189,7 @@ impl RRSigRRData {
         self.expiration = expiration;
     }
 
-    pub fn get_expiration(&self) -> u32 {
+    pub fn expiration(&self) -> u32 {
         self.expiration
     }
 
@@ -197,7 +197,7 @@ impl RRSigRRData {
         self.inception = inception;
     }
 
-    pub fn get_inception(&self) -> u32 {
+    pub fn inception(&self) -> u32 {
         self.inception
     }
 
@@ -205,7 +205,7 @@ impl RRSigRRData {
         self.key_tag = key_tag;
     }
 
-    pub fn get_key_tag(&self) -> u16 {
+    pub fn key_tag(&self) -> u16 {
         self.key_tag
     }
 
@@ -213,7 +213,7 @@ impl RRSigRRData {
         self.signer_name = Some(signer_name.to_string());
     }
 
-    pub fn get_signer_name(&self) -> Option<&String> {
+    pub fn signer_name(&self) -> Option<&String> {
         self.signer_name.as_ref()
     }
 
@@ -221,7 +221,7 @@ impl RRSigRRData {
         self.signature = signature.to_vec();
     }
 
-    pub fn get_signature(&self) -> &[u8] {
+    pub fn signature(&self) -> &[u8] {
         self.signature.as_ref()
     }
 }

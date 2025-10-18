@@ -79,7 +79,7 @@ impl InARRData {
         self.address = Some(address);
     }
 
-    pub fn get_address(&self) -> Option<Ipv4Addr> {
+    pub fn address(&self) -> Option<Ipv4Addr> {
         self.address
     }
 }

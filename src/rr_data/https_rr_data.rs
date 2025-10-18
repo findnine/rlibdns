@@ -65,7 +65,7 @@ impl RRData for HttpsRRData {
             .ok_or_else(|| RRDataError("target param was not set".to_string()))?.as_str(), compression_data, off+2));
 
         for param in self.params.iter() {
-            buf.extend_from_slice(&param.get_code().to_be_bytes());
+            buf.extend_from_slice(&param.code().to_be_bytes());
             let param_buf = param.to_bytes();
             buf.extend_from_slice(&(param_buf.len() as u16).to_be_bytes());
             buf.extend_from_slice(&param_buf);
@@ -83,7 +83,7 @@ impl RRData for HttpsRRData {
             .ok_or_else(|| RRDataError("target param was not set".to_string()))?.as_str()));
 
         for param in self.params.iter() {
-            buf.extend_from_slice(&param.get_code().to_be_bytes());
+            buf.extend_from_slice(&param.code().to_be_bytes());
             let param_buf = param.to_bytes();
             buf.extend_from_slice(&(param_buf.len() as u16).to_be_bytes());
             buf.extend_from_slice(&param_buf);
@@ -127,7 +127,7 @@ impl HttpsRRData {
         self.priority = priority;
     }
 
-    pub fn get_priority(&self) -> u16 {
+    pub fn priority(&self) -> u16 {
         self.priority
     }
 
@@ -135,7 +135,7 @@ impl HttpsRRData {
         self.target = Some(target.to_string());
     }
 
-    pub fn get_target(&self) -> Option<&String> {
+    pub fn target(&self) -> Option<&String> {
         self.target.as_ref()
     }
 
@@ -143,11 +143,11 @@ impl HttpsRRData {
         self.params.push(param);
     }
 
-    pub fn get_params(&self) -> &Vec<SvcParams> {
+    pub fn params(&self) -> &Vec<SvcParams> {
         self.params.as_ref()
     }
 
-    pub fn get_params_mut(&mut self) -> &mut Vec<SvcParams> {
+    pub fn params_mut(&mut self) -> &mut Vec<SvcParams> {
         self.params.as_mut()
     }
 }

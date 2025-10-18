@@ -92,7 +92,7 @@ impl HInfoRRData {
         self.cpu = Some(cpu.to_string());
     }
 
-    pub fn get_cpu(&self) -> Option<&String> {
+    pub fn cpu(&self) -> Option<&String> {
         self.cpu.as_ref()
     }
 
@@ -100,7 +100,7 @@ impl HInfoRRData {
         self.os = Some(os.to_string());
     }
 
-    pub fn get_os(&self) -> Option<&String> {
+    pub fn os(&self) -> Option<&String> {
         self.os.as_ref()
     }
 }

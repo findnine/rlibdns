@@ -164,7 +164,7 @@ impl TSigRRData {
         self.algorithm_name = Some(algorithm_name.to_string());
     }
 
-    pub fn get_algorithm_name(&self) -> Option<&String> {
+    pub fn algorithm_name(&self) -> Option<&String> {
         self.algorithm_name.as_ref()
     }
 
@@ -172,7 +172,7 @@ impl TSigRRData {
         self.time_signed = time_signed;
     }
 
-    pub fn get_time_signed(&self) -> u64 {
+    pub fn time_signed(&self) -> u64 {
         self.time_signed
     }
 
@@ -180,7 +180,7 @@ impl TSigRRData {
         self.fudge = fudge;
     }
 
-    pub fn get_fudge(&self) -> u16 {
+    pub fn fudge(&self) -> u16 {
         self.fudge
     }
 
@@ -188,7 +188,7 @@ impl TSigRRData {
         self.mac = mac.to_vec();
     }
 
-    pub fn get_mac(&self) -> &[u8] {
+    pub fn mac(&self) -> &[u8] {
         self.mac.as_ref()
     }
 
@@ -196,7 +196,7 @@ impl TSigRRData {
         self.original_id = original_id;
     }
 
-    pub fn get_original_id(&self) -> u16 {
+    pub fn original_id(&self) -> u16 {
         self.original_id
     }
 
@@ -204,7 +204,7 @@ impl TSigRRData {
         self.error = error;
     }
 
-    pub fn get_error(&self) -> u16 {
+    pub fn error(&self) -> u16 {
         self.error
     }
 
@@ -212,7 +212,7 @@ impl TSigRRData {
         self.data = data.to_vec();
     }
 
-    pub fn get_data(&self) -> &[u8] {
+    pub fn data(&self) -> &[u8] {
         self.data.as_ref()
     }
 }

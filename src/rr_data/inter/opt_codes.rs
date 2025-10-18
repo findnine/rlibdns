@@ -26,7 +26,7 @@ pub enum OptCodes {
 
 impl OptCodes {
 
-    pub fn get_code(&self) -> u16 {
+    pub fn code(&self) -> u16 {
         match self {
             Self::Llq => 1,
             Self::Ul => 2,

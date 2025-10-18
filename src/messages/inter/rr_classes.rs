@@ -14,7 +14,7 @@ pub enum RRClasses {
 
 impl RRClasses {
 
-    pub fn get_code(&self) -> u16 {
+    pub fn code(&self) -> u16 {
         match self {
             Self::In => 1,
             Self::Ch => 3,

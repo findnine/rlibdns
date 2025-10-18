@@ -6,18 +6,18 @@ use crate::rr_data::inter::rr_data::RRData;
 pub struct Record {
     fqdn: String,
     class: RRClasses,
-    _type: RRTypes,
+    rtype: RRTypes,
     ttl: u32,
     data: Option<Box<dyn RRData>>
 }
 
 impl Record {
 
-    pub fn new(fqdn: &str, class: RRClasses, _type: RRTypes, ttl: u32, data: Option<Box<dyn RRData>>) -> Self {
+    pub fn new(fqdn: &str, class: RRClasses, rtype: RRTypes, ttl: u32, data: Option<Box<dyn RRData>>) -> Self {
         Self {
             fqdn: fqdn.to_string(),
             class,
-            _type,
+            rtype,
             ttl,
             data
         }
@@ -27,7 +27,7 @@ impl Record {
         self.fqdn = fqdn.to_string();
     }
 
-    pub fn get_fqdn(&self) -> &str {
+    pub fn fqdn(&self) -> &str {
         &self.fqdn
     }
 
@@ -35,23 +35,23 @@ impl Record {
         self.class = class;
     }
 
-    pub fn get_class(&self) -> RRClasses {
+    pub fn class(&self) -> RRClasses {
         self.class
     }
 
-    pub fn set_type(&mut self, _type: RRTypes) {
-        self._type = _type;
+    pub fn set_type(&mut self, rtype: RRTypes) {
+        self.rtype = rtype;
     }
 
-    pub fn get_type(&self) -> RRTypes {
-        self._type
+    pub fn rtype(&self) -> RRTypes {
+        self.rtype
     }
 
     pub fn set_ttl(&mut self, ttl: u32) {
         self.ttl = ttl;
     }
 
-    pub fn get_ttl(&self) -> u32 {
+    pub fn ttl(&self) -> u32 {
         self.ttl
     }
 
@@ -59,7 +59,7 @@ impl Record {
         self.data = data;
     }
 
-    pub fn get_data(&self) -> Option<&Box<dyn RRData>> {
+    pub fn data(&self) -> Option<&Box<dyn RRData>> {
         self.data.as_ref()
     }
 }

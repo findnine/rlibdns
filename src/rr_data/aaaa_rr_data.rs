@@ -83,7 +83,7 @@ impl AaaaRRData {
         self.address = Some(address);
     }
 
-    pub fn get_address(&self) -> Option<Ipv6Addr> {
+    pub fn address(&self) -> Option<Ipv6Addr> {
         self.address
     }
 }

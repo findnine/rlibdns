@@ -15,7 +15,7 @@ pub enum SvcParamKeys {
 
 impl SvcParamKeys {
 
-    pub fn get_code(self) -> u16 {
+    pub fn code(self) -> u16 {
         match self {
             Self::Mandatory       => 0,
             Self::Alpn            => 1,

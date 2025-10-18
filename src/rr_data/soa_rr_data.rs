@@ -136,7 +136,7 @@ impl SoaRRData {
         self.fqdn = Some(fqdn.to_string());
     }
 
-    pub fn get_fqdn(&self) -> Option<&String> {
+    pub fn fqdn(&self) -> Option<&String> {
         self.fqdn.as_ref()
     }
 
@@ -144,7 +144,7 @@ impl SoaRRData {
         self.mailbox = Some(mailbox.to_string());
     }
 
-    pub fn get_mailbox(&self) -> Option<&String> {
+    pub fn mailbox(&self) -> Option<&String> {
         self.mailbox.as_ref()
     }
 
@@ -152,7 +152,7 @@ impl SoaRRData {
         self.serial = serial;
     }
 
-    pub fn get_serial(&self) -> u32 {
+    pub fn serial(&self) -> u32 {
         self.serial
     }
 
@@ -160,7 +160,7 @@ impl SoaRRData {
         self.refresh = refresh;
     }
 
-    pub fn get_refresh(&self) -> u32 {
+    pub fn refresh(&self) -> u32 {
         self.refresh
     }
 
@@ -168,7 +168,7 @@ impl SoaRRData {
         self.retry = retry;
     }
 
-    pub fn get_retry(&self) -> u32 {
+    pub fn retry(&self) -> u32 {
         self.retry
     }
 
@@ -176,7 +176,7 @@ impl SoaRRData {
         self.expire = expire;
     }
 
-    pub fn get_expire(&self) -> u32 {
+    pub fn expire(&self) -> u32 {
         self.expire
     }
 
@@ -184,7 +184,7 @@ impl SoaRRData {
         self.minimum_ttl = minimum_ttl;
     }
 
-    pub fn get_minimum_ttl(&self) -> u32 {
+    pub fn minimum_ttl(&self) -> u32 {
         self.minimum_ttl
     }
 }

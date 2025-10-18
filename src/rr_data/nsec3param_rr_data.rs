@@ -98,7 +98,7 @@ impl NSec3ParamRRData {
         self.algorithm = algorithm;
     }
 
-    pub fn get_algorithm(&self) -> u8 {
+    pub fn algorithm(&self) -> u8 {
         self.algorithm
     }
 
@@ -106,7 +106,7 @@ impl NSec3ParamRRData {
         self.flags = flags;
     }
 
-    pub fn get_flags(&self) -> u8 {
+    pub fn flags(&self) -> u8 {
         self.flags
     }
 
@@ -114,7 +114,7 @@ impl NSec3ParamRRData {
         self.iterations = iterations;
     }
 
-    pub fn get_iterations(&self) -> u16 {
+    pub fn iterations(&self) -> u16 {
         self.iterations
     }
 
@@ -122,7 +122,7 @@ impl NSec3ParamRRData {
         self.salt = salt.to_vec();
     }
 
-    pub fn get_salt(&self) -> &[u8] {
+    pub fn salt(&self) -> &[u8] {
         &self.salt
     }
 }

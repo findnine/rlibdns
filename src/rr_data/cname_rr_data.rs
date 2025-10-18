@@ -82,7 +82,7 @@ impl CNameRRData {
         self.target = Some(target.to_string());
     }
 
-    pub fn get_target(&self) -> Option<&String> {
+    pub fn target(&self) -> Option<&String> {
         self.target.as_ref()
     }
 }

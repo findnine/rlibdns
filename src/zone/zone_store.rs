@@ -38,7 +38,7 @@ impl ZoneStore {
             }
         }
 
-        Ok(self.add_zone(reader.get_origin(), zone))
+        Ok(self.add_zone(reader.origin(), zone))
     }
 
     pub fn open_with_jnl<P: Into<PathBuf>>(&mut self, file_path: P, fqdn: &str, class: RRClasses, journal_path: P) -> Result<Option<Zone>, ZoneReaderError> {
@@ -56,16 +56,16 @@ impl ZoneStore {
             }
         }
 
-        Ok(self.add_zone(reader.get_origin(), zone))
+        Ok(self.add_zone(reader.origin(), zone))
     }
 
     pub fn add_zone(&mut self, fqdn: &str, zone: Zone) -> Option<Zone> {
         let key = encode_fqdn(fqdn);
         match self.trie.get_mut(&key) {
             Some(zones) => {
-                let class = zone.get_class();
+                let class = zone.class();
 
-                if let Some(index) = zones.iter().position(|z| z.get_class().eq(&class)) {
+                if let Some(index) = zones.iter().position(|z| z.class().eq(&class)) {
                     return Some(std::mem::replace(&mut zones[index], zone));
                 }
 
@@ -83,21 +83,21 @@ impl ZoneStore {
         //self.trie.remove(&encode_fqdn(fqdn));
     }
 
-    pub fn get_zone_exact(&self, apex: &str, class: &RRClasses) -> Option<&Zone> {
-        self.trie.get(&encode_fqdn(apex))?.iter().find(|z| z.get_class().eq(class))
+    pub fn zone_exact(&self, apex: &str, class: &RRClasses) -> Option<&Zone> {
+        self.trie.get(&encode_fqdn(apex))?.iter().find(|z| z.class().eq(class))
     }
 
-    pub fn get_zone_exact_mut(&mut self, apex: &str, class: &RRClasses) -> Option<&mut Zone> {
-        self.trie.get_mut(&encode_fqdn(apex))?.iter_mut().find(|z| z.get_class().eq(class))
+    pub fn zone_exact_mut(&mut self, apex: &str, class: &RRClasses) -> Option<&mut Zone> {
+        self.trie.get_mut(&encode_fqdn(apex))?.iter_mut().find(|z| z.class().eq(class))
     }
 
-    pub fn get_deepest_zone(&self, name: &str, class: &RRClasses) -> Option<(String, &Zone)> {
+    pub fn deepest_zone(&self, name: &str, class: &RRClasses) -> Option<(String, &Zone)> {
         let (key, zones) = self.trie.get_deepest(&encode_fqdn(name))?;
-        Some((decode_fqdn(&key), zones.iter().find(|z| z.get_class().eq(class))?))
+        Some((decode_fqdn(&key), zones.iter().find(|z| z.class().eq(class))?))
     }
 
-    pub fn get_deepest_zone_mut(&mut self, name: &str, class: &RRClasses) -> Option<(String, &mut Zone)> {
+    pub fn deepest_zone_mut(&mut self, name: &str, class: &RRClasses) -> Option<(String, &mut Zone)> {
         let (key, zones) = self.trie.get_deepest_mut(&encode_fqdn(name))?;
-        Some((decode_fqdn(&key), zones.iter_mut().find(|z| z.get_class().eq(class))?))
+        Some((decode_fqdn(&key), zones.iter_mut().find(|z| z.class().eq(class))?))
     }
 }

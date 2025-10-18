@@ -74,7 +74,7 @@ impl RRData for OptRRData {
         buf.splice(4..6, self.flags.to_be_bytes());
 /*
         for (code, option) in self.options.iter() {
-            buf.extend_from_slice(&code.get_code().to_be_bytes());
+            buf.extend_from_slice(&code.code().to_be_bytes());
             buf.extend_from_slice(&(option.len() as u16).to_be_bytes());
             buf.extend_from_slice(&option);
         }
@@ -121,7 +121,7 @@ impl OptRRData {
         self.payload_size = payload_size;
     }
 
-    pub fn get_payload_size(&self) -> u16 {
+    pub fn payload_size(&self) -> u16 {
         self.payload_size
     }
 
@@ -129,7 +129,7 @@ impl OptRRData {
         self.ext_rcode = ext_rcode;
     }
 
-    pub fn get_ext_rcode(&self) -> u8 {
+    pub fn ext_rcode(&self) -> u8 {
         self.ext_rcode
     }
 
@@ -137,7 +137,7 @@ impl OptRRData {
         self.version = version;
     }
 
-    pub fn get_version(&self) -> u8 {
+    pub fn version(&self) -> u8 {
         self.version
     }
 
@@ -145,7 +145,7 @@ impl OptRRData {
         self.flags = flags;
     }
 
-    pub fn get_flags(&self) -> u16 {
+    pub fn flags(&self) -> u16 {
         self.flags
     }
 /*
@@ -157,19 +157,19 @@ impl OptRRData {
         self.options.insert(code, option);
     }
 
-    pub fn get_option(&self, code: &OptCodes) -> Option<&Vec<u8>> {
+    pub fn option(&self, code: &OptCodes) -> Option<&Vec<u8>> {
         self.options.get(code)
     }
 
-    pub fn get_option_mut(&mut self, code: &OptCodes) -> Option<&mut Vec<u8>> {
-        self.options.get_mut(code)
+    pub fn option_mut(&mut self, code: &OptCodes) -> Option<&mut Vec<u8>> {
+        self.options.mut(code)
     }
 
-    pub fn get_options(&self) -> impl Iterator<Item = (&OptCodes, &Vec<u8>)> {
+    pub fn options(&self) -> impl Iterator<Item = (&OptCodes, &Vec<u8>)> {
         self.options.iter()
     }
 
-    pub fn get_options_mut(&mut self) -> impl Iterator<Item = (&OptCodes, &mut Vec<u8>)> {
+    pub fn options_mut(&mut self) -> impl Iterator<Item = (&OptCodes, &mut Vec<u8>)> {
         self.options.iter_mut()
     }*/
 }

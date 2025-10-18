@@ -139,7 +139,7 @@ impl NSec3RRData {
         self.algorithm = algorithm;
     }
 
-    pub fn get_algorithm(&self) -> u8 {
+    pub fn algorithm(&self) -> u8 {
         self.algorithm
     }
 
@@ -147,7 +147,7 @@ impl NSec3RRData {
         self.flags = flags;
     }
 
-    pub fn get_flags(&self) -> u8 {
+    pub fn flags(&self) -> u8 {
         self.flags
     }
 
@@ -155,7 +155,7 @@ impl NSec3RRData {
         self.iterations = iterations;
     }
 
-    pub fn get_iterations(&self) -> u16 {
+    pub fn iterations(&self) -> u16 {
         self.iterations
     }
 
@@ -163,7 +163,7 @@ impl NSec3RRData {
         self.salt = salt.to_vec();
     }
 
-    pub fn get_salt(&self) -> &[u8] {
+    pub fn salt(&self) -> &[u8] {
         &self.salt
     }
 
@@ -171,7 +171,7 @@ impl NSec3RRData {
         self.next_hash = next_hash.to_vec();
     }
 
-    pub fn get_next_hash(&self) -> &[u8] {
+    pub fn next_hash(&self) -> &[u8] {
         &self.next_hash
     }
 
@@ -179,11 +179,11 @@ impl NSec3RRData {
         self.types.push(_type);
     }
 
-    pub fn get_types(&self) -> &Vec<RRTypes> {
+    pub fn types(&self) -> &Vec<RRTypes> {
         self.types.as_ref()
     }
 
-    pub fn get_types_mut(&mut self) -> &mut Vec<RRTypes> {
+    pub fn types_mut(&mut self) -> &mut Vec<RRTypes> {
         self.types.as_mut()
     }
 }

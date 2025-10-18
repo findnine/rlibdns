@@ -87,11 +87,11 @@ impl TxtRRData {
         self.data.push(data.to_string());
     }
 
-    pub fn get_data(&self) -> &Vec<String> {
+    pub fn data(&self) -> &Vec<String> {
         self.data.as_ref()
     }
 
-    pub fn get_data_mut(&mut self) -> &mut Vec<String> {
+    pub fn data_mut(&mut self) -> &mut Vec<String> {
         self.data.as_mut()
     }
 }

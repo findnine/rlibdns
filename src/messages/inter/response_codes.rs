@@ -18,7 +18,7 @@ pub enum ResponseCodes {
 
 impl ResponseCodes {
 
-    pub fn get_code(&self) -> u8 {
+    pub fn code(&self) -> u8 {
         match self {
             Self::NoError => 0,
             Self::FormErr => 1,
