@@ -114,6 +114,46 @@ impl Message {
             queries.push(RRQuery::from_bytes(buf, &mut off)?);
         }
 
+        let an = u16::from_be_bytes([buf[6], buf[7]]);
+        let ns = u16::from_be_bytes([buf[8], buf[9]]);
+        let ar = u16::from_be_bytes([buf[10], buf[11]]);
+
+        let mut sections: [Vec<Record>; 3] = Default::default();
+
+        /*
+        // answers + authority: normal
+        for _ in 0..an { sections[0].push(Record::from_bytes(buf, off, 0)?); }
+        for _ in 0..ns { sections[1].push(Record::from_bytes(buf, off, 0)?); }
+        */
+        /*
+        // additional: peel off meta
+        for i in 0..ar {
+            let peek = RecordHeader::peek(buf, off)?; // your light header read: name,type,class,ttl,rdlen (no body)
+            match peek.rtype {
+                RRTypes::OPT => {
+                    // only one OPT allowed
+                    if msg.edns.is_some() { return Err(MessageError::Protocol("multiple OPT RRs".into())); }
+                    let edns = Edns::from_wire(buf, &mut off)?; // parses DO bit, ext_rcode, options, advances off
+                    msg.edns = Some(edns);
+                }
+                RRTypes::TSIG => {
+                    // TSIG should be LAST additional; if not last, you can error or accept but note it.
+                    // Also remember its MAC etc. for verification later.
+                    // let tsig = Tsig::from_wire(buf, &mut off)?;
+                    // msg.tsig = Some(tsig);
+                    // if i != ar - 1 { return Err(MessageError::Protocol("TSIG not last".into())); }
+                    // For now, if you haven't implemented TSIG, you can skip or error.
+                    return Err(MessageError::Protocol("TSIG not yet supported".into()));
+                }
+                _ => {
+                    msg.sections[2].push(Record::from_bytes_with_known_header(buf, &mut off, peek)?);
+                }
+            }
+        }
+        */
+
+
+
         let sections = [
             section_from_wire(buf, &mut off, u16::from_be_bytes([buf[6], buf[7]]))?,
             section_from_wire(buf, &mut off, u16::from_be_bytes([buf[8], buf[9]]))?,
@@ -505,17 +545,18 @@ fn section_from_wire(buf: &[u8], off: &mut usize, count: u16) -> Result<Vec<Reco
     let mut section = Vec::new();
 
     for _ in 0..count {
-        let (fqdn, length) = unpack_fqdn(buf, *off);
-        *off += length;
+        let (fqdn, fqdn_length) = unpack_fqdn(buf, *off);
+        *off += fqdn_length;
 
         let rtype = RRTypes::try_from(u16::from_be_bytes([buf[*off], buf[*off+1]])).map_err(|e| MessageError::RecordError(e.to_string()))?;
 
         match rtype {
             RRTypes::Opt => {
                 let length = u16::from_be_bytes([buf[*off+2], buf[*off+3]]) as usize;
-                let data = OptRRData::from_bytes(buf, *off+2, length).map_err(|e| MessageError::RecordError(e.to_string()))?;
+                //let data = OptRRData::from_bytes(buf, *off+2, length).map_err(|e| MessageError::RecordError(e.to_string()))?;
+                let edns = Edns::from_bytes(buf, *off+2, length).map_err(|e| MessageError::RecordError(e.to_string()))?;
 
-                println!("{:?}", data);
+                //println!("{:?}", data);
 
                 *off += 4+length;
             }

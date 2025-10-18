@@ -1,6 +1,8 @@
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
+use crate::messages::message::MessageError;
 use crate::rr_data::inter::rr_data::RRData;
+use crate::utils::fqdn_utils::unpack_fqdn;
 
 #[derive(Debug, Clone)]
 pub struct Record {
@@ -22,6 +24,21 @@ impl Record {
             data
         }
     }
+
+    /*
+    pub fn from_bytes(buf: &[u8], off: usize, _len: usize) -> Result<Self, MessageError> {
+        let (fqdn, fqdn_length) = unpack_fqdn(buf, off);
+        let mut off = off+fqdn_length;
+
+        let rtype = RRTypes::try_from(u16::from_be_bytes([buf[off], buf[off+1]])).map_err(|e| MessageError::RecordError(e.to_string()))?;
+
+
+        Ok(Self {
+            fqdn,
+            rtype
+        })
+    }
+    */
 
     pub fn set_fqdn(&mut self, fqdn: &str) {
         self.fqdn = fqdn.to_string();
