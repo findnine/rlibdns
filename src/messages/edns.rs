@@ -62,9 +62,9 @@ impl Edns {
         let version = buf[off+3];
         //let z_flags = u16::from_be_bytes([buf[off+4], buf[off+5]]);
 
-        let z            = u16::from_be_bytes([buf[off + 4], buf[off + 5]]);
-        let do_bit       = (z & 0x8000) != 0;
-        let z_flags      = z & 0x7FFF;
+        let z = u16::from_be_bytes([buf[off + 4], buf[off + 5]]);
+        let do_bit = (z & 0x8000) != 0;
+        let z_flags = z & 0x7FFF;
 
         let data_length = off+8+u16::from_be_bytes([buf[off+6], buf[off+7]]) as usize;
         let mut off = off+8;
