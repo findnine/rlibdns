@@ -27,4 +27,36 @@ impl Edns {
             options
         }
     }
+
+    pub fn set_payload_size(&mut self, payload_size: u16) {
+        self.payload_size = payload_size;
+    }
+
+    pub fn payload_size(&self) -> u16 {
+        self.payload_size
+    }
+
+    pub fn set_ext_rcode(&mut self, ext_rcode: u8) {
+        self.ext_rcode = ext_rcode;
+    }
+
+    pub fn ext_rcode(&self) -> u8 {
+        self.ext_rcode
+    }
+
+    pub fn set_version(&mut self, version: u8) {
+        self.version = version;
+    }
+
+    pub fn version(&self) -> u8 {
+        self.version
+    }
+
+    pub fn set_z_flags(&mut self, z_flags: u16) {
+        self.z_flags = z_flags;
+    }
+
+    pub fn z_flags(&self) -> u16 {
+        self.z_flags
+    }
 }
