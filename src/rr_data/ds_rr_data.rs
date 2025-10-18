@@ -76,12 +76,12 @@ impl RRData for DsRRData {
 
 impl DsRRData {
 
-    pub fn new(key_tag: u16, algorithm: u8, digest_type: u8, digest: Vec<u8>) -> Self {
+    pub fn new(key_tag: u16, algorithm: u8, digest_type: u8, digest: &[u8]) -> Self {
         Self {
             key_tag,
             algorithm,
             digest_type,
-            digest
+            digest: digest.to_vec()
         }
     }
 }

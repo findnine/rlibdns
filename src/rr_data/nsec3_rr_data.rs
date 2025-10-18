@@ -124,13 +124,13 @@ impl RRData for NSec3RRData {
 
 impl NSec3RRData {
 
-    pub fn new(algorithm: u8, flags: u8, iterations: u16, salt: Vec<u8>, next_hash: Vec<u8>, types: Vec<RRTypes>) -> Self {
+    pub fn new(algorithm: u8, flags: u8, iterations: u16, salt: &[u8], next_hash: &[u8], types: Vec<RRTypes>) -> Self {
         Self {
             algorithm,
             flags,
             iterations,
-            salt,
-            next_hash,
+            salt: salt.to_vec(),
+            next_hash: next_hash.to_vec(),
             types
         }
     }

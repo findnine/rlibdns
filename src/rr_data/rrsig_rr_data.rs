@@ -139,7 +139,7 @@ impl RRData for RRSigRRData {
 
 impl RRSigRRData {
 
-    pub fn new(type_covered: RRTypes, algorithm: u8, labels: u8, original_ttl: u32, expiration: u32, inception: u32, key_tag: u16, signer_name: &str, signature: Vec<u8>) -> Self {
+    pub fn new(type_covered: RRTypes, algorithm: u8, labels: u8, original_ttl: u32, expiration: u32, inception: u32, key_tag: u16, signer_name: &str, signature: &[u8]) -> Self {
         Self {
             type_covered: Some(type_covered),
             algorithm,
@@ -149,7 +149,7 @@ impl RRSigRRData {
             inception,
             key_tag,
             signer_name: Some(signer_name.to_string()),
-            signature
+            signature: signature.to_vec()
         }
     }
 

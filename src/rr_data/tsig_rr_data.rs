@@ -148,15 +148,15 @@ impl RRData for TSigRRData {
 
 impl TSigRRData {
 
-    pub fn new(algorithm_name: &str, time_signed: u64, fudge: u16, mac: Vec<u8>, original_id: u16, error: u16, data: Vec<u8>) -> Self {
+    pub fn new(algorithm_name: &str, time_signed: u64, fudge: u16, mac: &[u8], original_id: u16, error: u16, data: &[u8]) -> Self {
         Self {
             algorithm_name: Some(algorithm_name.to_string()),
             time_signed,
             fudge,
-            mac,
+            mac: mac.to_vec(),
             original_id,
             error,
-            data
+            data: data.to_vec()
         }
     }
 

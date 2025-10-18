@@ -83,12 +83,12 @@ impl RRData for SmimeaRRData {
 
 impl SmimeaRRData {
 
-    pub fn new(usage: u8, selector: u8, matching_type: u8, certificate: Vec<u8>) -> Self {
+    pub fn new(usage: u8, selector: u8, matching_type: u8, certificate: &[u8]) -> Self {
         Self {
             usage,
             selector,
             matching_type,
-            certificate
+            certificate: certificate.to_vec()
         }
     }
 

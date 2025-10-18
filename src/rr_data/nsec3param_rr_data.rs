@@ -85,12 +85,12 @@ impl RRData for NSec3ParamRRData {
 
 impl NSec3ParamRRData {
 
-    pub fn new(algorithm: u8, flags: u8, iterations: u16, salt: Vec<u8>) -> Self {
+    pub fn new(algorithm: u8, flags: u8, iterations: u16, salt: &[u8]) -> Self {
         Self {
             algorithm,
             flags,
             iterations,
-            salt
+            salt: salt.to_vec()
         }
     }
 

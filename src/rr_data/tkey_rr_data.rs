@@ -129,15 +129,15 @@ impl RRData for TKeyRRData {
 
 impl TKeyRRData {
 
-    pub fn new(algorithm_name: &str, inception: u32, expiration: u32, mode: u16, error: u16, key: Vec<u8>, data: Vec<u8>) -> Self {
+    pub fn new(algorithm_name: &str, inception: u32, expiration: u32, mode: u16, error: u16, key: &[u8], data: &[u8]) -> Self {
         Self {
             algorithm_name: Some(algorithm_name.to_string()),
             inception,
             expiration,
             mode,
             error,
-            key,
-            data
+            key: key.to_vec(),
+            data: data.to_vec()
         }
     }
 
