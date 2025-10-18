@@ -115,7 +115,7 @@ impl Zone {
         }
     }
 
-    pub fn remove_set(&mut self, query: &str, rtype: &RRTypes) -> Option<RRSet> {
+    pub fn remove_rr_set(&mut self, query: &str, rtype: &RRTypes) -> Option<RRSet> {
         let key = encode_fqdn(query);
 
         match self.sets.get_mut(&key) {
@@ -173,15 +173,15 @@ impl Zone {
     }
     */
 
-    pub fn set(&self, query: &str, rtype: &RRTypes) -> Option<&RRSet> {
+    pub fn rr_set(&self, query: &str, rtype: &RRTypes) -> Option<&RRSet> {
         self.sets.get(&encode_fqdn(query))?.iter().find(|s| s.rtype().eq(rtype))
     }
 
-    pub fn all_sets(&self, query: &str) -> Option<&Vec<RRSet>> {
+    pub fn all_rr_sets(&self, query: &str) -> Option<&Vec<RRSet>> {
         self.sets.get(&encode_fqdn(query))
     }
 
-    pub fn all_sets_recursive(&self) -> impl Iterator<Item = (String, &Vec<RRSet>)> {
+    pub fn all_rr_sets_recursive(&self) -> impl Iterator<Item = (String, &Vec<RRSet>)> {
         self.sets.iter().map(|(key, records)| (decode_fqdn(key), records))
     }
 
