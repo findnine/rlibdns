@@ -5,35 +5,35 @@ use crate::rr_data::inter::rr_data::RRData;
 #[derive(Debug, Clone)]
 pub struct RRSet {
     class: RRClasses,
-    _type: RRTypes,
+    rtype: RRTypes,
     ttl: u32,
     data: Vec<u8>
 }
 
 impl RRSet {
 
-    pub fn new(class: RRClasses, _type: RRTypes, ttl: u32) -> Self {
+    pub fn new(class: RRClasses, rtype: RRTypes, ttl: u32) -> Self {
         Self {
             class,
-            _type,
+            rtype,
             ttl,
             data: Vec::new()
         }
     }
 
-    pub fn set_type(&mut self, _type: RRTypes) {
-        self._type = _type;
+    pub fn set_rtype(&mut self, rtype: RRTypes) {
+        self._type = rtype;
     }
 
-    pub fn get_type(&self) -> RRTypes {
-        self._type
+    pub fn rtype(&self) -> RRTypes {
+        self.rtype
     }
 
     pub fn set_ttl(&mut self, ttl: u32) {
         self.ttl = ttl;
     }
 
-    pub fn get_ttl(&self) -> u32 {
+    pub fn ttl(&self) -> u32 {
         self.ttl
     }
 
