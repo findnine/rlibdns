@@ -8,6 +8,7 @@ use crate::messages::inter::rr_classes::RRClasses;
 use crate::rr_data::inter::rr_data::RRData;
 use crate::messages::rr_query::RRQuery;
 use crate::messages::inter::rr_types::RRTypes;
+use crate::messages::edns::Edns;
 use crate::messages::record::Record;
 use crate::rr_data::opt_rr_data::OptRRData;
 use crate::utils::fqdn_utils::{pack_fqdn_compressed, unpack_fqdn};
@@ -47,7 +48,7 @@ pub struct Message {
     destination: Option<SocketAddr>,
     queries: Vec<RRQuery>,
     sections: [Vec<Record>; 3],
-    option: Option<OpCodes>
+    edns: Option<Edns>
 }
 
 impl Default for Message {
@@ -68,7 +69,7 @@ impl Default for Message {
             destination: None,
             queries: Vec::new(),
             sections: Default::default(),
-            option: None
+            edns: None
         }
     }
 }
@@ -134,7 +135,7 @@ impl Message {
             destination: None,
             queries,
             sections,
-            option: None
+            edns: None
         })
     }
 
@@ -511,8 +512,12 @@ fn section_from_wire(buf: &[u8], off: &mut usize, count: u16) -> Result<Vec<Reco
 
         match _type {
             RRTypes::Opt => {
-                let data = OptRRData::from_bytes(buf, *off+2, 0).map_err(|e| MessageError::RecordError(e.to_string()))?;
-                *off += 5+u16::from_be_bytes([buf[*off+3], buf[*off+4]]) as usize;
+                let length = u16::from_be_bytes([buf[*off+2], buf[*off+3]]) as usize;
+                let data = OptRRData::from_bytes(buf, *off+2, length).map_err(|e| MessageError::RecordError(e.to_string()))?;
+
+                println!("{:?}", data);
+
+                *off += 4+length;
             }
             _ => {
                 let class = u16::from_be_bytes([buf[*off+2], buf[*off+3]]);
