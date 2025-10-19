@@ -114,11 +114,13 @@ impl Message {
             queries.push(RRQuery::from_bytes(buf, &mut off)?);
         }
 
+        /*
         let an = u16::from_be_bytes([buf[6], buf[7]]);
         let ns = u16::from_be_bytes([buf[8], buf[9]]);
         let ar = u16::from_be_bytes([buf[10], buf[11]]);
 
         let mut sections: [Vec<Record>; 3] = Default::default();
+        */
 
         /*
         // answers + authority: normal
