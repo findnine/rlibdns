@@ -420,6 +420,14 @@ impl Message {
         &mut self.sections
     }
 
+    pub fn set_edns(&mut self, edns: Edns) {
+        self.edns = Some(edns);
+    }
+
+    pub fn edns(&self) -> Option<&Edns> {
+        self.edns.as_ref()
+    }
+
     pub fn as_ref(&self) -> &Self {
         self
     }
