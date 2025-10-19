@@ -64,13 +64,13 @@ impl fmt::Display for EdnsOption {
                         _ => format!("unknown family {}", family),
                     };
 
-                    write!(f, "\r\n; {}: {ip_str}/{src_prefix}/{scope_prefix}", self.code)
+                    write!(f, "{}: {ip_str}/{src_prefix}/{scope_prefix}", self.code)
 
                 } else {
-                    write!(f, "\r\n; {}: (invalid)", self.code)
+                    write!(f, "{}: (invalid)", self.code)
                 }
             }
-            _ => write!(f, "\r\n; {}: {}", self.code, hex::encode(&self.data))
+            _ => write!(f, "{}: {}", self.code, hex::encode(&self.data))
         }
     }
 }
@@ -160,7 +160,7 @@ impl fmt::Display for Edns {
         write!(f, "EDNS: version: {}, flags: {}; udp: {}", self.version, self.z_flags, self.payload_size)?;
 
         for option in self.options.iter() {
-            writeln!(f, "{}", option)?;
+            write!(f, "\r\n; {}", option)?;
         }
 
         Ok(())
