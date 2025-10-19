@@ -154,13 +154,58 @@ impl Message {
         }
         */
 
+        let mut sections: [Vec<Record>; 3] = Default::default();
+        sections[0] = section_from_wire(buf, &mut off, u16::from_be_bytes([buf[6], buf[7]]))?;
+        sections[1] = section_from_wire(buf, &mut off, u16::from_be_bytes([buf[8], buf[9]]))?;
+        //sections[0] = section_from_wire(buf, &mut off, u16::from_be_bytes([buf[6], buf[7]]))?;
+
+        //THE FUN ONE
+
+        //let mut section = Vec::new();
+
+        let mut edns = None;
+
+        for _ in 0..u16::from_be_bytes([buf[10], buf[11]]) {
+            let (fqdn, fqdn_length) = unpack_fqdn(buf, off);
+            off += fqdn_length;
+
+            let rtype = RRTypes::try_from(u16::from_be_bytes([buf[off], buf[off+1]])).map_err(|e| MessageError::RecordError(e.to_string()))?;
+
+            match rtype {
+                RRTypes::Opt => {
+                    let length = u16::from_be_bytes([buf[off+2], buf[off+3]]) as usize;
+                    //let data = OptRRData::from_bytes(buf, *off+2, length).map_err(|e| MessageError::RecordError(e.to_string()))?;
+                    edns = Some(Edns::from_bytes(buf, off+2, length).map_err(|e| MessageError::RecordError(e.to_string()))?);
+
+                    off += 4+length;
+                }
+                _ => {
+                    let class = u16::from_be_bytes([buf[off+2], buf[off+3]]);
+                    let cache_flush = (class & 0x8000) != 0;
+                    let class = RRClasses::try_from(class & 0x7FFF).map_err(|e| MessageError::RecordError(e.to_string()))?;
+                    let ttl = u32::from_be_bytes([buf[off+4], buf[off+5], buf[off+6], buf[off+7]]);
+
+                    let length = u16::from_be_bytes([buf[off+8], buf[off+9]]) as usize;
+                    let data = match length {
+                        0 => None,
+                        _ => Some(<dyn RRData>::from_wire(&rtype, &class, buf, off+10, length).map_err(|e| MessageError::RecordError(e.to_string()))?)
+                    };
+
+                    sections[2].push(Record::new(&fqdn, class, rtype, ttl, data));
+                    off += 10+length;
+                }
+            }
+        }
 
 
+
+        /*
         let sections = [
             section_from_wire(buf, &mut off, u16::from_be_bytes([buf[6], buf[7]]))?,
             section_from_wire(buf, &mut off, u16::from_be_bytes([buf[8], buf[9]]))?,
             section_from_wire(buf, &mut off, u16::from_be_bytes([buf[10], buf[11]]))?
         ];
+        */
 
         Ok(Self {
             id,
@@ -177,7 +222,7 @@ impl Message {
             destination: None,
             queries,
             sections,
-            edns: None
+            edns
         })
     }
 
@@ -528,6 +573,7 @@ impl<'a> Iterator for WireIter<'a> {
     }
 }
 
+//ALL BELOW IS TEMPRARY FOR NOW - CHANGE LATER - JUST USING THIS TO GET PAST EDNS / TSIG FOR NOW
 fn section_from_wire(buf: &[u8], off: &mut usize, count: u16) -> Result<Vec<Record>, MessageError> {
     let mut section = Vec::new();
 
@@ -537,32 +583,19 @@ fn section_from_wire(buf: &[u8], off: &mut usize, count: u16) -> Result<Vec<Reco
 
         let rtype = RRTypes::try_from(u16::from_be_bytes([buf[*off], buf[*off+1]])).map_err(|e| MessageError::RecordError(e.to_string()))?;
 
-        match rtype {
-            RRTypes::Opt => {
-                let length = u16::from_be_bytes([buf[*off+2], buf[*off+3]]) as usize;
-                //let data = OptRRData::from_bytes(buf, *off+2, length).map_err(|e| MessageError::RecordError(e.to_string()))?;
-                let edns = Edns::from_bytes(buf, *off+2, length).map_err(|e| MessageError::RecordError(e.to_string()))?;
+        let class = u16::from_be_bytes([buf[*off+2], buf[*off+3]]);
+        let cache_flush = (class & 0x8000) != 0;
+        let class = RRClasses::try_from(class & 0x7FFF).map_err(|e| MessageError::RecordError(e.to_string()))?;
+        let ttl = u32::from_be_bytes([buf[*off+4], buf[*off+5], buf[*off+6], buf[*off+7]]);
 
-                println!("{:?}", edns);
+        let length = u16::from_be_bytes([buf[*off+8], buf[*off+9]]) as usize;
+        let data = match length {
+            0 => None,
+            _ => Some(<dyn RRData>::from_wire(&rtype, &class, buf, *off+10, length).map_err(|e| MessageError::RecordError(e.to_string()))?)
+        };
 
-                *off += 4+length;
-            }
-            _ => {
-                let class = u16::from_be_bytes([buf[*off+2], buf[*off+3]]);
-                let cache_flush = (class & 0x8000) != 0;
-                let class = RRClasses::try_from(class & 0x7FFF).map_err(|e| MessageError::RecordError(e.to_string()))?;
-                let ttl = u32::from_be_bytes([buf[*off+4], buf[*off+5], buf[*off+6], buf[*off+7]]);
-
-                let length = u16::from_be_bytes([buf[*off+8], buf[*off+9]]) as usize;
-                let data = match length {
-                    0 => None,
-                    _ => Some(<dyn RRData>::from_wire(&rtype, &class, buf, *off+10, length).map_err(|e| MessageError::RecordError(e.to_string()))?)
-                };
-
-                section.push(Record::new(&fqdn, class, rtype, ttl, data));
-                *off += 10+length;
-            }
-        }
+        section.push(Record::new(&fqdn, class, rtype, ttl, data));
+        *off += 10+length;
     }
 
     Ok(section)

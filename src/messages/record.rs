@@ -84,7 +84,7 @@ impl Record {
 impl fmt::Display for Record {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        writeln!(f, "{:<24}{:<8}{:<8}{:<8}{}",
+        write!(f, "{:<24}{:<8}{:<8}{:<8}{}",
                  format!("{}.", self.fqdn),
                  self.ttl,
                  self.rtype.to_string(),
