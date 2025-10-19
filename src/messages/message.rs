@@ -428,12 +428,7 @@ impl fmt::Display for Message {
             writeln!(f, "\r\n;; ANSWER SECTION:")?;
 
             for record in self.sections[0].iter() {
-                writeln!(f, "{:<24}{:<8}{:<8}{:<8}{}",
-                         format!("{}.", record.fqdn()),
-                         record.ttl(),
-                         record.rtype().to_string(),
-                         record.class().to_string(),
-                         record.data().as_ref().map(|d| d.to_string()).unwrap_or(String::new()))?;
+                writeln!(f, "{}", record)?;
             }
         }
 
@@ -441,12 +436,7 @@ impl fmt::Display for Message {
             writeln!(f, "\r\n;; AUTHORITATIVE SECTION:")?;
 
             for record in self.sections[1].iter() {
-                writeln!(f, "{:<24}{:<8}{:<8}{:<8}{}",
-                         format!("{}.", record.fqdn()),
-                         record.ttl(),
-                         record.rtype().to_string(),
-                         record.class().to_string(),
-                         record.data().as_ref().map(|d| d.to_string()).unwrap_or(String::new()))?;
+                writeln!(f, "{}", record)?;
             }
         }
 
@@ -454,12 +444,7 @@ impl fmt::Display for Message {
             writeln!(f, "\r\n;; ADDITIONAL SECTION:")?;
 
             for record in self.sections[2].iter() {
-                writeln!(f, "{:<24}{:<8}{:<8}{:<8}{}",
-                         format!("{}.", record.fqdn()),
-                         record.ttl(),
-                         record.rtype().to_string(),
-                         record.class().to_string(),
-                         record.data().as_ref().map(|d| d.to_string()).unwrap_or(String::new()))?;
+                writeln!(f, "{}", record)?;
             }
         }
 

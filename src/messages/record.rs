@@ -1,8 +1,8 @@
+use std::fmt;
+use std::fmt::Formatter;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
-use crate::messages::message::MessageError;
 use crate::rr_data::inter::rr_data::RRData;
-use crate::utils::fqdn_utils::unpack_fqdn;
 
 #[derive(Debug, Clone)]
 pub struct Record {
@@ -78,5 +78,17 @@ impl Record {
 
     pub fn data(&self) -> Option<&Box<dyn RRData>> {
         self.data.as_ref()
+    }
+}
+
+impl fmt::Display for Record {
+
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        writeln!(f, "{:<24}{:<8}{:<8}{:<8}{}",
+                 format!("{}.", self.fqdn),
+                 self.ttl,
+                 self.rtype.to_string(),
+                 self.class.to_string(),
+                 self.data.as_ref().map(|d| d.to_string()).unwrap_or(String::new()))
     }
 }

@@ -24,8 +24,8 @@ impl RRQuery {
     }
 
     pub fn from_bytes(buf: &[u8], off: &mut usize) -> Result<Self, MessageError> {
-        let (fqdn, len) = unpack_fqdn(buf, *off);
-        *off += len;
+        let (fqdn, fqdn_length) = unpack_fqdn(buf, *off);
+        *off += fqdn_length;
 
         let rtype = RRTypes::try_from(u16::from_be_bytes([buf[*off], buf[*off+1]])).map_err(|e| MessageError::RecordError(e.to_string()))?;
         let class = RRClasses::try_from(u16::from_be_bytes([buf[*off+2], buf[*off+3]])).map_err(|e| MessageError::RecordError(e.to_string()))?;
