@@ -558,7 +558,7 @@ fn section_from_wire(buf: &[u8], off: &mut usize, count: u16) -> Result<Vec<Reco
                 //let data = OptRRData::from_bytes(buf, *off+2, length).map_err(|e| MessageError::RecordError(e.to_string()))?;
                 let edns = Edns::from_bytes(buf, *off+2, length).map_err(|e| MessageError::RecordError(e.to_string()))?;
 
-                //println!("{:?}", data);
+                println!("{:?}", edns);
 
                 *off += 4+length;
             }
