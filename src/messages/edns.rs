@@ -1,5 +1,9 @@
+use std::fmt;
+use std::fmt::Formatter;
+use std::net::{Ipv4Addr, Ipv6Addr};
 use crate::rr_data::inter::opt_codes::OptCodes;
 use crate::rr_data::inter::rr_data::RRDataError;
+use crate::utils::hex;
 
 #[derive(Debug, Clone)]
 pub struct Edns {
@@ -40,6 +44,34 @@ impl EdnsOption {
 
     pub fn data(&self) -> &[u8] {
         &self.data
+    }
+}
+
+impl fmt::Display for EdnsOption {
+
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self.code {
+            OptCodes::Ecs => {
+                if self.data.len() >= 4 {
+                    let family = u16::from_be_bytes([self.data[0], self.data[1]]);
+                    let src_prefix = self.data[2];
+                    let scope_prefix = self.data[3];
+                    let addr = &self.data[4..];
+
+                    let ip_str = match family {
+                        1 => format!("{}", Ipv4Addr::new(addr[0], addr[1], addr[2], addr[3])),
+                        2 => format!("{}", Ipv6Addr::from(<[u8; 16]>::try_from(addr).unwrap_or_default())),
+                        _ => format!("unknown family {}", family),
+                    };
+
+                    write!(f, "\r\n; {}: {ip_str}/{src_prefix}/{scope_prefix}", self.code)
+
+                } else {
+                    write!(f, "\r\n; {}: (invalid)", self.code)
+                }
+            }
+            _ => write!(f, "\r\n; {}: {}", self.code, hex::encode(&self.data))
+        }
     }
 }
 
@@ -119,5 +151,18 @@ impl Edns {
 
     pub fn z_flags(&self) -> u16 {
         self.z_flags
+    }
+}
+
+impl fmt::Display for Edns {
+
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "EDNS: version: {}, flags: {}; udp: {}", self.version, self.z_flags, self.payload_size)?;
+
+        for option in self.options.iter() {
+            writeln!(f, "{}", option)?;
+        }
+
+        Ok(())
     }
 }

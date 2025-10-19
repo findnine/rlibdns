@@ -470,11 +470,18 @@ impl fmt::Display for Message {
         }
         */
 
+        if self.edns.is_some() {
+            writeln!(f, "\r\n;; OPT PSEUDOSECTION:")?;
 
+            writeln!(f, "; {}", self.edns.as_ref().unwrap())?;
+        }
 
-        writeln!(f, "\r\n;; QUESTION SECTION:")?;
-        for q in &self.queries {
-            writeln!(f, ";{}", q)?;
+        if !self.queries.is_empty() {
+            writeln!(f, "\r\n;; QUESTION SECTION:")?;
+
+            for q in self.queries.iter() {
+                writeln!(f, ";{}", q)?;
+            }
         }
 
         if !self.sections[0].is_empty() {
