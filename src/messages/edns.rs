@@ -152,6 +152,18 @@ impl Edns {
     pub fn z_flags(&self) -> u16 {
         self.z_flags
     }
+
+    pub fn add_option(&mut self, option: EdnsOption) {
+        self.options.push(option);
+    }
+
+    pub fn options(&self) -> &Vec<EdnsOption> {
+        self.options.as_ref()
+    }
+
+    pub fn options_mut(&mut self) -> &mut Vec<EdnsOption> {
+        self.options.as_mut()
+    }
 }
 
 impl fmt::Display for Edns {
