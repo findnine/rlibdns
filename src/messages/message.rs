@@ -253,8 +253,22 @@ impl Message {
 
         if !truncated {
             for (i, section) in self.sections.iter().enumerate() {
-                let (records, count, t) = section_to_wire(&mut compression_data, off, section, max_payload_len);
+
+
+                //THIS IS TEMPORARY - WE NEED TO VERIFY TRUNCATION WITH THIS
+                let mut count = 0;
+                if i == 2 && self.edns.is_some() {
+                    buf.push(0x00);
+                    buf.extend_from_slice(&RRTypes::Opt.code().to_be_bytes());
+                    buf.extend_from_slice(&self.edns.as_ref().unwrap().to_bytes().unwrap());
+                    count += 1;
+                }
+                //TEMPORARY ^^^^^^
+
+
+                let (records, c, t) = section_to_wire(&mut compression_data, off, section, max_payload_len);
                 buf.extend_from_slice(&records);
+                count += c;
                 buf[i*2+6..i*2+8].copy_from_slice(&count.to_be_bytes());
 
                 if t {
