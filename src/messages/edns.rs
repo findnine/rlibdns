@@ -121,6 +121,12 @@ impl Edns {
         })
     }
 
+    pub fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
+
+
+        Ok(vec![])
+    }
+
     pub fn set_payload_size(&mut self, payload_size: u16) {
         self.payload_size = payload_size;
     }
@@ -143,6 +149,14 @@ impl Edns {
 
     pub fn version(&self) -> u8 {
         self.version
+    }
+
+    pub fn set_do_bit(&mut self, do_bit: bool) {
+        self.do_bit = do_bit;
+    }
+
+    pub fn do_bit(&self) -> bool {
+        self.do_bit
     }
 
     pub fn set_z_flags(&mut self, z_flags: u16) {
