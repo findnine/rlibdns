@@ -3,6 +3,7 @@ use std::fmt::Formatter;
 use std::net::{Ipv4Addr, Ipv6Addr};
 use crate::rr_data::inter::opt_codes::OptCodes;
 use crate::rr_data::inter::rr_data::RRDataError;
+use crate::rr_data::txt_rr_data::TxtRRData;
 use crate::utils::hex;
 
 #[derive(Debug, Clone)]
@@ -122,9 +123,29 @@ impl Edns {
     }
 
     pub fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
+        let mut buf = Vec::with_capacity(255);
 
+        buf.extend_from_slice(&self.payload_size.to_be_bytes());
 
-        Ok(vec![])
+        buf.push(self.ext_rcode);
+        buf.push(self.version);
+
+        let z = ((self.do_bit as u16) << 15) | (self.z_flags & 0x7FFF);
+        buf.extend_from_slice(&z.to_be_bytes());
+
+        unsafe { buf.set_len(8); };
+
+        let mut opt_length = 0u16;
+        for option in self.options.iter() {
+            buf.extend_from_slice(&option.code.code().to_be_bytes());
+            buf.extend_from_slice(&(option.data.len() as u16).to_be_bytes());
+            buf.extend_from_slice(&option.data);
+            opt_length += 4+option.data.len() as u16;
+        }
+
+        buf[6..8].copy_from_slice(&opt_length.to_be_bytes());
+
+        Ok(buf)
     }
 
     pub fn set_payload_size(&mut self, payload_size: u16) {
@@ -191,4 +212,11 @@ impl fmt::Display for Edns {
 
         Ok(())
     }
+}
+
+#[test]
+fn test() {
+    let buf = vec![ 0x4, 0xd0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xc, 0x0, 0xa, 0x0, 0x8, 0x3c, 0x79, 0xda, 0xbb, 0x15, 0xdc, 0x64, 0x77 ];
+    let record = Edns::from_bytes(&buf, 0, buf.len()).unwrap();
+    assert_eq!(buf, record.to_bytes().unwrap());
 }
