@@ -184,27 +184,29 @@ impl<'a> FromWireContext<'a> {
         loop {
             if steps > 255 { return Err(WireError::Format("too many labels".to_string())); }
             if off >= self.buf.len() { return Err(WireError::Truncated("name".to_string())); }
+
             let len = self.buf[off];
+
             if len == 0 {
                 if !jumped {
                     self.pos = off + 1;
                 }
-                if out.is_empty() {
-                    out.push('.');
-                } else if !out.ends_with('.') {
-                    out.push('.');
-                }
                 return Ok(out);
             }
+
             if (len & 0xC0) == 0xC0 {
                 if off + 1 >= self.buf.len() { return Err(WireError::Truncated("name ptr".to_string())); }
                 let ptr = (((len as u16 & 0x3F) << 8) | self.buf[off + 1] as u16) as usize;
                 if !jumped { self.pos = off + 2; }
                 off = ptr;
                 jumped = true;
+
             } else {
                 let l = len as usize;
-                if off + 1 + l > self.buf.len() { return Err(WireError::Truncated("label".to_string())); }
+                if off + 1 + l > self.buf.len() {
+                    return Err(WireError::Truncated("label".to_string()));
+                }
+
                 let lab = &self.buf[off + 1 .. off + 1 + l];
                 if !out.is_empty() {
                     out.push('.');
@@ -212,6 +214,7 @@ impl<'a> FromWireContext<'a> {
                 out.push_str(&String::from_utf8_lossy(lab).to_ascii_lowercase());
                 off += 1 + l;
             }
+
             steps += 1;
         }
     }
