@@ -480,7 +480,7 @@ impl FromWire for Message {
         let flags = u16::from_wire(context)?;
 
         let qr = (flags & 0x8000) != 0;
-        let op_code = OpCodes::try_from(((flags >> 11) & 0x0F) as u8).unwrap();//.map_err(|e| MessageError::HeaderError(e.to_string()))?;
+        let op_code = OpCodes::try_from(((flags >> 11) & 0x0F) as u8).map_err(|e| WireError::Format(e.to_string()))?;
         let authoritative = (flags & 0x0400) != 0;
         let truncated = (flags & 0x0200) != 0;
         let recursion_desired = (flags & 0x0100) != 0;
@@ -488,7 +488,7 @@ impl FromWire for Message {
         //let z = (flags & 0x0040) != 0;
         let authenticated_data = (flags & 0x0020) != 0;
         let checking_disabled = (flags & 0x0010) != 0;
-        let response_code = ResponseCodes::try_from((flags & 0x000F) as u8).unwrap();//.map_err(|e| MessageError::HeaderError(e.to_string()))?;
+        let response_code = ResponseCodes::try_from((flags & 0x000F) as u8).map_err(|e| WireError::Format(e.to_string()))?;
 
         let qd_count = u16::from_wire(context)?;
         let an_count = u16::from_wire(context)?;
