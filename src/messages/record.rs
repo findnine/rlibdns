@@ -1,8 +1,11 @@
+use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
-use crate::rr_data::inter::rr_data::RRData;
+use crate::messages::message::MessageError;
+use crate::rr_data::inter::rr_data::{RRData, RRDataError};
+use crate::utils::fqdn_utils::pack_fqdn_compressed;
 
 #[derive(Debug, Clone)]
 pub struct Record {
@@ -39,6 +42,38 @@ impl Record {
         })
     }
     */
+
+    pub fn to_wire(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, MessageError> {
+        let fqdn = pack_fqdn_compressed(&self.fqdn, compression_data, off);
+
+        let mut buf = Vec::new();
+
+        match &self.data {
+            Some(data) => {
+                let data = data.to_wire(compression_data, off).map_err(|e| MessageError::RecordError(e.to_string()))?;
+
+                buf.extend_from_slice(&fqdn);
+                buf.extend_from_slice(&self.rtype.code().to_be_bytes());
+
+                buf.extend_from_slice(&self.class.code().to_be_bytes());
+                buf.extend_from_slice(&self.ttl.to_be_bytes());
+
+                buf.extend_from_slice(&(data.len() as u16).to_be_bytes());
+                buf.extend_from_slice(&data);
+            }
+            None => {
+                buf.extend_from_slice(&fqdn);
+                buf.extend_from_slice(&self.rtype.code().to_be_bytes());
+
+                buf.extend_from_slice(&self.class.code().to_be_bytes());
+                buf.extend_from_slice(&self.ttl.to_be_bytes());
+
+                buf.extend_from_slice(&0u16.to_be_bytes());
+            }
+        }
+
+        Ok(buf)
+    }
 
     pub fn set_fqdn(&mut self, fqdn: &str) {
         self.fqdn = fqdn.to_string();

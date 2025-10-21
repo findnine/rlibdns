@@ -252,29 +252,32 @@ impl Message {
         }
 
         if !truncated {
-            for (i, section) in self.sections.iter().enumerate() {
+            'outer: for (i, section) in self.sections.iter().enumerate() {
+                let mut count: u16 = 0;
 
-
-                //THIS IS TEMPORARY - WE NEED TO VERIFY TRUNCATION WITH THIS
-                let mut count = 0;
                 if i == 2 && self.edns.is_some() {
                     buf.push(0x00);
                     buf.extend_from_slice(&RRTypes::Opt.code().to_be_bytes());
                     buf.extend_from_slice(&self.edns.as_ref().unwrap().to_bytes().unwrap());
                     count += 1;
                 }
-                //TEMPORARY ^^^^^^
 
+                for record in section.iter() {
+                    match record.to_wire(&mut compression_data, off) {
+                        Ok(record_buf) => {
+                            if buf.len()+record_buf.len() > max_payload_len {
+                                truncated = true;
+                                break 'outer;
+                            }
 
-                let (records, c, t) = section_to_wire(&mut compression_data, off, section, max_payload_len);
-                buf.extend_from_slice(&records);
-                count += c;
-                buf[i*2+6..i*2+8].copy_from_slice(&count.to_be_bytes());
-
-                if t {
-                    truncated = t;
-                    break;
+                            buf.extend_from_slice(&record_buf);
+                            count += 1;
+                        }
+                        Err(_) => continue
+                    }
                 }
+
+                buf[i*2+6..i*2+8].copy_from_slice(&count.to_be_bytes());
             }
         }
 
@@ -581,19 +584,37 @@ impl<'a> Iterator for WireIter<'a> {
 
         if !truncated {
             let mut total = 0;
-            for (i, records) in self.message.sections.iter().enumerate() {
+            'outer: for (i, section) in self.message.sections.iter().enumerate() {
+                let mut count: u16 = 0;
+
                 let before = total;
                 total += self.message.sections[i].len();
 
                 if self.position < total {
-                    let (records, count, t) = section_to_wire(&mut compression_data, off, &records[self.position - before..], self.max_payload_len);
-                    buf.extend_from_slice(&records);
+                    if i == 2 && self.message.edns.is_some() {
+                        buf.push(0x00);
+                        buf.extend_from_slice(&RRTypes::Opt.code().to_be_bytes());
+                        buf.extend_from_slice(&self.message.edns.as_ref().unwrap().to_bytes().unwrap());
+                        count += 1;
+                    }
+
+                    for record in &section[self.position - before..] {
+                        match record.to_wire(&mut compression_data, off) {
+                            Ok(record_buf) => {
+                                if buf.len()+record_buf.len() > self.max_payload_len {
+                                    truncated = true;
+                                    break 'outer;
+                                }
+
+                                buf.extend_from_slice(&record_buf);
+                                count += 1;
+                            }
+                            Err(_) => continue
+                        }
+                    }
+
                     buf[i*2+6..i*2+8].copy_from_slice(&count.to_be_bytes());
                     self.position += count as usize;
-
-                    if t {
-                        break;
-                    }
                 }
             }
         }
@@ -638,6 +659,12 @@ fn section_to_wire(compression_data: &mut HashMap<String, usize>, off: usize, se
     let mut off = off;
 
     for record in section.iter() {
+        match record.to_wire(compression_data, off) {
+            Ok(record_buf) => buf.extend_from_slice(&record_buf),
+            Err(e) => return (Vec::new(), 0, false)
+        }
+
+
         let fqdn = pack_fqdn_compressed(&record.fqdn(), compression_data, off);
 
         off += fqdn.len()+10;
