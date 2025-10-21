@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::wire::{FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
-use crate::rr_data::ch_a_rr_data::ChARRData;
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::utils::hex;
 use crate::zone::inter::zone_rr_data::ZoneRRData;
@@ -90,7 +89,7 @@ impl DsRRData {
 
 impl FromWireLen for DsRRData {
 
-    fn from_wire(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
+    fn from_wire(context: &mut FromWireContext, _len: u16) -> Result<Self, WireError> {
         todo!()
     }
 }

@@ -2,8 +2,7 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
-use crate::messages::wire::{FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
-use crate::rr_data::ch_a_rr_data::ChARRData;
+use crate::messages::wire::{FromWire, FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::zone::inter::zone_rr_data::ZoneRRData;
 use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
@@ -109,15 +108,32 @@ impl HInfoRRData {
 
 impl FromWireLen for HInfoRRData {
 
-    fn from_wire(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
-        todo!()
+    fn from_wire(context: &mut FromWireContext, _len: u16) -> Result<Self, WireError> {
+        let data_length = u8::from_wire(context)? as usize;
+        let cpu = String::from_utf8(context.take(data_length)?.to_vec()).unwrap();
+
+        let data_length = u8::from_wire(context)? as usize;
+        let os = String::from_utf8(context.take(data_length)?.to_vec()).unwrap();
+
+        Ok(Self {
+            cpu: Some(cpu),
+            os: Some(os)
+        })
     }
 }
 
 impl ToWire for HInfoRRData {
 
     fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
-        todo!()
+        let cpu = self.cpu.as_ref()
+            .ok_or_else(|| WireError::Format("cpu param was not set".to_string()))?.as_bytes();
+        (cpu.len() as u8).to_wire(context)?;
+        context.write(cpu)?;
+
+        let os = self.os.as_ref()
+            .ok_or_else(|| WireError::Format("os param was not set".to_string()))?.as_bytes();
+        (os.len() as u8).to_wire(context)?;
+        context.write(os)
     }
 }
 

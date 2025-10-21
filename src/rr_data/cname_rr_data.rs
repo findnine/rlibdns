@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::wire::{FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
-use crate::rr_data::ch_a_rr_data::ChARRData;
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::utils::fqdn_utils::{pack_fqdn, pack_fqdn_compressed, unpack_fqdn};
 use crate::zone::inter::zone_rr_data::ZoneRRData;
@@ -91,15 +90,20 @@ impl CNameRRData {
 
 impl FromWireLen for CNameRRData {
 
-    fn from_wire(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
-        todo!()
+    fn from_wire(context: &mut FromWireContext, _len: u16) -> Result<Self, WireError> {
+        let target = context.name()?;
+
+        Ok(Self {
+            target: Some(target)
+        })
     }
 }
 
 impl ToWire for CNameRRData {
 
     fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
-        todo!()
+        context.write_name(self.target.as_ref()
+            .ok_or_else(|| WireError::Format("target param was not set".to_string()))?)
     }
 }
 
