@@ -258,7 +258,9 @@ impl Message {
                 if i == 2 && self.edns.is_some() {
                     buf.push(0x00);
                     buf.extend_from_slice(&RRTypes::Opt.code().to_be_bytes());
-                    buf.extend_from_slice(&self.edns.as_ref().unwrap().to_bytes().unwrap());
+                    let edns_buf = self.edns.as_ref().unwrap().to_bytes().unwrap();
+                    buf.extend_from_slice(&edns_buf);
+                    off += edns_buf.len()+3;
                     count += 1;
                 }
 
@@ -271,6 +273,7 @@ impl Message {
                             }
 
                             buf.extend_from_slice(&record_buf);
+                            off += record_buf.len();
                             count += 1;
                         }
                         Err(_) => continue
@@ -594,7 +597,9 @@ impl<'a> Iterator for WireIter<'a> {
                     if i == 2 && self.message.edns.is_some() {
                         buf.push(0x00);
                         buf.extend_from_slice(&RRTypes::Opt.code().to_be_bytes());
-                        buf.extend_from_slice(&self.message.edns.as_ref().unwrap().to_bytes().unwrap());
+                        let edns_buf = self.message.edns.as_ref().unwrap().to_bytes().unwrap();
+                        buf.extend_from_slice(&edns_buf);
+                        off += edns_buf.len()+3;
                         count += 1;
                     }
 
@@ -602,11 +607,12 @@ impl<'a> Iterator for WireIter<'a> {
                         match record.to_wire(&mut compression_data, off) {
                             Ok(record_buf) => {
                                 if buf.len()+record_buf.len() > self.max_payload_len {
-                                    truncated = true;
+                                    //truncated = true;
                                     break 'outer;
                                 }
 
                                 buf.extend_from_slice(&record_buf);
+                                off += record_buf.len();
                                 count += 1;
                             }
                             Err(_) => continue
