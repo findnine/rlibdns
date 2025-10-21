@@ -50,7 +50,7 @@ impl Record {
 
         match &self.data {
             Some(data) => {
-                let data = data.to_wire(compression_data, off).map_err(|e| MessageError::RecordError(e.to_string()))?;
+                let data = data.to_wire(compression_data, off+fqdn.len()+10).map_err(|e| MessageError::RecordError(e.to_string()))?;
 
                 buf.extend_from_slice(&fqdn);
                 buf.extend_from_slice(&self.rtype.code().to_be_bytes());
