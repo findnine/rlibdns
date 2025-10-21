@@ -4,6 +4,8 @@ use std::fmt;
 use std::fmt::Formatter;
 use std::str::FromStr;
 use crate::messages::inter::rr_types::RRTypes;
+use crate::messages::wire::{FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
+use crate::rr_data::ch_a_rr_data::ChARRData;
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::utils::fqdn_utils::{pack_fqdn, pack_fqdn_compressed, unpack_fqdn};
 use crate::utils::base64;
@@ -72,7 +74,7 @@ impl RRData for RRSigRRData {
         })
     }
 
-    fn to_wire(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
+    fn to_wire1(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
         let mut buf = vec![0u8; 18]; //190 (ECDSA/Ed25519) / 318 (RSA)
 
         buf.splice(0..2, self.type_covered.as_ref()
@@ -223,6 +225,20 @@ impl RRSigRRData {
 
     pub fn signature(&self) -> &[u8] {
         self.signature.as_ref()
+    }
+}
+
+impl FromWireLen for RRSigRRData {
+
+    fn from_wire(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
+        todo!()
+    }
+}
+
+impl ToWire for RRSigRRData {
+
+    fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
+        todo!()
     }
 }
 

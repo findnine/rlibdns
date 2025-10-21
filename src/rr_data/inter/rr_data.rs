@@ -24,7 +24,6 @@ use crate::rr_data::{
     sshfp_rr_data::SshFpRRData,
     svcb_rr_data::SvcbRRData,
     txt_rr_data::TxtRRData,
-    opt_rr_data::OptRRData,
     uri_rr_data::UriRRData
 };
 
@@ -34,6 +33,7 @@ use std::fmt;
 use std::fmt::{Debug, Display, Formatter};
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
+use crate::messages::wire::{FromWireLen, ToWire};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct RRDataError(pub String);
@@ -45,11 +45,11 @@ impl Display for RRDataError {
     }
 }
 
-pub trait RRData: Display + Debug + Send + Sync {
+pub trait RRData: Display + Debug + Send + Sync + FromWireLen + ToWire {
 
     fn from_bytes(buf: &[u8], off: usize, len: usize) -> Result<Self, RRDataError> where Self: Sized;
 
-    fn to_wire(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError>;
+    fn to_wire1(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError>;
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError>;
 

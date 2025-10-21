@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use std::net::Ipv4Addr;
+use crate::messages::wire::{FromWireLen, FromWireContext, ToWire, ToWireContext, WireError};
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::zone::inter::zone_rr_data::ZoneRRData;
 use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
@@ -34,7 +35,7 @@ impl RRData for InARRData {
         })
     }
 
-    fn to_wire(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RRDataError> {
+    fn to_wire1(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RRDataError> {
         self.to_bytes()
     }
 
@@ -81,6 +82,30 @@ impl InARRData {
 
     pub fn address(&self) -> Option<Ipv4Addr> {
         self.address
+    }
+}
+
+impl FromWireLen for InARRData {
+
+    fn from_wire(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
+        let address = match len {
+            4 => {
+                let buf = context.take(len as usize)?;
+                Ipv4Addr::new(buf[0], buf[1], buf[2], buf[3])
+            },
+            _ => return Err(WireError::Format("invalid inet address".to_string()))
+        };
+
+        Ok(Self {
+            address: Some(address)
+        })
+    }
+}
+
+impl ToWire for InARRData {
+
+    fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
+        context.write(&self.address.ok_or_else(|| WireError::Format("address param was not set".to_string()))?.octets())
     }
 }
 

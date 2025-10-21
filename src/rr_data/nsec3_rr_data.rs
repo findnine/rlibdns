@@ -4,6 +4,8 @@ use std::fmt;
 use std::fmt::Formatter;
 use std::str::FromStr;
 use crate::messages::inter::rr_types::RRTypes;
+use crate::messages::wire::{FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
+use crate::rr_data::ch_a_rr_data::ChARRData;
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::utils::{base32, hex};
 use crate::zone::inter::zone_rr_data::ZoneRRData;
@@ -91,7 +93,7 @@ impl RRData for NSec3RRData {
         })
     }
 
-    fn to_wire(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RRDataError> {
+    fn to_wire1(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RRDataError> {
         self.to_bytes()
     }
 
@@ -185,6 +187,20 @@ impl NSec3RRData {
 
     pub fn types_mut(&mut self) -> &mut Vec<RRTypes> {
         self.types.as_mut()
+    }
+}
+
+impl FromWireLen for NSec3RRData {
+
+    fn from_wire(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
+        todo!()
+    }
+}
+
+impl ToWire for NSec3RRData {
+
+    fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
+        todo!()
     }
 }
 

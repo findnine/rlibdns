@@ -231,8 +231,8 @@ impl JournalReader {
             let length = u16::from_be_bytes([buf[off+8], buf[off+9]]) as usize;
             let data = match length {
                 0 => None,
-                _ => Some(<dyn RRData>::from_wire(&_type, &class, &buf, off+10, length)
-                    .map_err(|_| JournalReaderError::new(ErrorKind::TypeNotFound, &format!("record type {} not found", _type)))?)
+                _ => None/*Some(<dyn RRData>::from_wire(&_type, &class, &buf, off+10, length)
+                    .map_err(|_| JournalReaderError::new(ErrorKind::TypeNotFound, &format!("record type {} not found", _type)))?)*/
             };
             txn.add_record(phase, &name, class, _type, ttl, data);
         }

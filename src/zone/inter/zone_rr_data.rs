@@ -26,7 +26,6 @@ use crate::rr_data::{
     sshfp_rr_data::SshFpRRData,
     svcb_rr_data::SvcbRRData,
     txt_rr_data::TxtRRData,
-    opt_rr_data::OptRRData,
     uri_rr_data::UriRRData
 };
 

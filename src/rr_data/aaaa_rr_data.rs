@@ -2,7 +2,9 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
-use std::net::Ipv6Addr;
+use std::net::{Ipv4Addr, Ipv6Addr};
+use crate::messages::wire::{FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
+use crate::rr_data::in_a_rr_data::InARRData;
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::zone::inter::zone_rr_data::ZoneRRData;
 use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
@@ -38,7 +40,7 @@ impl RRData for AaaaRRData {
         })
     }
 
-    fn to_wire(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RRDataError> {
+    fn to_wire1(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RRDataError> {
         self.to_bytes()
     }
 
@@ -85,6 +87,20 @@ impl AaaaRRData {
 
     pub fn address(&self) -> Option<Ipv6Addr> {
         self.address
+    }
+}
+
+impl FromWireLen for AaaaRRData {
+
+    fn from_wire(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
+        todo!()
+    }
+}
+
+impl ToWire for AaaaRRData {
+
+    fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
+        todo!()
     }
 }
 

@@ -2,6 +2,8 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
+use crate::messages::wire::{FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
+use crate::rr_data::ch_a_rr_data::ChARRData;
 use crate::rr_data::inter::naptr_flags::NaptrFlags;
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
@@ -79,7 +81,7 @@ impl RRData for NaptrRRData {
         })
     }
 
-    fn to_wire(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RRDataError> {
+    fn to_wire1(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RRDataError> {
         self.to_bytes()
     }
 
@@ -196,6 +198,20 @@ impl NaptrRRData {
 
     pub fn replacement(&self) -> Option<&String> {
         self.replacement.as_ref()
+    }
+}
+
+impl FromWireLen for NaptrRRData {
+
+    fn from_wire(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
+        todo!()
+    }
+}
+
+impl ToWire for NaptrRRData {
+
+    fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
+        todo!()
     }
 }
 

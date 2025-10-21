@@ -4,6 +4,7 @@ use std::fmt::Formatter;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::messages::message::MessageError;
+use crate::messages::wire::{FromWire, FromWireContext, ToWire, ToWireContext, WireError};
 use crate::utils::fqdn_utils::{pack_fqdn, pack_fqdn_compressed, unpack_fqdn};
 
 #[derive(Debug, Clone)]
@@ -38,7 +39,7 @@ impl RRQuery {
         })
     }
 
-    pub fn to_wire(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Vec<u8> {
+    pub fn to_wire1(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Vec<u8> {
         let mut buf = pack_fqdn_compressed(&self.fqdn, compression_data, off);
 
         buf.extend_from_slice(&self.rtype.code().to_be_bytes());
@@ -86,6 +87,34 @@ impl RRQuery {
 
     pub fn as_mut(&mut self) -> &mut Self {
         self
+    }
+}
+
+impl FromWire for RRQuery {
+
+    fn from_wire(context: &mut FromWireContext) -> Result<Self, WireError> {
+        let fqdn = context.name()?;
+
+        let rtype = RRTypes::try_from(u16::from_wire(context)?).map_err(|e| WireError::Format(e.to_string()))?;
+        let class = RRClasses::try_from(u16::from_wire(context)?).map_err(|e| WireError::Format(e.to_string()))?;
+
+        Ok(Self {
+            fqdn,
+            rtype,
+            class
+        })
+    }
+}
+
+impl ToWire for RRQuery {
+
+    fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
+        context.write_name(self.fqdn())?;
+
+        self.rtype.code().to_wire(context)?;
+        self.class.code().to_wire(context)?;
+
+        Ok(())
     }
 }
 
