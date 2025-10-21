@@ -623,6 +623,27 @@ impl ToWire for Message {
         }
         context.patch(6..8, &count.to_be_bytes())?;
 
+        count = 0;
+        for record in self.sections[1].iter() {
+            record.to_wire(context)?;
+            count += 1;
+        }
+        context.patch(8..10, &count.to_be_bytes())?;
+
+        count = 0;
+
+        if let Some(edns) = self.edns.as_ref() {
+            0u8.to_wire(context)?;
+            RRTypes::Opt.code().to_wire(context)?;
+            edns.to_wire(context)?;
+            count += 1;
+        }
+
+        for record in self.sections[2].iter() {
+            record.to_wire(context)?;
+            count += 1;
+        }
+        context.patch(10..12, &count.to_be_bytes())?;
 
         /*
         if !truncated {

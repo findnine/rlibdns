@@ -3,7 +3,7 @@ use std::fmt::Formatter;
 use std::net::{Ipv4Addr, Ipv6Addr};
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
-use crate::messages::wire::{FromWire, FromWireContext, WireError};
+use crate::messages::wire::{FromWire, FromWireContext, ToWire, ToWireContext, WireError};
 use crate::rr_data::inter::opt_codes::OptCodes;
 use crate::rr_data::inter::rr_data::RRDataError;
 use crate::utils::hex;
@@ -236,6 +236,34 @@ impl FromWire for Edns {
             z_flags,
             options
         })
+    }
+}
+
+impl ToWire for Edns {
+
+    fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
+        self.payload_size.to_wire(context)?;
+
+        self.ext_rcode.to_wire(context)?;
+        self.version.to_wire(context)?;
+
+        let z = ((self.do_bit as u16) << 15) | (self.z_flags & 0x7FFF);
+        z.to_wire(context)?;
+
+        let checkpoint = context.pos();
+        context.skip(2)?;
+
+        let mut opt_length = 0u16;
+        for option in self.options.iter() {
+            option.code.code().to_wire(context)?;
+            (option.data.len() as u16).to_wire(context)?;
+            context.write(&option.data)?;
+            opt_length += 4+option.data.len() as u16;
+        }
+
+        context.patch(checkpoint..checkpoint+2, &opt_length.to_be_bytes())?;
+
+        Ok(())
     }
 }
 
