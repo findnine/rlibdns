@@ -186,8 +186,14 @@ impl<'a> FromWireContext<'a> {
             if off >= self.buf.len() { return Err(WireError::Truncated("name".to_string())); }
             let len = self.buf[off];
             if len == 0 {
-                if !jumped { self.pos = off + 1; }
-                if out.is_empty() { out.push('.'); } else if !out.ends_with('.') { out.push('.'); }
+                if !jumped {
+                    self.pos = off + 1;
+                }
+                if out.is_empty() {
+                    out.push('.');
+                } else if !out.ends_with('.') {
+                    out.push('.');
+                }
                 return Ok(out);
             }
             if (len & 0xC0) == 0xC0 {
@@ -200,7 +206,9 @@ impl<'a> FromWireContext<'a> {
                 let l = len as usize;
                 if off + 1 + l > self.buf.len() { return Err(WireError::Truncated("label".to_string())); }
                 let lab = &self.buf[off + 1 .. off + 1 + l];
-                if !out.is_empty() { out.push('.'); }
+                if !out.is_empty() {
+                    out.push('.');
+                }
                 out.push_str(&String::from_utf8_lossy(lab).to_ascii_lowercase());
                 off += 1 + l;
             }

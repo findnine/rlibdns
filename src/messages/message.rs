@@ -562,8 +562,7 @@ impl FromWire for Message {
             */
         }
 
-
-        Ok(Self {
+        let _self = Self {
             id,
             op_code,
             response_code,
@@ -579,7 +578,11 @@ impl FromWire for Message {
             queries,
             sections,
             edns
-        })
+        };
+
+        println!("{}", _self);
+
+        Ok(_self)
     }
 }
 
@@ -631,7 +634,6 @@ impl ToWire for Message {
         context.patch(8..10, &count.to_be_bytes())?;
 
         count = 0;
-
         if let Some(edns) = self.edns.as_ref() {
             0u8.to_wire(context)?;
             RRTypes::Opt.code().to_wire(context)?;

@@ -2,9 +2,8 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
-use std::net::{Ipv4Addr, Ipv6Addr};
+use std::net::Ipv6Addr;
 use crate::messages::wire::{FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
-use crate::rr_data::in_a_rr_data::InARRData;
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::zone::inter::zone_rr_data::ZoneRRData;
 use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
@@ -93,14 +92,25 @@ impl AaaaRRData {
 impl FromWireLen for AaaaRRData {
 
     fn from_wire(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
-        todo!()
+        let address = match len {
+            16 => {
+                let mut octets = [0u8; 16];
+                octets.copy_from_slice(context.take(len as usize)?);
+                Ipv6Addr::from(octets)
+            }
+            _ => return Err(WireError::Format("invalid inet address".to_string()))
+        };
+
+        Ok(Self {
+            address: Some(address)
+        })
     }
 }
 
 impl ToWire for AaaaRRData {
 
     fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
-        todo!()
+        context.write(&self.address.ok_or_else(|| WireError::Format("address param was not set".to_string()))?.octets())
     }
 }
 
