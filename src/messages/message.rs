@@ -29,8 +29,6 @@ use crate::messages::wire::{FromWire, FromWireContext, ToWire, ToWireContext, Wi
 +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 */
 
-pub const DNS_HEADER_LEN: usize = 12;
-
 #[derive(Debug, Clone)]
 pub struct Message {
     id: u16,
@@ -90,12 +88,192 @@ impl Message {
 
     pub fn from_bytes<B: AsRef<[u8]>>(buf: B) -> Result<Self, WireError> {
         let mut context = FromWireContext::new(buf.as_ref());
-        Self::from_wire(&mut context)
+
+        let id = u16::from_wire(&mut context)?;
+
+        let flags = u16::from_wire(&mut context)?;
+
+        let qr = (flags & 0x8000) != 0;
+        let op_code = OpCodes::try_from(((flags >> 11) & 0x0F) as u8).map_err(|e| WireError::Format(e.to_string()))?;
+        let authoritative = (flags & 0x0400) != 0;
+        let truncated = (flags & 0x0200) != 0;
+        let recursion_desired = (flags & 0x0100) != 0;
+        let recursion_available = (flags & 0x0080) != 0;
+        //let z = (flags & 0x0040) != 0;
+        let authenticated_data = (flags & 0x0020) != 0;
+        let checking_disabled = (flags & 0x0010) != 0;
+        let response_code = ResponseCodes::try_from((flags & 0x000F) as u8).map_err(|e| WireError::Format(e.to_string()))?;
+
+        let qd_count = u16::from_wire(&mut context)?;
+        let an_count = u16::from_wire(&mut context)?;
+        let ns_count = u16::from_wire(&mut context)?;
+        let ar_count = u16::from_wire(&mut context)?;
+
+        let mut queries = Vec::new();
+
+        for _ in 0..qd_count {
+            queries.push(RRQuery::from_wire(&mut context)?);
+        }
+
+        let mut sections: [Vec<Record>; 3] = Default::default();
+
+        for _ in 0..an_count {
+            sections[0].push(Record::from_wire(&mut context)?);
+        }
+
+        for _ in 0..ns_count {
+            sections[1].push(Record::from_wire(&mut context)?);
+        }
+
+        let mut edns = None;
+        for _ in 0..ar_count {
+            let fqdn = context.name()?;
+
+            let rtype = RRTypes::try_from(u16::from_wire(&mut context)?).map_err(|e| WireError::Format(e.to_string()))?;
+
+            match rtype {
+                RRTypes::Opt => {
+                    edns = Some(Edns::from_wire(&mut context)?);
+                }
+                _ => {
+                    //sections[2].push(Record::from_wire(context)?);
+                }
+            }
+
+            /*
+            let class = u16::from_wire(context)?;
+            let cache_flush = (class & 0x8000) != 0;
+            let class = RRClasses::try_from(class).map_err(|e| WireError::Format(e.to_string()))?;
+            let ttl = u32::from_wire(context)?;
+
+            let len = u16::from_wire(context)?;
+            let data = match len {
+                0 => None,
+                _ => {
+                    match rtype {
+                        RRTypes::A => Some(RRData::upcast(InARRData::from_wire(context, len)?)),
+                        _ => None
+                    }
+                }
+            };
+            */
+
+
+            /*
+            //PEAK HERE FOR EDNS
+            let buf = context.peek(2)?;
+            println!("{:x?}", buf);
+
+            match RRTypes::try_from(u16::from_be_bytes([buf[0], buf[1]])).map_err(|e| WireError::Other(e.to_string()))? {
+                RRTypes::Opt => {
+                    println!("EDNS");
+                    break;
+                }
+                _ => {
+                    sections[2].push(Record::from_wire(context)?);
+                }
+            }
+            */
+        }
+
+        Ok(Self {
+            id,
+            op_code,
+            response_code,
+            qr,
+            authoritative,
+            truncated,
+            recursion_desired,
+            recursion_available,
+            authenticated_data,
+            checking_disabled,
+            origin: None,
+            destination: None,
+            queries,
+            sections,
+            edns
+        })
     }
 
     pub fn to_bytes(&self, max_payload_len: usize) -> Vec<u8> {
         let mut context = ToWireContext::with_capacity(max_payload_len);
-        self.to_wire(&mut context).unwrap();
+
+        self.id.to_wire(&mut context).unwrap();
+
+        context.skip(10).unwrap();
+
+        let mut truncated = false;
+
+        let mut count: u16 = 0;
+        for query in &self.queries {
+            let checkpoint = context.pos();
+            if let Err(_) = query.to_wire(&mut context) {
+                truncated = true;
+                context.rollback(checkpoint);
+                break;
+            }
+            count += 1;
+        }
+        context.patch(4..6, &count.to_be_bytes()).unwrap();
+
+        for i in 0..2 {
+            if !truncated {
+                count = 0;
+                for record in self.sections[i].iter() {
+                    let checkpoint = context.pos();
+                    if let Err(_) = record.to_wire(&mut context) {
+                        truncated = true;
+                        context.rollback(checkpoint);
+                        break;
+                    }
+                    count += 1;
+                }
+                context.patch(i*2+6..i*2+8, &count.to_be_bytes()).unwrap();
+            }
+        }
+
+        'ar: {
+            if !truncated {
+                count = 0;
+                if let Some(edns) = self.edns.as_ref() {
+                    let checkpoint = context.pos();
+                    if let Err(_) = {
+                        0u8.to_wire(&mut context).unwrap();
+                        RRTypes::Opt.code().to_wire(&mut context).unwrap();
+                        edns.to_wire(&mut context)
+                    } {
+                        truncated = true;
+                        context.rollback(checkpoint);
+                        break 'ar;
+                    }
+                    count += 1;
+                }
+
+                for record in self.sections[2].iter() {
+                    let checkpoint = context.pos();
+                    if let Err(_) = record.to_wire(&mut context) {
+                        truncated = true;
+                        context.rollback(checkpoint);
+                        break;
+                    }
+                    count += 1;
+                }
+                context.patch(10..12, &count.to_be_bytes()).unwrap();
+            }
+        }
+
+        let flags = (if self.qr { 0x8000 } else { 0 }) |  // QR bit
+            ((self.op_code.code() as u16 & 0x0F) << 11) |  // Opcode
+            (if self.authoritative { 0x0400 } else { 0 }) |  // AA bit
+            (if truncated { 0x0200 } else { 0 }) |  // TC bit
+            (if self.recursion_desired { 0x0100 } else { 0 }) |  // RD bit
+            (if self.recursion_available { 0x0080 } else { 0 }) |  // RA bit
+            //(if self.z { 0x0040 } else { 0 }) |  // Z bit (always 0)
+            (if self.authenticated_data { 0x0020 } else { 0 }) |  // AD bit
+            (if self.checking_disabled { 0x0010 } else { 0 }) |  // CD bit
+            (self.response_code.code() as u16 & 0x000F);  // RCODE
+        context.patch(2..4, &flags.to_be_bytes()).unwrap();
+
         context.into_bytes()
     }
 
@@ -274,200 +452,6 @@ impl Message {
 
     pub fn as_mut(&mut self) -> &mut Self {
         self
-    }
-}
-
-impl FromWire for Message {
-
-    fn from_wire(context: &mut FromWireContext) -> Result<Self, WireError> {
-        let id = u16::from_wire(context)?;
-
-        let flags = u16::from_wire(context)?;
-
-        let qr = (flags & 0x8000) != 0;
-        let op_code = OpCodes::try_from(((flags >> 11) & 0x0F) as u8).map_err(|e| WireError::Format(e.to_string()))?;
-        let authoritative = (flags & 0x0400) != 0;
-        let truncated = (flags & 0x0200) != 0;
-        let recursion_desired = (flags & 0x0100) != 0;
-        let recursion_available = (flags & 0x0080) != 0;
-        //let z = (flags & 0x0040) != 0;
-        let authenticated_data = (flags & 0x0020) != 0;
-        let checking_disabled = (flags & 0x0010) != 0;
-        let response_code = ResponseCodes::try_from((flags & 0x000F) as u8).map_err(|e| WireError::Format(e.to_string()))?;
-
-        let qd_count = u16::from_wire(context)?;
-        let an_count = u16::from_wire(context)?;
-        let ns_count = u16::from_wire(context)?;
-        let ar_count = u16::from_wire(context)?;
-
-        let mut queries = Vec::new();
-
-        for _ in 0..qd_count {
-            queries.push(RRQuery::from_wire(context)?);
-        }
-
-        let mut sections: [Vec<Record>; 3] = Default::default();
-
-        for _ in 0..an_count {
-            sections[0].push(Record::from_wire(context)?);
-        }
-
-        for _ in 0..ns_count {
-            sections[1].push(Record::from_wire(context)?);
-        }
-
-        let mut edns = None;
-        for _ in 0..ar_count {
-            let fqdn = context.name()?;
-
-            let rtype = RRTypes::try_from(u16::from_wire(context)?).map_err(|e| WireError::Format(e.to_string()))?;
-
-            match rtype {
-                RRTypes::Opt => {
-                    edns = Some(Edns::from_wire(context)?);
-                }
-                _ => {
-                    //sections[2].push(Record::from_wire(context)?);
-                }
-            }
-
-            /*
-            let class = u16::from_wire(context)?;
-            let cache_flush = (class & 0x8000) != 0;
-            let class = RRClasses::try_from(class).map_err(|e| WireError::Format(e.to_string()))?;
-            let ttl = u32::from_wire(context)?;
-
-            let len = u16::from_wire(context)?;
-            let data = match len {
-                0 => None,
-                _ => {
-                    match rtype {
-                        RRTypes::A => Some(RRData::upcast(InARRData::from_wire(context, len)?)),
-                        _ => None
-                    }
-                }
-            };
-            */
-
-
-            /*
-            //PEAK HERE FOR EDNS
-            let buf = context.peek(2)?;
-            println!("{:x?}", buf);
-
-            match RRTypes::try_from(u16::from_be_bytes([buf[0], buf[1]])).map_err(|e| WireError::Other(e.to_string()))? {
-                RRTypes::Opt => {
-                    println!("EDNS");
-                    break;
-                }
-                _ => {
-                    sections[2].push(Record::from_wire(context)?);
-                }
-            }
-            */
-        }
-
-        Ok(Self {
-            id,
-            op_code,
-            response_code,
-            qr,
-            authoritative,
-            truncated,
-            recursion_desired,
-            recursion_available,
-            authenticated_data,
-            checking_disabled,
-            origin: None,
-            destination: None,
-            queries,
-            sections,
-            edns
-        })
-    }
-}
-
-impl ToWire for Message {
-
-    fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
-        self.id.to_wire(context)?;
-
-        context.skip(10)?;
-
-        let mut truncated = false;
-
-        //let mut off = DNS_HEADER_LEN;
-        let mut count: u16 = 0;
-        for query in &self.queries {
-            let checkpoint = context.pos();
-            if let Err(_) = query.to_wire(context) {
-                truncated = true;
-                context.rollback(checkpoint);
-                break;
-            }
-            count += 1;
-        }
-        context.patch(4..6, &count.to_be_bytes())?;
-
-        for i in 0..2 {
-            if !truncated {
-                count = 0;
-                for record in self.sections[i].iter() {
-                    let checkpoint = context.pos();
-                    if let Err(_) = record.to_wire(context) {
-                        truncated = true;
-                        context.rollback(checkpoint);
-                        break;
-                    }
-                    count += 1;
-                }
-                context.patch(i*2+6..i*2+8, &count.to_be_bytes())?;
-            }
-        }
-
-        'ar: {
-            if !truncated {
-                count = 0;
-                if let Some(edns) = self.edns.as_ref() {
-                    let checkpoint = context.pos();
-                    if let Err(_) = {
-                        0u8.to_wire(context)?;
-                        RRTypes::Opt.code().to_wire(context)?;
-                        edns.to_wire(context)
-                    } {
-                        truncated = true;
-                        context.rollback(checkpoint);
-                        break 'ar;
-                    }
-                    count += 1;
-                }
-
-                for record in self.sections[2].iter() {
-                    let checkpoint = context.pos();
-                    if let Err(_) = record.to_wire(context) {
-                        truncated = true;
-                        context.rollback(checkpoint);
-                        break;
-                    }
-                    count += 1;
-                }
-                context.patch(10..12, &count.to_be_bytes())?;
-            }
-        }
-
-        let flags = (if self.qr { 0x8000 } else { 0 }) |  // QR bit
-            ((self.op_code.code() as u16 & 0x0F) << 11) |  // Opcode
-            (if self.authoritative { 0x0400 } else { 0 }) |  // AA bit
-            (if truncated { 0x0200 } else { 0 }) |  // TC bit
-            (if self.recursion_desired { 0x0100 } else { 0 }) |  // RD bit
-            (if self.recursion_available { 0x0080 } else { 0 }) |  // RA bit
-            //(if self.z { 0x0040 } else { 0 }) |  // Z bit (always 0)
-            (if self.authenticated_data { 0x0020 } else { 0 }) |  // AD bit
-            (if self.checking_disabled { 0x0010 } else { 0 }) |  // CD bit
-            (self.response_code.code() as u16 & 0x000F);  // RCODE
-        context.patch(2..4, &flags.to_be_bytes())?;
-
-        Ok(())
     }
 }
 
