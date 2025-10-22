@@ -4,21 +4,6 @@ use std::fmt::Formatter;
 use std::ops::RangeBounds;
 use std::ops::Bound::*;
 
-pub trait FromWire {
-
-    fn from_wire(context: &mut FromWireContext) -> Result<Self, WireError> where Self: Sized;
-}
-
-pub trait FromWireLen {
-
-    fn from_wire(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> where Self: Sized;
-}
-
-pub trait ToWire {
-
-    fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError>;
-}
-
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum WireError {
     Truncated(String),
@@ -60,15 +45,22 @@ impl ToWireContext {
     }
 
     pub fn write(&mut self, buf: &[u8]) -> Result<(), WireError> {
+        self.ensure_space(buf.len())?;
         self.buf.extend_from_slice(buf);
         Ok(())
     }
 
     pub fn skip(&mut self, n: usize) -> Result<(), WireError> {
-        if self.buf.len()+n > self.capacity {
-            return Err(WireError::Truncated(self.buf.len().to_string()));
-        }
+        self.ensure_space(n)?;
         Ok(unsafe { self.buf.set_len(self.buf.len()+n); })
+    }
+
+    fn ensure_space(&mut self, n: usize) -> Result<(), WireError> {
+        if self.buf.len() + n > self.capacity {
+            return Err(WireError::Truncated(format!("write past capacity at {}", self.buf.len())));
+        }
+
+        Ok(())
     }
 
     pub fn patch<R: RangeBounds<usize>>(&mut self, range: R, buf: &[u8]) -> Result<(), WireError> {
@@ -91,8 +83,15 @@ impl ToWireContext {
         Ok(())
     }
 
+    pub fn rollback(&mut self, mark: usize) {
+        if mark < self.buf.len() {
+            self.buf.truncate(mark);
+            self.compression_map.retain(|_, &mut off| (off as usize) < mark);
+        }
+    }
+
     pub fn write_name(&mut self, fqdn: &str) -> Result<(), WireError> {
-        if fqdn == "." {
+        if fqdn.eq(".") {
             0u8.to_wire(self)?;
             return Ok(());
         }
@@ -220,6 +219,21 @@ impl<'a> FromWireContext<'a> {
     }
 }
 
+pub trait FromWire {
+
+    fn from_wire(context: &mut FromWireContext) -> Result<Self, WireError> where Self: Sized;
+}
+
+pub trait FromWireLen {
+
+    fn from_wire(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> where Self: Sized;
+}
+
+pub trait ToWire {
+
+    fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError>;
+}
+
 impl FromWire for u8 {
 
     fn from_wire(context: &mut FromWireContext) -> Result<Self, WireError> {
@@ -230,6 +244,7 @@ impl FromWire for u8 {
 impl ToWire for u8 {
 
     fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
+        context.ensure_space(1)?;
         Ok(context.buf.push(*self))
     }
 }
@@ -245,6 +260,7 @@ impl FromWire for u16 {
 impl ToWire for u16 {
 
     fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
+        context.ensure_space(2)?;
         Ok(context.buf.extend_from_slice(&self.to_be_bytes()))
     }
 }
@@ -260,6 +276,7 @@ impl FromWire for u32 {
 impl ToWire for u32 {
 
     fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
+        context.ensure_space(4)?;
         Ok(context.buf.extend_from_slice(&self.to_be_bytes()))
     }
 }
