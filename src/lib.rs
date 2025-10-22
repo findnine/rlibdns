@@ -25,6 +25,11 @@ mod tests {
 
 
 
+    //COMPLETE NAPTR WIRING
+
+
+
+
 
     //Don't use hashmaps or indexmaps or btreemaps at all
 

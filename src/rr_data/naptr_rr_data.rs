@@ -2,8 +2,7 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
-use crate::messages::wire::{FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
-use crate::rr_data::ch_a_rr_data::ChARRData;
+use crate::messages::wire::{FromWire, FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
 use crate::rr_data::inter::naptr_flags::NaptrFlags;
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
@@ -204,14 +203,83 @@ impl NaptrRRData {
 impl FromWireLen for NaptrRRData {
 
     fn from_wire(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
-        todo!()
+        let order = u16::from_wire(context)?;
+        let preference = u16::from_wire(context)?;
+
+        /*
+        let data_length = buf[off+4] as usize;
+        let mut flags = Vec::new();
+
+        for flag in String::from_utf8(buf[off + 5..off + 5 + data_length].to_vec())
+            .map_err(|e| RRDataError(e.to_string()))?.split(",") {
+            let tok = flag.trim();
+            if tok.is_empty() {
+                continue;
+            }
+
+            flags.push(NaptrFlags::try_from(flag.chars()
+                .next()
+                .ok_or_else(|| RRDataError("empty NAPTR flag token".to_string()))?).map_err(|e| RRDataError(e.to_string()))?);
+        }
+
+        let mut off = off+5+data_length;
+
+        let data_length = buf[off] as usize;
+        let service = String::from_utf8(buf[off + 1..off + 1 + data_length].to_vec())
+            .map_err(|e| RRDataError(e.to_string()))?;
+
+        off += 1+data_length;
+
+        let data_length = buf[off] as usize;
+        let regex = String::from_utf8(buf[off + 1..off + 1 + data_length].to_vec())
+            .map_err(|e| RRDataError(e.to_string()))?;
+
+        off += 1+data_length;
+
+        let (replacement, _) = unpack_fqdn(buf, off);
+        */
+
+        Ok(Self {
+            order,
+            preference,
+            //flags,
+            //service: Some(service),
+            //regex: Some(regex),
+            //replacement: Some(replacement)
+            ..Default::default()
+        })
     }
 }
 
 impl ToWire for NaptrRRData {
 
     fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
-        todo!()
+        self.order.to_wire(context)?;
+        self.preference.to_wire(context)?;
+
+        let length = self.flags.len();
+        (((length * 2) - 1) as u8).to_wire(context)?;
+
+        for (i, flag) in self.flags.iter().enumerate() {
+            flag.code().to_wire(context)?;
+            if i < length - 1 {
+                b','.to_wire(context)?;
+            }
+        }
+
+        let service = self.service.as_ref().ok_or_else(|| WireError::Format("service param was not set".to_string()))?.as_bytes();
+        (service.len() as u8).to_wire(context)?;
+        context.write(&service)?;
+
+        let regex = self.regex.as_ref().ok_or_else(|| WireError::Format("regex param was not set".to_string()))?.as_bytes();
+        (regex.len() as u8).to_wire(context)?;
+        context.write(&regex)?;
+
+        //WRITE UNPACKED...
+        //buf.extend_from_slice(&pack_fqdn(self.replacement.as_ref()
+        //    .ok_or_else(|| RRDataError("replacement param was not set".to_string()))?));
+
+        Ok(())
     }
 }
 
