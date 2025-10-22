@@ -789,55 +789,70 @@ impl<'a> Iterator for WireIter<'a> {
             if let Err(_) = query.to_wire(&mut self.context) {
                 truncated = true;
                 self.context.rollback(checkpoint);
+                self.context.patch(4..6, &count.to_be_bytes()).unwrap();
                 break;
             }
             count += 1;
         }
         self.context.patch(4..6, &count.to_be_bytes()).unwrap();
 
-        for i in 0..2 {
+        'sections: {
             if !truncated {
-                count = 0;
-                for record in self.message.sections[i].iter() {
-                    let checkpoint = self.context.pos();
-                    if let Err(_) = record.to_wire(&mut self.context) {
-                        truncated = true;
-                        self.context.rollback(checkpoint);
-                        break;
-                    }
-                    count += 1;
-                }
-                self.context.patch(i*2+6..i*2+8, &count.to_be_bytes()).unwrap();
-            }
-        }
+                let mut total = 0;
+                for i in 0..2 {
+                    let before = total;
+                    total += self.message.sections[i].len();
 
-        'ar: {
-            if !truncated {
-                count = 0;
-                if let Some(edns) = self.message.edns.as_ref() {
-                    let checkpoint = self.context.pos();
-                    if let Err(_) = {
-                        0u8.to_wire(&mut self.context).unwrap();
-                        RRTypes::Opt.code().to_wire(&mut self.context).unwrap();
-                        edns.to_wire(&mut self.context)
-                    } {
-                        truncated = true;
-                        self.context.rollback(checkpoint);
-                        break 'ar;
+                    if self.position < total {
+                        count = 0;
+                        for record in &self.message.sections[i][self.position - before..] {
+                            let checkpoint = self.context.pos();
+                            if let Err(_) = record.to_wire(&mut self.context) {
+                                self.context.rollback(checkpoint);
+                                self.context.patch(i*2+6..i*2+8, &count.to_be_bytes()).unwrap();
+                                break 'sections;
+                            }
+                            count += 1;
+                        }
+                        self.context.patch(i*2+6..i*2+8, &count.to_be_bytes()).unwrap();
+
+                        self.position += count as usize;
                     }
-                    count += 1;
                 }
 
-                for record in self.message.sections[2].iter() {
-                    let checkpoint = self.context.pos();
-                    if let Err(_) = record.to_wire(&mut self.context) {
-                        truncated = true;
-                        self.context.rollback(checkpoint);
-                        break;
+                let before = total;
+                total += self.message.sections[2].len();
+
+                if self.position < total {
+                    count = 0;
+                    if let Some(edns) = self.message.edns.as_ref() {
+                        let checkpoint = self.context.pos();
+                        if let Err(_) = {
+                            0u8.to_wire(&mut self.context).unwrap();
+                            RRTypes::Opt.code().to_wire(&mut self.context).unwrap();
+                            edns.to_wire(&mut self.context)
+                        } {
+                            self.context.rollback(checkpoint);
+                            self.context.patch(10..12, &count.to_be_bytes()).unwrap();
+                            break 'sections;
+                        }
+                        count += 1;
+                        self.position += 1;
                     }
-                    count += 1;
+
+                    for record in &self.message.sections[2][self.position - before..] {
+                        let checkpoint = self.context.pos();
+                        if let Err(_) = record.to_wire(&mut self.context) {
+                            self.context.rollback(checkpoint);
+                            break 'sections;
+                        }
+                        count += 1;
+                    }
+
+                    self.context.patch(10..12, &count.to_be_bytes()).unwrap();
+
+                    self.position += count as usize;
                 }
-                self.context.patch(10..12, &count.to_be_bytes()).unwrap();
             }
         }
 
