@@ -2,7 +2,7 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
-use crate::messages::wire::{FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
+use crate::messages::wire::{FromWire, FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
 use crate::rr_data::ch_a_rr_data::ChARRData;
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::utils::hex;
@@ -131,15 +131,32 @@ impl NSec3ParamRRData {
 
 impl FromWireLen for NSec3ParamRRData {
 
-    fn from_wire(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
-        todo!()
+    fn from_wire(context: &mut FromWireContext, _len: u16) -> Result<Self, WireError> {
+        let algorithm = u8::from_wire(context)?;
+        let flags = u8::from_wire(context)?;
+        let iterations = u16::from_wire(context)?;
+
+        let salt_length = u8::from_wire(context)? as usize;
+        let salt = context.take(salt_length)?.to_vec();
+
+        Ok(Self {
+            algorithm,
+            flags,
+            iterations,
+            salt
+        })
     }
 }
 
 impl ToWire for NSec3ParamRRData {
 
     fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
-        todo!()
+        self.algorithm.to_wire(context)?;
+        self.flags.to_wire(context)?;
+        self.iterations.to_wire(context)?;
+
+        (self.salt.len() as u8).to_wire(context)?;
+        context.write(&self.salt)
     }
 }
 

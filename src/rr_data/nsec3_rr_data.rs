@@ -4,7 +4,7 @@ use std::fmt;
 use std::fmt::Formatter;
 use std::str::FromStr;
 use crate::messages::inter::rr_types::RRTypes;
-use crate::messages::wire::{FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
+use crate::messages::wire::{FromWire, FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
 use crate::rr_data::ch_a_rr_data::ChARRData;
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::utils::{base32, hex};
@@ -193,7 +193,59 @@ impl NSec3RRData {
 impl FromWireLen for NSec3RRData {
 
     fn from_wire(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
-        todo!()
+        let algorithm = u8::from_wire(context)?;
+        let flags = u8::from_wire(context)?;
+        let iterations = u16::from_wire(context)?;
+
+        let salt_length = u8::from_wire(context)? as usize;
+        let salt = context.take(salt_length)?.to_vec();
+
+        let next_hash_length = u8::from_wire(context)? as usize;
+        let next_hash = context.take(next_hash_length)?.to_vec();
+
+        let mut types = Vec::new();
+
+        /*
+        let mut i = len-6-salt_length as u16-next_hash_length as u16;
+        while i < len {
+            if i+2 > len {
+                return Err(RRDataError("truncated NSEC window header".to_string()));
+            }
+
+            let window = buf[off];
+            let data_length = buf[off + 1] as usize;
+            off += 2;
+
+            if data_length == 0 || data_length > 32 {
+                return Err(RRDataError("invalid NSEC window length".to_string()));
+            }
+
+            if off + data_length > len {
+                return Err(RRDataError("truncated NSEC bitmap".to_string()));
+            }
+
+            for (i, &byte) in buf[off..off + data_length].iter().enumerate() {
+                for bit in 0..8 {
+                    if (byte & (1 << (7 - bit))) != 0 {
+                        let _type = RRTypes::try_from((window as u16) * 256 + (i as u16 * 8 + bit as u16))
+                            .map_err(|e| RRDataError(e.to_string()))?;
+                        types.push(_type);
+                    }
+                }
+            }
+
+            off += data_length;
+        }
+        */
+
+        Ok(Self {
+            algorithm,
+            flags,
+            iterations,
+            salt,
+            next_hash,
+            types
+        })
     }
 }
 

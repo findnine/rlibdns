@@ -12,9 +12,6 @@ use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PtrRRData {
-    class: RRClasses,
-    cache_flush: bool,
-    ttl: u32,
     fqdn: Option<String>
 }
 
@@ -22,9 +19,6 @@ impl Default for PtrRRData {
 
     fn default() -> Self {
         Self {
-            class: RRClasses::default(),
-            cache_flush: false,
-            ttl: 0,
             fqdn: None
         }
     }
@@ -33,55 +27,25 @@ impl Default for PtrRRData {
 impl RRData for PtrRRData {
 
     fn from_bytes(buf: &[u8], off: usize, _len: usize) -> Result<Self, RRDataError> {
-        let class = u16::from_be_bytes([buf[off], buf[off+1]]);
-        let cache_flush = (class & 0x8000) != 0;
-        let class = RRClasses::try_from(class & 0x7FFF).unwrap();
-        let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
-
-        //let z = u16::from_be_bytes([buf[off+6], buf[off+7]]);
-
         let (fqdn, _) = unpack_fqdn(buf, off+8);
 
         Ok(Self {
-            class,
-            cache_flush,
-            ttl,
             fqdn: Some(fqdn)
         })
     }
 
     fn to_wire1(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = vec![0u8; 8]; //32
+        let mut buf = Vec::with_capacity(32);
 
-        let mut class = self.class.code();
-        if self.cache_flush {
-            class = class | 0x8000;
-        }
-
-        buf.splice(0..2, class.to_be_bytes());
-        buf.splice(2..6, self.ttl.to_be_bytes());
-
-        buf.extend_from_slice(&pack_fqdn_compressed(self.fqdn.as_ref().unwrap(), compression_data, off+8));
-
-        buf.splice(6..8, ((buf.len()-8) as u16).to_be_bytes());
+        buf.extend_from_slice(&pack_fqdn_compressed(self.fqdn.as_ref().unwrap(), compression_data, off));
 
         Ok(buf)
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = vec![0u8; 8]; //34
-
-        let mut class = self.class.code();
-        if self.cache_flush {
-            class = class | 0x8000;
-        }
-
-        buf.splice(0..2, class.to_be_bytes());
-        buf.splice(2..6, self.ttl.to_be_bytes());
+        let mut buf = Vec::with_capacity(32);
 
         buf.extend_from_slice(&pack_fqdn(self.fqdn.as_ref().unwrap()));
-
-        buf.splice(6..8, ((buf.len()-8) as u16).to_be_bytes());
 
         Ok(buf)
     }
@@ -109,28 +73,10 @@ impl RRData for PtrRRData {
 
 impl PtrRRData {
 
-    pub fn new(ttl: u32, class: RRClasses) -> Self {
+    pub fn new(fqdn: &str) -> Self {
         Self {
-            class,
-            ttl,
-            ..Self::default()
+            fqdn: Some(fqdn.to_string())
         }
-    }
-
-    pub fn set_class(&mut self, class: RRClasses) {
-        self.class = class;
-    }
-
-    pub fn class(&self) -> RRClasses {
-        self.class
-    }
-
-    pub fn set_ttl(&mut self, ttl: u32) {
-        self.ttl = ttl;
-    }
-
-    pub fn ttl(&self) -> u32 {
-        self.ttl
     }
 
     pub fn set_fqdn(&mut self, fqdn: &str) {
@@ -144,15 +90,20 @@ impl PtrRRData {
 
 impl FromWireLen for PtrRRData {
 
-    fn from_wire(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
-        todo!()
+    fn from_wire(context: &mut FromWireContext, _len: u16) -> Result<Self, WireError> {
+        let fqdn = context.name()?;
+
+        Ok(Self {
+            fqdn: Some(fqdn)
+        })
     }
 }
 
 impl ToWire for PtrRRData {
 
     fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
-        todo!()
+        context.write_name(self.fqdn.as_ref()
+            .ok_or_else(|| WireError::Format("fqdn param was not set".to_string()))?)
     }
 }
 
