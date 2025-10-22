@@ -145,7 +145,6 @@ impl ToWireContext {
             }
         }
 
-        // terminal root
         self.ensure_space(1)?;
         0u8.to_wire(self)?;
         Ok(())
