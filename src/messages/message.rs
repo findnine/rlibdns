@@ -591,22 +591,6 @@ impl ToWire for Message {
     fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
         self.id.to_wire(context)?;
 
-        //SKIP 2 FOR FLAGS
-        //context.skip(2)?;
-        //let flags = (if self.qr { 0x8000 } else { 0 }) |  // QR bit
-        //    ((self.op_code.code() as u16 & 0x0F) << 11) |  // Opcode
-        //    (if self.authoritative { 0x0400 } else { 0 }) |  // AA bit
-        //    (if truncated { 0x0200 } else { 0 }) |  // TC bit
-        //    (if self.recursion_desired { 0x0100 } else { 0 }) |  // RD bit
-        //    (if self.recursion_available { 0x0080 } else { 0 }) |  // RA bit
-        //    //(if self.z { 0x0040 } else { 0 }) |  // Z bit (always 0)
-        //    (if self.authenticated_data { 0x0020 } else { 0 }) |  // AD bit
-        //    (if self.checking_disabled { 0x0010 } else { 0 }) |  // CD bit
-        //    (self.response_code.code() as u16 & 0x000F);  // RCODE
-        //flags.to_wire(context)?;
-
-
-        //(self.queries.len() as u16).to_wire(context)?;
         context.skip(10)?;
 
         let mut truncated = false;
@@ -624,90 +608,51 @@ impl ToWire for Message {
         }
         context.patch(4..6, &count.to_be_bytes())?;
 
-        if !truncated {
-            count = 0;
-            for record in self.sections[0].iter() {
-                let checkpoint = context.pos();
-                if let Err(_) = record.to_wire(context) {
-                    truncated = true;
-                    context.rollback(checkpoint);
-                    break;
+        for i in 0..2 {
+            if !truncated {
+                count = 0;
+                for record in self.sections[i].iter() {
+                    let checkpoint = context.pos();
+                    if let Err(_) = record.to_wire(context) {
+                        truncated = true;
+                        context.rollback(checkpoint);
+                        break;
+                    }
+                    count += 1;
                 }
-                count += 1;
+                context.patch(i*2+6..i*2+8, &count.to_be_bytes())?;
             }
-            context.patch(6..8, &count.to_be_bytes())?;
         }
 
-        if !truncated {
-            count = 0;
-            for record in self.sections[1].iter() {
-                let checkpoint = context.pos();
-                if let Err(_) = record.to_wire(context) {
-                    truncated = true;
-                    context.rollback(checkpoint);
-                    break;
-                }
-                count += 1;
-            }
-            context.patch(8..10, &count.to_be_bytes())?;
-        }
-
-        if !truncated {
-            count = 0;
-            if let Some(edns) = self.edns.as_ref() {
-                0u8.to_wire(context)?;
-                RRTypes::Opt.code().to_wire(context)?;
-                edns.to_wire(context)?;
-                count += 1;
-            }
-
-            for record in self.sections[2].iter() {
-                let checkpoint = context.pos();
-                if let Err(_) = record.to_wire(context) {
-                    truncated = true;
-                    context.rollback(checkpoint);
-                    break;
-                }
-                count += 1;
-            }
-            context.patch(10..12, &count.to_be_bytes())?;
-        }
-
-        /*
-        if !truncated {
-            'outer: for (i, section) in self.sections.iter().enumerate() {
-                let mut count: u16 = 0;
-
-                if i == 2 && self.edns.is_some() {
-                    buf.push(0x00);
-                    buf.extend_from_slice(&RRTypes::Opt.code().to_be_bytes());
-                    let edns_buf = self.edns.as_ref().unwrap().to_bytes().unwrap();
-                    buf.extend_from_slice(&edns_buf);
-                    off += edns_buf.len()+3;
+        'ar: {
+            if !truncated {
+                count = 0;
+                if let Some(edns) = self.edns.as_ref() {
+                    let checkpoint = context.pos();
+                    if let Err(_) = {
+                        0u8.to_wire(context)?;
+                        RRTypes::Opt.code().to_wire(context)?;
+                        edns.to_wire(context)
+                    } {
+                        truncated = true;
+                        context.rollback(checkpoint);
+                        break 'ar;
+                    }
                     count += 1;
                 }
 
-                for record in section.iter() {
-                    match record.to_wire(&mut compression_data, off) {
-                        Ok(record_buf) => {
-                            if buf.len()+record_buf.len() > max_payload_len {
-                                truncated = true;
-                                break 'outer;
-                            }
-
-                            buf.extend_from_slice(&record_buf);
-                            off += record_buf.len();
-                            count += 1;
-                        }
-                        Err(_) => continue
+                for record in self.sections[2].iter() {
+                    let checkpoint = context.pos();
+                    if let Err(_) = record.to_wire(context) {
+                        truncated = true;
+                        context.rollback(checkpoint);
+                        break;
                     }
+                    count += 1;
                 }
-
-                buf[i*2+6..i*2+8].copy_from_slice(&count.to_be_bytes());
+                context.patch(10..12, &count.to_be_bytes())?;
             }
         }
-        */
-
 
         let flags = (if self.qr { 0x8000 } else { 0 }) |  // QR bit
             ((self.op_code.code() as u16 & 0x0F) << 11) |  // Opcode
@@ -721,15 +666,7 @@ impl ToWire for Message {
             (self.response_code.code() as u16 & 0x000F);  // RCODE
         context.patch(2..4, &flags.to_be_bytes())?;
 
-        //buf[2..4].copy_from_slice(&flags.to_be_bytes());
-
-        //buf
-
-
-
-
         Ok(())
-
     }
 }
 
