@@ -1,5 +1,4 @@
 use std::any::Any;
-use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use std::str::FromStr;
@@ -7,7 +6,7 @@ use crate::messages::wire::{FromWire, FromWireContext, FromWireLen, ToWire, ToWi
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::rr_data::inter::svc_param::SvcParams;
 use crate::rr_data::inter::svc_param_keys::SvcParamKeys;
-use crate::utils::fqdn_utils::{pack_fqdn, pack_fqdn_compressed, unpack_fqdn};
+use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 use crate::zone::inter::zone_rr_data::ZoneRRData;
 use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
 
@@ -31,23 +30,22 @@ impl Default for HttpsRRData {
 
 impl RRData for HttpsRRData {
 
-    fn from_bytes(buf: &[u8], off: usize, len: usize) -> Result<Self, RRDataError> {
-        let priority = u16::from_be_bytes([buf[off], buf[off+1]]);
+    fn from_bytes(buf: &[u8]) -> Result<Self, RRDataError> {
+        let priority = u16::from_be_bytes([buf[0], buf[1]]);
 
-        let (target, target_length) = unpack_fqdn(&buf, off+2);
+        let (target, target_length) = unpack_fqdn(&buf, 2);
 
-        let len = off+len;
-        let mut off = off+2+target_length;
+        let mut i = 2+target_length;
         let mut params = Vec::new();
 
-        while off < len {
-            let key = SvcParamKeys::try_from(u16::from_be_bytes([buf[off], buf[off+1]]))
+        while i < buf.len() {
+            let key = SvcParamKeys::try_from(u16::from_be_bytes([buf[i], buf[i+1]]))
                 .map_err(|e| RRDataError(e.to_string()))?;
-            let length = u16::from_be_bytes([buf[off+2], buf[off+3]]) as usize;
-            params.push(SvcParams::from_bytes(key, &buf[off+4..off+4+length])
+            let length = u16::from_be_bytes([buf[i+2], buf[i+3]]) as usize;
+            params.push(SvcParams::from_bytes(key, &buf[i+4..i+4+length])
                 .map_err(|e| RRDataError(e.to_string()))?);
 
-            off += length+4;
+            i += length+4;
         }
 
         Ok(Self {
@@ -55,24 +53,6 @@ impl RRData for HttpsRRData {
             target: Some(target),
             params
         })
-    }
-
-    fn to_wire1(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = Vec::with_capacity(158);
-
-        buf.extend_from_slice(&self.priority.to_be_bytes());
-
-        buf.extend_from_slice(&pack_fqdn_compressed(self.target.as_ref()
-            .ok_or_else(|| RRDataError("target param was not set".to_string()))?.as_str(), compression_data, off+2));
-
-        for param in self.params.iter() {
-            buf.extend_from_slice(&param.code().to_be_bytes());
-            let param_buf = param.to_bytes();
-            buf.extend_from_slice(&(param_buf.len() as u16).to_be_bytes());
-            buf.extend_from_slice(&param_buf);
-        }
-
-        Ok(buf)
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
@@ -233,6 +213,6 @@ impl fmt::Display for HttpsRRData {
 #[test]
 fn test() {
     let buf = vec![ 0x0, 0x1, 0x3, 0x77, 0x77, 0x77, 0x5, 0x66, 0x69, 0x6e, 0x64, 0x39, 0x3, 0x6e, 0x65, 0x74, 0x0, 0x0, 0x1, 0x0, 0x6, 0x2, 0x68, 0x33, 0x2, 0x68, 0x32, 0x0, 0x4, 0x0, 0x8, 0x68, 0x15, 0x2a, 0x89, 0xac, 0x43, 0xce, 0x1c, 0x0, 0x5, 0x0, 0x47, 0x0, 0x45, 0xfe, 0xd, 0x0, 0x41, 0xda, 0x0, 0x20, 0x0, 0x20, 0xad, 0xee, 0x8b, 0x18, 0xce, 0xda, 0xba, 0x2b, 0x15, 0xe4, 0x6e, 0x16, 0x57, 0xc1, 0xf4, 0x91, 0x27, 0x41, 0xc0, 0xd8, 0xbf, 0x6, 0x22, 0x55, 0xa1, 0xd6, 0x80, 0x27, 0x63, 0x7e, 0x4e, 0x10, 0x0, 0x4, 0x0, 0x1, 0x0, 0x1, 0x0, 0x12, 0x63, 0x6c, 0x6f, 0x75, 0x64, 0x66, 0x6c, 0x61, 0x72, 0x65, 0x2d, 0x65, 0x63, 0x68, 0x2e, 0x63, 0x6f, 0x6d, 0x0, 0x0, 0x0, 0x6, 0x0, 0x20, 0x26, 0x6, 0x47, 0x0, 0x30, 0x30, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x68, 0x15, 0x2a, 0x89, 0x26, 0x6, 0x47, 0x0, 0x30, 0x35, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xac, 0x43, 0xce, 0x1c ];
-    let record = HttpsRRData::from_bytes(&buf, 0, buf.len()).unwrap();
+    let record = HttpsRRData::from_bytes(&buf).unwrap();
     assert_eq!(buf, record.to_bytes().unwrap());
 }

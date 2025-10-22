@@ -1,8 +1,6 @@
 use std::fmt;
 use std::fmt::Formatter;
 use std::net::{Ipv4Addr, Ipv6Addr};
-use crate::messages::inter::rr_classes::RRClasses;
-use crate::messages::inter::rr_types::RRTypes;
 use crate::messages::wire::{FromWire, FromWireContext, ToWire, ToWireContext, WireError};
 use crate::rr_data::inter::opt_codes::OptCodes;
 use crate::rr_data::inter::rr_data::RRDataError;
@@ -95,7 +93,6 @@ impl Edns {
         let payload_size = u16::from_be_bytes([buf[0], buf[1]]);
         let ext_rcode = buf[2];
         let version = buf[3];
-        //let z_flags = u16::from_be_bytes([buf[off+4], buf[off+5]]);
 
         let z = u16::from_be_bytes([buf[4], buf[5]]);
         let do_bit = (z & 0x8000) != 0;

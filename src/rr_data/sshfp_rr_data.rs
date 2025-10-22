@@ -1,10 +1,8 @@
 use std::any::Any;
-use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::wire::{FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
-use crate::rr_data::ch_a_rr_data::ChARRData;
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::utils::hex;
 use crate::zone::inter::zone_rr_data::ZoneRRData;
@@ -12,8 +10,6 @@ use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SshFpRRData {
-    class: RRClasses,
-    ttl: u32,
     algorithm: u8,
     fingerprint_type: u8,
     fingerprint: Vec<u8>
@@ -23,8 +19,6 @@ impl Default for SshFpRRData {
 
     fn default() -> Self {
         Self {
-            class: RRClasses::default(),
-            ttl: 0,
             algorithm: 0,
             fingerprint_type: 0,
             fingerprint: Vec::new()
@@ -34,42 +28,26 @@ impl Default for SshFpRRData {
 
 impl RRData for SshFpRRData {
 
-    fn from_bytes(buf: &[u8], off: usize, _len: usize) -> Result<Self, RRDataError> {
-        let class = RRClasses::try_from(u16::from_be_bytes([buf[off], buf[off+1]])).unwrap();
-        let ttl = u32::from_be_bytes([buf[off+2], buf[off+3], buf[off+4], buf[off+5]]);
+    fn from_bytes(buf: &[u8]) -> Result<Self, RRDataError> {
+        let algorithm = buf[0];
+        let fingerprint_type = buf[1];
 
-        let algorithm = buf[off+8];
-        let fingerprint_type = buf[off+9];
-
-        let data_length = off+8+u16::from_be_bytes([buf[off+6], buf[off+7]]) as usize;
-
-        let fingerprint = buf[off+10..data_length].to_vec();
+        let fingerprint = buf[2..buf.len()].to_vec();
 
         Ok(Self {
-            class,
-            ttl,
             algorithm,
             fingerprint_type,
             fingerprint
         })
     }
 
-    fn to_wire1(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RRDataError> {
-        self.to_bytes()
-    }
-
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = vec![0u8; 10]; //40
+        let mut buf = Vec::with_capacity(40);
 
-        buf.splice(0..2, self.class.code().to_be_bytes());
-        buf.splice(2..6, self.ttl.to_be_bytes());
-
-        buf[8] = self.algorithm;
-        buf[9] = self.fingerprint_type;
+        buf.push(self.algorithm);
+        buf.push(self.fingerprint_type);
 
         buf.extend_from_slice(&self.fingerprint);
-
-        buf.splice(6..8, ((buf.len()-8) as u16).to_be_bytes());
 
         Ok(buf)
     }
@@ -97,28 +75,10 @@ impl RRData for SshFpRRData {
 
 impl SshFpRRData {
 
-    pub fn new(ttl: u32, class: RRClasses) -> Self {
+    pub fn new() -> Self {
         Self {
-            class,
-            ttl,
             ..Self::default()
         }
-    }
-
-    pub fn set_class(&mut self, class: RRClasses) {
-        self.class = class;
-    }
-
-    pub fn class(&self) -> RRClasses {
-        self.class
-    }
-
-    pub fn set_ttl(&mut self, ttl: u32) {
-        self.ttl = ttl;
-    }
-
-    pub fn ttl(&self) -> u32 {
-        self.ttl
     }
 
     pub fn set_algorithm(&mut self, algorithm: u8) {

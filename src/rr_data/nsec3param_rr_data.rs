@@ -1,5 +1,4 @@
 use std::any::Any;
-use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::wire::{FromWire, FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
@@ -30,13 +29,13 @@ impl Default for NSec3ParamRRData {
 
 impl RRData for NSec3ParamRRData {
 
-    fn from_bytes(buf: &[u8], off: usize, _len: usize) -> Result<Self, RRDataError> {
-        let algorithm = buf[off];
-        let flags = buf[off+1];
-        let iterations = u16::from_be_bytes([buf[off+2], buf[off+3]]);
+    fn from_bytes(buf: &[u8]) -> Result<Self, RRDataError> {
+        let algorithm = buf[0];
+        let flags = buf[1];
+        let iterations = u16::from_be_bytes([buf[2], buf[3]]);
 
-        let salt_length = buf[off+4] as usize;
-        let salt = buf[off + 5..off + 5 + salt_length].to_vec();
+        let salt_length = buf[4] as usize;
+        let salt = buf[5..5+salt_length].to_vec();
 
         Ok(Self {
             algorithm,
@@ -44,10 +43,6 @@ impl RRData for NSec3ParamRRData {
             iterations,
             salt
         })
-    }
-
-    fn to_wire1(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RRDataError> {
-        self.to_bytes()
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
@@ -189,6 +184,6 @@ impl fmt::Display for NSec3ParamRRData {
 #[test]
 fn test() {
     let buf = vec![ 0x1, 0x0, 0x0, 0x0, 0x0 ];
-    let record = NSec3ParamRRData::from_bytes(&buf, 0, buf.len()).unwrap();
+    let record = NSec3ParamRRData::from_bytes(&buf).unwrap();
     assert_eq!(buf, record.to_bytes().unwrap());
 }

@@ -1,5 +1,4 @@
 use std::any::Any;
-use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use std::net::Ipv4Addr;
@@ -24,19 +23,15 @@ impl Default for InARRData {
 
 impl RRData for InARRData {
 
-    fn from_bytes(buf: &[u8], off: usize, len: usize) -> Result<Self, RRDataError> {
-        let address = match len {
-            4 => Ipv4Addr::new(buf[off], buf[off+1], buf[off+2], buf[off+3]),
+    fn from_bytes(buf: &[u8]) -> Result<Self, RRDataError> {
+        let address = match buf.len() {
+            4 => Ipv4Addr::new(buf[0], buf[1], buf[2], buf[3]),
             _ => return Err(RRDataError("invalid inet address".to_string()))
         };
 
         Ok(Self {
             address: Some(address)
         })
-    }
-
-    fn to_wire1(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RRDataError> {
-        self.to_bytes()
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
@@ -133,6 +128,6 @@ impl fmt::Display for InARRData {
 #[test]
 fn test() {
     let buf = vec![ 0x7f, 0x0, 0x0, 0x1 ];
-    let record = InARRData::from_bytes(&buf, 0, buf.len()).unwrap();
+    let record = InARRData::from_bytes(&buf).unwrap();
     assert_eq!(buf, record.to_bytes().unwrap());
 }

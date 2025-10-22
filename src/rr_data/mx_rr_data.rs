@@ -4,7 +4,7 @@ use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::wire::{FromWire, FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
-use crate::utils::fqdn_utils::{pack_fqdn, pack_fqdn_compressed, unpack_fqdn};
+use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 use crate::zone::inter::zone_rr_data::ZoneRRData;
 use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
 
@@ -26,26 +26,15 @@ impl Default for MxRRData {
 
 impl RRData for MxRRData {
 
-    fn from_bytes(buf: &[u8], off: usize, _len: usize) -> Result<Self, RRDataError> {
-        let priority = u16::from_be_bytes([buf[off], buf[off+1]]);
+    fn from_bytes(buf: &[u8]) -> Result<Self, RRDataError> {
+        let priority = u16::from_be_bytes([buf[0], buf[1]]);
 
-        let (server, _) = unpack_fqdn(buf, off+2);
+        let (server, _) = unpack_fqdn(buf, 2);
 
         Ok(Self {
             priority,
             server: Some(server)
         })
-    }
-
-    fn to_wire1(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = Vec::with_capacity(46);
-
-        buf.extend_from_slice(&self.priority.to_be_bytes());
-
-        buf.extend_from_slice(&pack_fqdn_compressed(self.server.as_ref()
-            .ok_or_else(|| RRDataError("server param was not set".to_string()))?, compression_data, off+2));
-
-        Ok(buf)
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
@@ -157,6 +146,6 @@ impl fmt::Display for MxRRData {
 #[test]
 fn test() {
     let buf = vec![ 0x0, 0x1, 0x5, 0x66, 0x69, 0x6e, 0x64, 0x39, 0x3, 0x6e, 0x65, 0x74, 0x0 ];
-    let record = MxRRData::from_bytes(&buf, 0, buf.len()).unwrap();
+    let record = MxRRData::from_bytes(&buf).unwrap();
     assert_eq!(buf, record.to_bytes().unwrap());
 }

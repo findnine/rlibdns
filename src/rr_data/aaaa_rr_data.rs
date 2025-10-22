@@ -1,5 +1,4 @@
 use std::any::Any;
-use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use std::net::Ipv6Addr;
@@ -24,11 +23,11 @@ impl Default for AaaaRRData {
 
 impl RRData for AaaaRRData {
 
-    fn from_bytes(buf: &[u8], off: usize, len: usize) -> Result<Self, RRDataError> {
-        let address = match len {
+    fn from_bytes(buf: &[u8]) -> Result<Self, RRDataError> {
+        let address = match buf.len() {
             16 => {
                 let mut octets = [0u8; 16];
-                octets.copy_from_slice(&buf[off..off+len]);
+                octets.copy_from_slice(&buf);
                 Ipv6Addr::from(octets)
             }
             _ => return Err(RRDataError("invalid inet address".to_string()))
@@ -37,10 +36,6 @@ impl RRData for AaaaRRData {
         Ok(Self {
             address: Some(address)
         })
-    }
-
-    fn to_wire1(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RRDataError> {
-        self.to_bytes()
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
@@ -138,6 +133,6 @@ impl fmt::Display for AaaaRRData {
 #[test]
 fn test() {
     let buf = vec![ 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1 ];
-    let record = AaaaRRData::from_bytes(&buf, 0, buf.len()).unwrap();
+    let record = AaaaRRData::from_bytes(&buf).unwrap();
     assert_eq!(buf, record.to_bytes().unwrap());
 }

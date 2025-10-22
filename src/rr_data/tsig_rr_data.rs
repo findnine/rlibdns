@@ -1,10 +1,9 @@
 use std::any::Any;
-use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::wire::{FromWire, FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
-use crate::utils::fqdn_utils::{pack_fqdn, pack_fqdn_compressed, unpack_fqdn};
+use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 use crate::utils::hex;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -35,29 +34,27 @@ impl Default for TSigRRData {
 
 impl RRData for TSigRRData {
 
-    fn from_bytes(buf: &[u8], off: usize, _len: usize) -> Result<Self, RRDataError> {
-        let mut off = off;
+    fn from_bytes(buf: &[u8]) -> Result<Self, RRDataError> {
+        let (algorithm_name, algorithm_name_length) = unpack_fqdn(buf, 0);
+        let mut i = algorithm_name_length;
 
-        let (algorithm_name, algorithm_name_length) = unpack_fqdn(buf, off);
-        off += algorithm_name_length;
+        let time_signed = ((buf[i] as u64) << 40)
+                | ((buf[i+1] as u64) << 32)
+                | ((buf[i+2] as u64) << 24)
+                | ((buf[i+3] as u64) << 16)
+                | ((buf[i+4] as u64) << 8)
+                |  (buf[i+5] as u64);
+        let fudge = u16::from_be_bytes([buf[i+6], buf[i+7]]);
 
-        let time_signed = ((buf[off] as u64) << 40)
-                | ((buf[off+1] as u64) << 32)
-                | ((buf[off+2] as u64) << 24)
-                | ((buf[off+3] as u64) << 16)
-                | ((buf[off+4] as u64) << 8)
-                |  (buf[off+5] as u64);
-        let fudge = u16::from_be_bytes([buf[off+6], buf[off+7]]);
+        let mac_length = 10+u16::from_be_bytes([buf[i+8], buf[i+9]]) as usize;
+        let mac = buf[i+10..i+mac_length].to_vec();
+        i += mac_length;
 
-        let mac_length = 10+u16::from_be_bytes([buf[off+8], buf[off+9]]) as usize;
-        let mac = buf[off + 10..off + mac_length].to_vec();
-        off += mac_length;
+        let original_id = u16::from_be_bytes([buf[i], buf[i+1]]);
+        let error = u16::from_be_bytes([buf[i+2], buf[i+3]]);
 
-        let original_id = u16::from_be_bytes([buf[off], buf[off+1]]);
-        let error = u16::from_be_bytes([buf[off+2], buf[off+3]]);
-
-        let data_length = off+6+u16::from_be_bytes([buf[off+4], buf[off+5]]) as usize;
-        let data = buf[off+6..data_length].to_vec();
+        let data_length = i+6+u16::from_be_bytes([buf[i+4], buf[i+5]]) as usize;
+        let data = buf[i+6..data_length].to_vec();
 
         Ok(Self {
             algorithm_name: Some(algorithm_name),
@@ -68,34 +65,6 @@ impl RRData for TSigRRData {
             error,
             data
         })
-    }
-
-    fn to_wire1(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = Vec::with_capacity(158);
-
-        buf.extend_from_slice(&pack_fqdn_compressed(self.algorithm_name.as_ref()
-            .ok_or_else(|| RRDataError("algorithm_name param was not set".to_string()))?, compression_data, off)); //PROBABLY NO COMPRESS
-
-        buf.extend_from_slice(&[
-            ((self.time_signed >> 40) & 0xFF) as u8,
-            ((self.time_signed >> 32) & 0xFF) as u8,
-            ((self.time_signed >> 24) & 0xFF) as u8,
-            ((self.time_signed >> 16) & 0xFF) as u8,
-            ((self.time_signed >>  8) & 0xFF) as u8,
-            ( self.time_signed        & 0xFF) as u8
-        ]);
-        buf.extend_from_slice(&self.fudge.to_be_bytes());
-
-        buf.extend_from_slice(&(self.mac.len() as u16).to_be_bytes());
-        buf.extend_from_slice(&self.mac);
-
-        buf.extend_from_slice(&self.original_id.to_be_bytes());
-        buf.extend_from_slice(&self.error.to_be_bytes());
-
-        buf.extend_from_slice(&(self.data.len() as u16).to_be_bytes());
-        buf.extend_from_slice(&self.data);
-
-        Ok(buf)
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
@@ -296,6 +265,6 @@ impl fmt::Display for TSigRRData {
 #[test]
 fn test() {
     let buf = vec![ 0x8, 0x67, 0x73, 0x73, 0x2d, 0x74, 0x73, 0x69, 0x67, 0x0, 0x0, 0x0, 0x50, 0xf8, 0xcf, 0xbb, 0x8c, 0xa0, 0x0, 0x1c, 0x4, 0x4, 0x5, 0xff, 0xff, 0xff, 0xff, 0xff, 0x0, 0x0, 0x0, 0x0, 0x73, 0x28, 0x5d, 0xa, 0x2d, 0xf4, 0xa3, 0x34, 0x2f, 0xcf, 0x1, 0x6f, 0x3c, 0x9f, 0x76, 0x82, 0x2, 0x34, 0x0, 0x0, 0x0, 0x0 ];
-    let record = TSigRRData::from_bytes(&buf, 0, buf.len()).unwrap();
+    let record = TSigRRData::from_bytes(&buf).unwrap();
     assert_eq!(buf, record.to_bytes().unwrap());
 }

@@ -1,5 +1,4 @@
 use std::any::Any;
-use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::wire::{FromWire, FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
@@ -30,12 +29,12 @@ impl Default for SmimeaRRData {
 
 impl RRData for SmimeaRRData {
 
-    fn from_bytes(buf: &[u8], off: usize, len: usize) -> Result<Self, RRDataError> {
-        let usage = buf[off];
-        let selector = buf[off+1];
-        let matching_type = buf[off+2];
+    fn from_bytes(buf: &[u8]) -> Result<Self, RRDataError> {
+        let usage = buf[0];
+        let selector = buf[1];
+        let matching_type = buf[2];
 
-        let certificate = buf[off+3..len].to_vec();
+        let certificate = buf[3..buf.len()].to_vec();
 
         Ok(Self {
             usage,
@@ -43,10 +42,6 @@ impl RRData for SmimeaRRData {
             matching_type,
             certificate
         })
-    }
-
-    fn to_wire1(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RRDataError> {
-        self.to_bytes()
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
@@ -185,6 +180,6 @@ impl fmt::Display for SmimeaRRData {
 #[test]
 fn test() {
     let buf = vec![ 0x1, 0x2, 0x3, 0x30, 0x25, 0x1f, 0xd9, 0x47, 0x7c, 0xfd, 0x17, 0x6a, 0x98, 0x3a, 0x34, 0xe1, 0x90, 0xbb, 0x7d, 0xa3, 0xc2, 0xf3, 0x7c, 0xa, 0xba, 0x95 ];
-    let record = SmimeaRRData::from_bytes(&buf, 0, buf.len()).unwrap();
+    let record = SmimeaRRData::from_bytes(&buf).unwrap();
     assert_eq!(buf, record.to_bytes().unwrap());
 }

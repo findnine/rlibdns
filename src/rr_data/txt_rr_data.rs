@@ -1,5 +1,4 @@
 use std::any::Any;
-use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::wire::{FromWire, FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
@@ -23,25 +22,21 @@ impl Default for TxtRRData {
 
 impl RRData for TxtRRData {
 
-    fn from_bytes(buf: &[u8], off: usize, len: usize) -> Result<Self, RRDataError> {
-        let mut off = off;
+    fn from_bytes(buf: &[u8]) -> Result<Self, RRDataError> {
         let mut data = Vec::new();
+        let mut i = 0;
 
-        while off < len {
-            let data_length = buf[off] as usize;
-            let record = String::from_utf8(buf[off + 1..off + 1 + data_length].to_vec())
+        while i < buf.len() {
+            let data_length = buf[i] as usize;
+            let record = String::from_utf8(buf[i+1..i+1+data_length].to_vec())
                 .map_err(|e| RRDataError(e.to_string()))?;
             data.push(record);
-            off += data_length+1;
+            i += data_length+1;
         }
 
         Ok(Self {
             data
         })
-    }
-
-    fn to_wire1(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RRDataError> {
-        self.to_bytes()
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
@@ -155,6 +150,6 @@ impl fmt::Display for TxtRRData {
 #[test]
 fn test() {
     let buf = vec![ 0x9, 0x76, 0x3d, 0x62, 0x6c, 0x61, 0x20, 0x62, 0x6c, 0x61 ];
-    let record = TxtRRData::from_bytes(&buf, 0, buf.len()).unwrap();
+    let record = TxtRRData::from_bytes(&buf).unwrap();
     assert_eq!(buf, record.to_bytes().unwrap());
 }

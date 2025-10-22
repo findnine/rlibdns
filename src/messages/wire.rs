@@ -3,8 +3,7 @@ use std::fmt;
 use std::fmt::Formatter;
 use std::ops::RangeBounds;
 use std::ops::Bound::*;
-
-const MAX_LABEL: usize = 64;
+use crate::utils::fqdn_utils::MAX_LABEL;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum WireError {

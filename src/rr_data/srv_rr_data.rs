@@ -1,10 +1,9 @@
 use std::any::Any;
-use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::wire::{FromWire, FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
-use crate::utils::fqdn_utils::{pack_fqdn, pack_fqdn_compressed, unpack_fqdn};
+use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 use crate::zone::inter::zone_rr_data::ZoneRRData;
 use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
 
@@ -30,12 +29,12 @@ impl Default for SrvRRData {
 
 impl RRData for SrvRRData {
 
-    fn from_bytes(buf: &[u8], off: usize, _len: usize) -> Result<Self, RRDataError> {
-        let priority = u16::from_be_bytes([buf[off], buf[off+1]]);
-        let weight = u16::from_be_bytes([buf[off+2], buf[off+3]]);
-        let port = u16::from_be_bytes([buf[off+4], buf[off+5]]);
+    fn from_bytes(buf: &[u8]) -> Result<Self, RRDataError> {
+        let priority = u16::from_be_bytes([buf[0], buf[1]]);
+        let weight = u16::from_be_bytes([buf[2], buf[3]]);
+        let port = u16::from_be_bytes([buf[4], buf[5]]);
 
-        let (target, _) = unpack_fqdn(buf, off+6);
+        let (target, _) = unpack_fqdn(buf, 6);
 
         Ok(Self {
             priority,
@@ -43,19 +42,6 @@ impl RRData for SrvRRData {
             port,
             target: Some(target)
         })
-    }
-
-    fn to_wire1(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = Vec::with_capacity(62);
-
-        buf.extend_from_slice(&self.priority.to_be_bytes());
-        buf.extend_from_slice(&self.weight.to_be_bytes());
-        buf.extend_from_slice(&self.port.to_be_bytes());
-
-        buf.extend_from_slice(&pack_fqdn_compressed(self.target.as_ref()
-            .ok_or_else(|| RRDataError("target param was not set".to_string()))?, compression_data, off+6));
-
-        Ok(buf)
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
@@ -197,6 +183,6 @@ impl fmt::Display for SrvRRData {
 #[test]
 fn test() {
     let buf = vec![ 0x0, 0x0, 0x0, 0x0, 0x4, 0xaa, 0x7, 0x6f, 0x70, 0x65, 0x6e, 0x76, 0x70, 0x6e, 0x5, 0x66, 0x69, 0x6e, 0x64, 0x39, 0x3, 0x6e, 0x65, 0x74, 0x0 ];
-    let record = SrvRRData::from_bytes(&buf, 0, buf.len()).unwrap();
+    let record = SrvRRData::from_bytes(&buf).unwrap();
     assert_eq!(buf, record.to_bytes().unwrap());
 }

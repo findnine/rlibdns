@@ -1,10 +1,9 @@
 use std::any::Any;
-use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::wire::{FromWire, FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
-use crate::utils::fqdn_utils::{pack_fqdn, pack_fqdn_compressed, unpack_fqdn};
+use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 use crate::zone::inter::zone_rr_data::ZoneRRData;
 use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
 
@@ -36,18 +35,18 @@ impl Default for SoaRRData {
 
 impl RRData for SoaRRData {
 
-    fn from_bytes(buf: &[u8], off: usize, _len: usize) -> Result<Self, RRDataError> {
-        let (fqdn, fqdn_length) = unpack_fqdn(buf, off);
-        let mut off = off+fqdn_length;
+    fn from_bytes(buf: &[u8]) -> Result<Self, RRDataError> {
+        let (fqdn, fqdn_length) = unpack_fqdn(buf, 0);
+        let mut i = fqdn_length;
 
-        let (mailbox, mailbox_length) = unpack_fqdn(buf, off);
-        off += mailbox_length;
+        let (mailbox, mailbox_length) = unpack_fqdn(buf, i);
+        i += mailbox_length;
 
-        let serial = u32::from_be_bytes([buf[off], buf[off+1], buf[off+2], buf[off+3]]);
-        let refresh = u32::from_be_bytes([buf[off+4], buf[off+5], buf[off+6], buf[off+7]]);
-        let retry = u32::from_be_bytes([buf[off+8], buf[off+9], buf[off+10], buf[off+11]]);
-        let expire = u32::from_be_bytes([buf[off+12], buf[off+13], buf[off+14], buf[off+15]]);
-        let minimum_ttl = u32::from_be_bytes([buf[off+16], buf[off+17], buf[off+18], buf[off+19]]);
+        let serial = u32::from_be_bytes([buf[i], buf[i+1], buf[i+2], buf[i+3]]);
+        let refresh = u32::from_be_bytes([buf[i+4], buf[i+5], buf[i+6], buf[i+7]]);
+        let retry = u32::from_be_bytes([buf[i+8], buf[i+9], buf[i+10], buf[i+11]]);
+        let expire = u32::from_be_bytes([buf[i+12], buf[i+13], buf[i+14], buf[i+15]]);
+        let minimum_ttl = u32::from_be_bytes([buf[i+16], buf[i+17], buf[i+18], buf[i+19]]);
 
         Ok(Self {
             fqdn: Some(fqdn),
@@ -58,25 +57,6 @@ impl RRData for SoaRRData {
             expire,
             minimum_ttl
         })
-    }
-
-    fn to_wire1(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = Vec::with_capacity(94);
-
-        let fqdn = pack_fqdn_compressed(self.fqdn.as_ref()
-            .ok_or_else(|| RRDataError("fqdn param was not set".to_string()))?, compression_data, off);
-        buf.extend_from_slice(&fqdn);
-
-        buf.extend_from_slice(&pack_fqdn_compressed(self.mailbox.as_ref()
-            .ok_or_else(|| RRDataError("mailbox param was not set".to_string()))?, compression_data, off+fqdn.len()));
-
-        buf.extend_from_slice(&self.serial.to_be_bytes());
-        buf.extend_from_slice(&self.refresh.to_be_bytes());
-        buf.extend_from_slice(&self.retry.to_be_bytes());
-        buf.extend_from_slice(&self.expire.to_be_bytes());
-        buf.extend_from_slice(&self.minimum_ttl.to_be_bytes());
-
-        Ok(buf)
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
@@ -269,6 +249,6 @@ impl fmt::Display for SoaRRData {
 #[test]
 fn test() {
     let buf = vec![ 0x3, 0x6e, 0x73, 0x31, 0x5, 0x66, 0x69, 0x6e, 0x64, 0x39, 0x3, 0x6e, 0x65, 0x74, 0x0, 0x5, 0x61, 0x64, 0x6d, 0x69, 0x6e, 0x5, 0x66, 0x69, 0x6e, 0x64, 0x39, 0x3, 0x6e, 0x65, 0x74, 0x0, 0x0, 0x0, 0x0, 0x4, 0x0, 0x9, 0x3a, 0x80, 0x0, 0x1, 0x51, 0x80, 0x0, 0x24, 0xea, 0x0, 0x0, 0x9, 0x3a, 0x80 ];
-    let record = SoaRRData::from_bytes(&buf, 0, buf.len()).unwrap();
+    let record = SoaRRData::from_bytes(&buf).unwrap();
     assert_eq!(buf, record.to_bytes().unwrap());
 }

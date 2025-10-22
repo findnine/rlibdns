@@ -28,7 +28,6 @@ use crate::rr_data::{
 };
 
 use std::any::Any;
-use std::collections::HashMap;
 use std::fmt;
 use std::fmt::{Debug, Display, Formatter};
 use crate::messages::inter::rr_classes::RRClasses;
@@ -47,9 +46,7 @@ impl Display for RRDataError {
 
 pub trait RRData: Display + Debug + Send + Sync + FromWireLen + ToWire {
 
-    fn from_bytes(buf: &[u8], off: usize, len: usize) -> Result<Self, RRDataError> where Self: Sized;
-
-    fn to_wire1(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError>;
+    fn from_bytes(buf: &[u8]) -> Result<Self, RRDataError> where Self: Sized;
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError>;
 
@@ -126,54 +123,6 @@ impl dyn RRData {
             */
             // pseudo/unsupported types:
             _ => return None
-        })
-    }
-
-    pub fn from_wire(rtype: &RRTypes, class: &RRClasses, buf: &[u8], off: usize, len: usize) -> Result<Box<dyn RRData>, RRDataError> {
-        Ok(match rtype {
-            RRTypes::A      => {
-                match class {
-                    RRClasses::Ch => ChARRData::from_bytes(buf, off, len)?.upcast(),
-                    _ => InARRData::from_bytes(buf, off, len)?.upcast()
-                }
-            }
-            RRTypes::Aaaa   => AaaaRRData::from_bytes(buf, off, len)?.upcast(),
-            RRTypes::Ns     => NsRRData::from_bytes(buf, off, len)?.upcast(),
-            RRTypes::CName  => CNameRRData::from_bytes(buf, off, len)?.upcast(),
-            RRTypes::Soa    => SoaRRData::from_bytes(buf, off, len)?.upcast(),
-            RRTypes::Ptr    => PtrRRData::from_bytes(buf, off, len)?.upcast(),
-            RRTypes::HInfo  => HInfoRRData::from_bytes(buf, off, len)?.upcast(),
-            RRTypes::Mx     => MxRRData::from_bytes(buf, off, len)?.upcast(),
-            RRTypes::Txt    => TxtRRData::from_bytes(buf, off, len)?.upcast(),
-            RRTypes::Loc    => LocRRData::from_bytes(buf, off, len)?.upcast(),
-            RRTypes::Srv    => SrvRRData::from_bytes(buf, off, len)?.upcast(),
-            RRTypes::Naptr  => NaptrRRData::from_bytes(buf, off, len)?.upcast(),
-            RRTypes::SshFp  => SshFpRRData::from_bytes(buf, off, len)?.upcast(),
-            RRTypes::RRSig  => RRSigRRData::from_bytes(buf, off, len)?.upcast(),
-            RRTypes::NSec   => NSecRRData::from_bytes(buf, off, len)?.upcast(),
-            RRTypes::DnsKey => DnsKeyRRData::from_bytes(buf, off, len)?.upcast(),
-            RRTypes::Ds     => DsRRData::from_bytes(buf, off, len)?.upcast(),
-            RRTypes::NSec3Param   => NSec3ParamRRData::from_bytes(buf, off, len)?.upcast(),
-            RRTypes::NSec3   => NSec3RRData::from_bytes(buf, off, len)?.upcast(),
-            RRTypes::Smimea => SmimeaRRData::from_bytes(buf, off, len)?.upcast(),
-            RRTypes::Svcb   => SvcbRRData::from_bytes(buf, off, len)?.upcast(),
-            RRTypes::Https  => HttpsRRData::from_bytes(buf, off, len)?.upcast(),
-            /*
-            RRTypes::Spf => {
-                todo!()
-            }*/
-            RRTypes::TKey   => TKeyRRData::from_bytes(buf, off, len)?.upcast(),
-            RRTypes::TSig   => TSigRRData::from_bytes(buf, off, len)?.upcast(),
-            RRTypes::Uri    => UriRRData::from_bytes(buf, off, len)?.upcast(),
-            /*RRTypes::Caa => {
-                todo!()
-            }
-            _ => {
-                todo!()
-            }
-            */
-            //RRTypes::Opt    => OptRecord::from_bytes(buf, off)?.upcast(),
-            _ => return Err(RRDataError("type could not produce a record".to_string()))
         })
     }
 }

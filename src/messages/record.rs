@@ -1,14 +1,10 @@
-use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
-use crate::messages::message::MessageError;
 use crate::messages::wire::{FromWire, FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
 use crate::rr_data::in_a_rr_data::InARRData;
 use crate::rr_data::inter::rr_data::RRData;
-use crate::utils::fqdn_utils::pack_fqdn_compressed;
-use crate::zone::inter::zone_rr_data::ZoneRRData;
 
 #[derive(Debug, Clone)]
 pub struct Record {
@@ -29,53 +25,6 @@ impl Record {
             ttl,
             data
         }
-    }
-
-    /*
-    pub fn from_bytes(buf: &[u8], off: usize, _len: usize) -> Result<Self, MessageError> {
-        let (fqdn, fqdn_length) = unpack_fqdn(buf, off);
-        let mut off = off+fqdn_length;
-
-        let rtype = RRTypes::try_from(u16::from_be_bytes([buf[off], buf[off+1]])).map_err(|e| MessageError::RecordError(e.to_string()))?;
-
-
-        Ok(Self {
-            fqdn,
-            rtype
-        })
-    }
-    */
-
-    pub fn to_wire1(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, MessageError> {
-        let fqdn = pack_fqdn_compressed(&self.fqdn, compression_data, off);
-
-        let mut buf = Vec::new();
-
-        match &self.data {
-            Some(data) => {
-                //let data = data.to_wire(compression_data, off+fqdn.len()+10).map_err(|e| MessageError::RecordError(e.to_string()))?;
-
-                buf.extend_from_slice(&fqdn);
-                buf.extend_from_slice(&self.rtype.code().to_be_bytes());
-
-                buf.extend_from_slice(&self.class.code().to_be_bytes());
-                buf.extend_from_slice(&self.ttl.to_be_bytes());
-
-                //buf.extend_from_slice(&(data.len() as u16).to_be_bytes());
-                //buf.extend_from_slice(&data);
-            }
-            None => {
-                buf.extend_from_slice(&fqdn);
-                buf.extend_from_slice(&self.rtype.code().to_be_bytes());
-
-                buf.extend_from_slice(&self.class.code().to_be_bytes());
-                buf.extend_from_slice(&self.ttl.to_be_bytes());
-
-                buf.extend_from_slice(&0u16.to_be_bytes());
-            }
-        }
-
-        Ok(buf)
     }
 
     pub fn set_fqdn(&mut self, fqdn: &str) {
@@ -159,8 +108,6 @@ impl ToWire for Record {
 
         match &self.data {
             Some(data) => {
-                //let data = data.to_wire(context)?;
-
                 self.rtype.code().to_wire(context)?;
 
                 self.class.code().to_wire(context)?;
@@ -168,8 +115,6 @@ impl ToWire for Record {
 
                 let checkpoint = context.pos();
                 context.skip(2)?;
-                //buf.extend_from_slice(&(data.len() as u16).to_be_bytes());
-                //buf.extend_from_slice(&data);
 
                 data.to_wire(context)?;
 

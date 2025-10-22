@@ -27,11 +27,11 @@ impl Default for UriRRData {
 
 impl RRData for UriRRData {
 
-    fn from_bytes(buf: &[u8], off: usize, len: usize) -> Result<Self, RRDataError> {
-        let priority = u16::from_be_bytes([buf[off], buf[off+1]]);
-        let weight = u16::from_be_bytes([buf[off+2], buf[off+3]]);
+    fn from_bytes(buf: &[u8]) -> Result<Self, RRDataError> {
+        let priority = u16::from_be_bytes([buf[0], buf[1]]);
+        let weight = u16::from_be_bytes([buf[2], buf[3]]);
 
-        let target = String::from_utf8(buf[off+4..off+len].to_vec())
+        let target = String::from_utf8(buf[4..buf.len()].to_vec())
             .map_err(|e| RRDataError(e.to_string()))?;
 
         Ok(Self {
@@ -39,10 +39,6 @@ impl RRData for UriRRData {
             weight,
             target: Some(target)
         })
-    }
-
-    fn to_wire1(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RRDataError> {
-        self.to_bytes()
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
@@ -167,6 +163,6 @@ impl fmt::Display for UriRRData {
 #[test]
 fn test() {
     let buf = vec![ 0x0, 0x1, 0x66, 0x69, 0x6e, 0x64, 0x39, 0x3a, 0x2f, 0x2f, 0x6e, 0x61, 0x6d, 0x65, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72 ];
-    let record = UriRRData::from_bytes(&buf, 0, buf.len()).unwrap();
+    let record = UriRRData::from_bytes(&buf).unwrap();
     assert_eq!(buf, record.to_bytes().unwrap());
 }

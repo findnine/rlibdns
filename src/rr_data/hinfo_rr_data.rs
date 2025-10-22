@@ -1,5 +1,4 @@
 use std::any::Any;
-use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::wire::{FromWire, FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
@@ -25,22 +24,18 @@ impl Default for HInfoRRData {
 
 impl RRData for HInfoRRData {
 
-    fn from_bytes(buf: &[u8], off: usize, _len: usize) -> Result<Self, RRDataError> {
-        let data_length = buf[off] as usize;
-        let cpu = String::from_utf8(buf[off+1..off+1+data_length].to_vec()).unwrap();
-        let off = off+1+data_length;
+    fn from_bytes(buf: &[u8]) -> Result<Self, RRDataError> {
+        let cpu_length = buf[0] as usize;
+        let cpu = String::from_utf8(buf[1..1+cpu_length].to_vec()).unwrap();
 
-        let data_length = buf[off] as usize;
-        let os = String::from_utf8(buf[off+1..off+1+data_length].to_vec()).unwrap();
+        let i = 1+cpu_length;
+        let os_length = buf[i] as usize;
+        let os = String::from_utf8(buf[1+i..1+i+os_length].to_vec()).unwrap();
 
         Ok(Self {
             cpu: Some(cpu),
             os: Some(os)
         })
-    }
-
-    fn to_wire1(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RRDataError> {
-        self.to_bytes()
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
@@ -163,6 +158,6 @@ impl fmt::Display for HInfoRRData {
 #[test]
 fn test() {
     let buf = vec![ 0x3, 0x41, 0x4d, 0x44, 0x0 ];
-    let record = HInfoRRData::from_bytes(&buf, 0, buf.len()).unwrap();
+    let record = HInfoRRData::from_bytes(&buf).unwrap();
     assert_eq!(buf, record.to_bytes().unwrap());
 }

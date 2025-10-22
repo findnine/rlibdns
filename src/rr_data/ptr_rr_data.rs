@@ -1,10 +1,9 @@
 use std::any::Any;
-use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::wire::{FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
-use crate::utils::fqdn_utils::{pack_fqdn, pack_fqdn_compressed, unpack_fqdn};
+use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 use crate::zone::inter::zone_rr_data::ZoneRRData;
 use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
 
@@ -24,20 +23,12 @@ impl Default for PtrRRData {
 
 impl RRData for PtrRRData {
 
-    fn from_bytes(buf: &[u8], off: usize, _len: usize) -> Result<Self, RRDataError> {
-        let (fqdn, _) = unpack_fqdn(buf, off+8);
+    fn from_bytes(buf: &[u8]) -> Result<Self, RRDataError> {
+        let (fqdn, _) = unpack_fqdn(buf, 0);
 
         Ok(Self {
             fqdn: Some(fqdn)
         })
-    }
-
-    fn to_wire1(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = Vec::with_capacity(32);
-
-        buf.extend_from_slice(&pack_fqdn_compressed(self.fqdn.as_ref().unwrap(), compression_data, off));
-
-        Ok(buf)
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
@@ -130,6 +121,6 @@ impl fmt::Display for PtrRRData {
 #[test]
 fn test() {
     let buf = vec![ ];
-    let record = PtrRRData::from_bytes(&buf, 0, buf.len()).unwrap();
+    let record = PtrRRData::from_bytes(&buf).unwrap();
     assert_eq!(buf, record.to_bytes().unwrap());
 }
