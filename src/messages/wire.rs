@@ -4,6 +4,8 @@ use std::fmt::Formatter;
 use std::ops::RangeBounds;
 use std::ops::Bound::*;
 
+const MAX_LABEL: usize = 63;
+
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum WireError {
     Truncated(String),
@@ -91,33 +93,49 @@ impl ToWireContext {
     }
 
     pub fn write_name(&mut self, fqdn: &str) -> Result<(), WireError> {
-        if fqdn.eq(".") {
+        if fqdn == "." {
+            self.ensure_space(1)?;
             0u8.to_wire(self)?;
             return Ok(());
         }
 
         let labels: Vec<&str> = fqdn.trim_end_matches('.').split('.').collect();
+        for l in &labels {
+            if l.len() > MAX_LABEL {
+                return Err(WireError::Format(format!("label too long: {}", l.len())));
+            }
+        }
+
         if self.is_compression {
-            // try longest-known suffix
+            // Try longest-known suffix
             for i in 0..labels.len() {
                 let suffix = labels[i..].join(".").into_bytes();
                 if let Some(&off) = self.compression_map.get(&suffix) {
-                    // write prefix labels raw
+                    if (off & 0xC000) != 0 || off > 0x3FFF {
+                        return Err(WireError::Format("bad compression offset".into()));
+                    }
+
                     for l in &labels[..i] {
-                        let start = self.pos();
+                        self.ensure_space(1 + l.len())?;
                         (l.len() as u8).to_wire(self)?;
                         self.buf.extend_from_slice(l.as_bytes());
+
                         let remain = labels[i..].join(".").into_bytes();
-                        self.compression_map.entry(remain).or_insert(start as u16);
+                        let start = (self.buf.len() - l.len() - 1) as u16;
+                        self.compression_map.entry(remain).or_insert(start);
                     }
+
+                    self.ensure_space(2)?;
                     let ptr = 0xC000u16 | off;
                     ptr.to_wire(self)?;
                     return Ok(());
                 }
             }
         }
+
         for i in 0..labels.len() {
             let l = labels[i];
+            self.ensure_space(1 + l.len())?;
             let start = self.pos();
             (l.len() as u8).to_wire(self)?;
             self.buf.extend_from_slice(l.as_bytes());
@@ -127,6 +145,8 @@ impl ToWireContext {
             }
         }
 
+        // terminal root
+        self.ensure_space(1)?;
         0u8.to_wire(self)?;
         Ok(())
     }
