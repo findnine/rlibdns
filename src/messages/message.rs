@@ -776,7 +776,6 @@ impl<'a> Iterator for WireIter<'a> {
 
         let mut truncated = false;
 
-        //let mut off = DNS_HEADER_LEN;
         let mut count: u16 = 0;
         for query in &self.message.queries {
             let checkpoint = self.context.pos();
