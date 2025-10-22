@@ -2,8 +2,7 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
-use crate::messages::wire::{FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
-use crate::rr_data::ch_a_rr_data::ChARRData;
+use crate::messages::wire::{FromWire, FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::utils::coord_utils::{encode_loc_precision, CoordUtils};
 use crate::zone::inter::zone_rr_data::ZoneRRData;
@@ -169,15 +168,40 @@ impl LocRRData {
 
 impl FromWireLen for LocRRData {
 
-    fn from_wire(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
-        todo!()
+    fn from_wire(context: &mut FromWireContext, _len: u16) -> Result<Self, WireError> {
+        let version = u8::from_wire(context)?;
+        let size = u8::from_wire(context)?;
+        let h_precision = u8::from_wire(context)?;
+        let v_precision = u8::from_wire(context)?;
+        let latitude = u32::from_wire(context)?;
+        let longitude = u32::from_wire(context)?;
+        let altitude = u32::from_wire(context)?;
+
+        Ok(Self {
+            version,
+            size,
+            h_precision,
+            v_precision,
+            latitude,
+            longitude,
+            altitude
+        })
     }
 }
 
 impl ToWire for LocRRData {
 
     fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
-        todo!()
+        self.version.to_wire(context)?;
+        self.size.to_wire(context)?;
+        self.h_precision.to_wire(context)?;
+        self.v_precision.to_wire(context)?;
+
+        self.latitude.to_wire(context)?;
+        self.longitude.to_wire(context)?;
+        self.altitude.to_wire(context)?;
+
+        Ok(())
     }
 }
 
