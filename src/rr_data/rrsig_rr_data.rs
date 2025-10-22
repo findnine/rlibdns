@@ -4,7 +4,7 @@ use std::fmt;
 use std::fmt::Formatter;
 use std::str::FromStr;
 use crate::messages::inter::rr_types::RRTypes;
-use crate::messages::wire::{FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
+use crate::messages::wire::{FromWire, FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::utils::fqdn_utils::{pack_fqdn, pack_fqdn_compressed, unpack_fqdn};
 use crate::utils::base64;
@@ -230,7 +230,36 @@ impl RRSigRRData {
 impl FromWireLen for RRSigRRData {
 
     fn from_wire(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
-        todo!()
+        let type_covered = RRTypes::try_from(u16::from_wire(context)?)
+            .map_err(|e| WireError::Format(e.to_string()))?;
+
+        let algorithm = u8::from_wire(context)?;
+        let labels = u8::from_wire(context)?;
+
+        let original_ttl = u32::from_wire(context)?;
+        let expiration = u32::from_wire(context)?;
+        let inception = u32::from_wire(context)?;
+        let key_tag = u16::from_wire(context)?;
+
+        let pos = context.pos();
+        let signer_name = context.name()?;
+
+        println!("{}", len as usize - (context.pos() - pos) - 18);
+        let signature = context.take(len as usize - (context.pos() - pos) - 18)?.to_vec();//buf[off+18+signer_name_length..len].to_vec();
+
+
+
+        Ok(Self {
+            type_covered: Some(type_covered),
+            algorithm,
+            labels,
+            original_ttl,
+            expiration,
+            inception,
+            key_tag,
+            signer_name: Some(signer_name),
+            signature
+        })
     }
 }
 
