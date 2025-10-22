@@ -2,8 +2,7 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
-use crate::messages::wire::{FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
-use crate::rr_data::ch_a_rr_data::ChARRData;
+use crate::messages::wire::{FromWire, FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::utils::fqdn_utils::{pack_fqdn, pack_fqdn_compressed, unpack_fqdn};
 use crate::zone::inter::zone_rr_data::ZoneRRData;
@@ -139,15 +138,31 @@ impl SrvRRData {
 
 impl FromWireLen for SrvRRData {
 
-    fn from_wire(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
-        todo!()
+    fn from_wire(context: &mut FromWireContext, _len: u16) -> Result<Self, WireError> {
+        let priority = u16::from_wire(context)?;
+        let weight = u16::from_wire(context)?;
+        let port = u16::from_wire(context)?;
+
+        let target = context.name()?;
+
+        Ok(Self {
+            priority,
+            weight,
+            port,
+            target: Some(target)
+        })
     }
 }
 
 impl ToWire for SrvRRData {
 
     fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
-        todo!()
+        self.priority.to_wire(context)?;
+        self.weight.to_wire(context)?;
+        self.port.to_wire(context)?;
+
+        context.write_name(self.target.as_ref()
+            .ok_or_else(|| WireError::Format("target param was not set".to_string()))?)
     }
 }
 

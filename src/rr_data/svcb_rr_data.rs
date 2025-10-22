@@ -3,8 +3,7 @@ use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use std::str::FromStr;
-use crate::messages::wire::{FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
-use crate::rr_data::ch_a_rr_data::ChARRData;
+use crate::messages::wire::{FromWire, FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::rr_data::inter::svc_param::SvcParams;
 use crate::rr_data::inter::svc_param_keys::SvcParamKeys;
@@ -152,14 +151,48 @@ impl SvcbRRData {
 impl FromWireLen for SvcbRRData {
 
     fn from_wire(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
-        todo!()
+        let priority = u16::from_wire(context)?;
+
+        let checkpoint = context.pos();
+        let target = context.name()?;
+
+        let mut i = (context.pos()-checkpoint) as u16;
+        let mut params = Vec::new();
+
+        while i < len {
+            let key = SvcParamKeys::try_from(u16::from_wire(context)?)
+                .map_err(|e| WireError::Format(e.to_string()))?;
+            let length = u16::from_wire(context)?;
+            params.push(SvcParams::from_bytes(key, context.take(length as usize)?)
+                .map_err(|e| WireError::Format(e.to_string()))?);
+
+            i += length+4;
+        }
+
+        Ok(Self {
+            priority,
+            target: Some(target),
+            params
+        })
     }
 }
 
 impl ToWire for SvcbRRData {
 
     fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
-        todo!()
+        self.priority.to_wire(context)?;
+
+        context.write_name(self.target.as_ref()
+            .ok_or_else(|| WireError::Format("target param was not set".to_string()))?)?;
+
+        for param in self.params.iter() {
+            param.code().to_wire(context)?;
+            let param_buf = param.to_bytes();
+            (param_buf.len() as u16).to_wire(context)?;
+            context.write(&param_buf)?;
+        }
+
+        Ok(())
     }
 }
 

@@ -2,8 +2,7 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
-use crate::messages::wire::{FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
-use crate::rr_data::ch_a_rr_data::ChARRData;
+use crate::messages::wire::{FromWire, FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::zone::inter::zone_rr_data::ZoneRRData;
 use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
@@ -116,14 +115,27 @@ impl UriRRData {
 impl FromWireLen for UriRRData {
 
     fn from_wire(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
-        todo!()
+        let priority = u16::from_wire(context)?;
+        let weight = u16::from_wire(context)?;
+
+        let target = String::from_utf8(context.take(len as usize - 4)?.to_vec())
+            .map_err(|e| WireError::Format(e.to_string()))?;
+
+        Ok(Self {
+            priority,
+            weight,
+            target: Some(target)
+        })
     }
 }
 
 impl ToWire for UriRRData {
 
     fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
-        todo!()
+        self.priority.to_wire(context)?;
+        self.weight.to_wire(context)?;
+
+        context.write(self.target.as_ref().ok_or_else(|| WireError::Format("target param was not set".to_string()))?.as_bytes())
     }
 }
 

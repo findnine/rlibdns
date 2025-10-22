@@ -2,9 +2,7 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
-use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::wire::{FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
-use crate::rr_data::ch_a_rr_data::ChARRData;
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::utils::fqdn_utils::{pack_fqdn, pack_fqdn_compressed, unpack_fqdn};
 use crate::zone::inter::zone_rr_data::ZoneRRData;
@@ -127,4 +125,11 @@ impl fmt::Display for PtrRRData {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{}", format!("{}.", self.fqdn.as_ref().unwrap()))
     }
+}
+
+#[test]
+fn test() {
+    let buf = vec![ ];
+    let record = PtrRRData::from_bytes(&buf, 0, buf.len()).unwrap();
+    assert_eq!(buf, record.to_bytes().unwrap());
 }

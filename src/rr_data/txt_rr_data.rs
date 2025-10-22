@@ -2,8 +2,7 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
-use crate::messages::wire::{FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
-use crate::rr_data::ch_a_rr_data::ChARRData;
+use crate::messages::wire::{FromWire, FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::zone::inter::zone_rr_data::ZoneRRData;
 use crate::zone::zone_reader::ZoneReaderError;
@@ -49,8 +48,9 @@ impl RRData for TxtRRData {
         let mut buf = Vec::with_capacity(78);
 
         for record in &self.data {
-            buf.push(record.len() as u8);
-            buf.extend_from_slice(record.as_bytes());
+            let record_bytes = record.as_bytes();
+            buf.push(record_bytes.len() as u8);
+            buf.extend_from_slice(record_bytes);
         }
 
         Ok(buf)
@@ -101,14 +101,33 @@ impl TxtRRData {
 impl FromWireLen for TxtRRData {
 
     fn from_wire(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
-        todo!()
+        let mut data = Vec::new();
+
+        let mut i = 0;
+        while i < len {
+            let data_length = u8::from_wire(context)? as usize;
+            let record = String::from_utf8(context.take(data_length)?.to_vec())
+                .map_err(|e| WireError::Format(e.to_string()))?;
+            data.push(record);
+            i += data_length as u16 +1;
+        }
+
+        Ok(Self {
+            data
+        })
     }
 }
 
 impl ToWire for TxtRRData {
 
     fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
-        todo!()
+        for record in &self.data {
+            let record_bytes = record.as_bytes();
+            (record_bytes.len() as u8).to_wire(context)?;
+            context.write(record_bytes)?;
+        }
+
+        Ok(())
     }
 }
 

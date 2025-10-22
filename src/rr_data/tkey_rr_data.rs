@@ -2,8 +2,7 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
-use crate::messages::wire::{FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
-use crate::rr_data::ch_a_rr_data::ChARRData;
+use crate::messages::wire::{FromWire, FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::utils::base64;
 use crate::utils::fqdn_utils::{pack_fqdn, pack_fqdn_compressed, unpack_fqdn};
@@ -202,15 +201,50 @@ impl TKeyRRData {
 
 impl FromWireLen for TKeyRRData {
 
-    fn from_wire(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
-        todo!()
+    fn from_wire(context: &mut FromWireContext, _len: u16) -> Result<Self, WireError> {
+        let algorithm_name = context.name()?;
+
+        let inception = u32::from_wire(context)?;
+        let expiration = u32::from_wire(context)?;
+
+        let mode = u16::from_wire(context)?;
+        let error = u16::from_wire(context)?;
+
+        let key_length = u16::from_wire(context)? as usize;
+        let key = context.take(key_length)?.to_vec();
+
+        let data_length = u16::from_wire(context)? as usize;
+        let data = context.take(data_length)?.to_vec();
+
+        Ok(Self {
+            algorithm_name: Some(algorithm_name),
+            inception,
+            expiration,
+            mode,
+            error,
+            key,
+            data
+        })
     }
 }
 
 impl ToWire for TKeyRRData {
 
     fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
-        todo!()
+        context.write_name(self.algorithm_name.as_ref()
+            .ok_or_else(|| WireError::Format("algorithm_name param was not set".to_string()))?)?; //PROBABLY NO COMPRESS
+
+        self.inception.to_wire(context)?;
+        self.expiration.to_wire(context)?;
+
+        self.mode.to_wire(context)?;
+        self.error.to_wire(context)?;
+
+        (self.key.len() as u16).to_wire(context)?;
+        context.write(&self.key)?;
+
+        (self.data.len() as u16).to_wire(context)?;
+        context.write(&self.data)
     }
 }
 

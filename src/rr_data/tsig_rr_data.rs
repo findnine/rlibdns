@@ -2,8 +2,7 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
-use crate::messages::wire::{FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
-use crate::rr_data::ch_a_rr_data::ChARRData;
+use crate::messages::wire::{FromWire, FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::utils::fqdn_utils::{pack_fqdn, pack_fqdn_compressed, unpack_fqdn};
 use crate::utils::hex;
@@ -221,15 +220,63 @@ impl TSigRRData {
 
 impl FromWireLen for TSigRRData {
 
-    fn from_wire(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
-        todo!()
+    fn from_wire(context: &mut FromWireContext, _len: u16) -> Result<Self, WireError> {
+        let algorithm_name = context.name()?;
+
+        let time_signed = context.take(6)?;
+        let time_signed = ((time_signed[0] as u64) << 40)
+            | ((time_signed[1] as u64) << 32)
+            | ((time_signed[2] as u64) << 24)
+            | ((time_signed[3] as u64) << 16)
+            | ((time_signed[4] as u64) << 8)
+            |  (time_signed[5] as u64);
+        let fudge = u16::from_wire(context)?;
+
+        let mac_length = u16::from_wire(context)? as usize;
+        let mac = context.take(mac_length)?.to_vec();
+
+        let original_id = u16::from_wire(context)?;
+        let error = u16::from_wire(context)?;
+
+        let data_length = u16::from_wire(context)? as usize;
+        let data = context.take(data_length)?.to_vec();
+
+        Ok(Self {
+            algorithm_name: Some(algorithm_name),
+            time_signed,
+            fudge,
+            mac,
+            original_id,
+            error,
+            data
+        })
     }
 }
 
 impl ToWire for TSigRRData {
 
     fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
-        todo!()
+        context.write_name(self.algorithm_name.as_ref()
+            .ok_or_else(|| WireError::Format("algorithm_name param was not set".to_string()))?)?; //PROBABLY NO COMPRESS
+
+        context.write(&[
+            ((self.time_signed >> 40) & 0xFF) as u8,
+            ((self.time_signed >> 32) & 0xFF) as u8,
+            ((self.time_signed >> 24) & 0xFF) as u8,
+            ((self.time_signed >> 16) & 0xFF) as u8,
+            ((self.time_signed >>  8) & 0xFF) as u8,
+            ( self.time_signed        & 0xFF) as u8
+        ])?;
+        self.fudge.to_wire(context)?;
+
+        (self.mac.len() as u16).to_wire(context)?;
+        context.write(&self.mac)?;
+
+        self.original_id.to_wire(context)?;
+        self.error.to_wire(context)?;
+
+        (self.data.len() as u16).to_wire(context)?;
+        context.write(&self.data)
     }
 }
 
