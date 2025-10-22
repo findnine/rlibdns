@@ -11,7 +11,6 @@ use crate::messages::inter::rr_types::RRTypes;
 use crate::messages::edns::Edns;
 use crate::messages::record::Record;
 use crate::messages::wire::{FromWire, FromWireContext, ToWire, ToWireContext, WireError};
-use crate::rr_data::in_a_rr_data::InARRData;
 use crate::utils::fqdn_utils::{pack_fqdn_compressed, unpack_fqdn};
 /*
                                1  1  1  1  1  1
