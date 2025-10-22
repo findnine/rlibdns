@@ -2,7 +2,7 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
-use crate::messages::wire::{FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
+use crate::messages::wire::{FromWire, FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
 use crate::rr_data::ch_a_rr_data::ChARRData;
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::utils::hex;
@@ -130,14 +130,29 @@ impl SmimeaRRData {
 impl FromWireLen for SmimeaRRData {
 
     fn from_wire(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
-        todo!()
+        let usage = u8::from_wire(context)?;
+        let selector = u8::from_wire(context)?;
+        let matching_type = u8::from_wire(context)?;
+
+        let certificate = context.take(len as usize - 3)?.to_vec();
+
+        Ok(Self {
+            usage,
+            selector,
+            matching_type,
+            certificate
+        })
     }
 }
 
 impl ToWire for SmimeaRRData {
 
     fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
-        todo!()
+        self.usage.to_wire(context)?;
+        self.selector.to_wire(context)?;
+        self.matching_type.to_wire(context)?;
+
+        context.write(&self.certificate)
     }
 }
 

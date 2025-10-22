@@ -2,7 +2,7 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
-use crate::messages::wire::{FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
+use crate::messages::wire::{FromWire, FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
 use crate::rr_data::ch_a_rr_data::ChARRData;
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::utils::fqdn_utils::{pack_fqdn, pack_fqdn_compressed, unpack_fqdn};
@@ -193,15 +193,42 @@ impl SoaRRData {
 
 impl FromWireLen for SoaRRData {
 
-    fn from_wire(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
-        todo!()
+    fn from_wire(context: &mut FromWireContext, _len: u16) -> Result<Self, WireError> {
+        let fqdn = context.name()?;
+        let mailbox = context.name()?;
+
+        let serial = u32::from_wire(context)?;
+        let refresh = u32::from_wire(context)?;
+        let retry = u32::from_wire(context)?;
+        let expire = u32::from_wire(context)?;
+        let minimum_ttl = u32::from_wire(context)?;
+
+        Ok(Self {
+            fqdn: Some(fqdn),
+            mailbox: Some(mailbox),
+            serial,
+            refresh,
+            retry,
+            expire,
+            minimum_ttl
+        })
     }
 }
 
 impl ToWire for SoaRRData {
 
     fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
-        todo!()
+        context.write_name(self.fqdn.as_ref()
+            .ok_or_else(|| WireError::Format("fqdn param was not set".to_string()))?)?;
+
+        context.write_name(self.mailbox.as_ref()
+            .ok_or_else(|| WireError::Format("mailbox param was not set".to_string()))?)?;
+
+        self.serial.to_wire(context)?;
+        self.refresh.to_wire(context)?;
+        self.retry.to_wire(context)?;
+        self.expire.to_wire(context)?;
+        self.minimum_ttl.to_wire(context)
     }
 }
 
