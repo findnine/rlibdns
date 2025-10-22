@@ -578,21 +578,23 @@ impl<'a> Iterator for WireIter<'a> {
                             if let Err(_) = record.to_wire(&mut self.context) {
                                 self.context.rollback(checkpoint);
                                 self.context.patch(i*2+6..i*2+8, &count.to_be_bytes()).unwrap();
+                                self.position += count as usize;
                                 break 'sections;
                             }
                             count += 1;
                         }
                         self.context.patch(i*2+6..i*2+8, &count.to_be_bytes()).unwrap();
-
                         self.position += count as usize;
                     }
                 }
 
                 let before = total;
-                total += self.message.sections[2].len();
+                total += self.total-before;
 
                 if self.position < total {
                     count = 0;
+                    let start = self.position - before;
+
                     if let Some(edns) = self.message.edns.as_ref() {
                         let checkpoint = self.context.pos();
                         if let Err(_) = {
@@ -602,23 +604,24 @@ impl<'a> Iterator for WireIter<'a> {
                         } {
                             self.context.rollback(checkpoint);
                             self.context.patch(10..12, &count.to_be_bytes()).unwrap();
+                            self.position += count as usize;
                             break 'sections;
                         }
                         count += 1;
-                        self.position += 1;
                     }
 
-                    for record in &self.message.sections[2][self.position - before..] {
+                    for record in &self.message.sections[2][start..] {
                         let checkpoint = self.context.pos();
                         if let Err(_) = record.to_wire(&mut self.context) {
                             self.context.rollback(checkpoint);
+                            self.context.patch(10..12, &count.to_be_bytes()).unwrap();
+                            self.position += count as usize;
                             break 'sections;
                         }
                         count += 1;
                     }
 
                     self.context.patch(10..12, &count.to_be_bytes()).unwrap();
-
                     self.position += count as usize;
                 }
             }
