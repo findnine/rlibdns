@@ -134,6 +134,10 @@ impl ToWireContext {
     pub fn into_bytes(self) -> Vec<u8> {
         self.buf
     }
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        self.buf.clone()
+    }
 }
 
 pub struct FromWireContext<'a> {
