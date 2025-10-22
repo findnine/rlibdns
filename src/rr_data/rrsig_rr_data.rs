@@ -244,10 +244,7 @@ impl FromWireLen for RRSigRRData {
         let pos = context.pos();
         let signer_name = context.name()?;
 
-        println!("{}", len as usize - (context.pos() - pos) - 18);
-        let signature = context.take(len as usize - (context.pos() - pos) - 18)?.to_vec();//buf[off+18+signer_name_length..len].to_vec();
-
-
+        let signature = context.take(len as usize - (context.pos() - pos) - 18)?.to_vec();
 
         Ok(Self {
             type_covered: Some(type_covered),
@@ -278,7 +275,7 @@ impl ToWire for RRSigRRData {
         self.key_tag.to_wire(context)?;
 
         context.write_name(self.signer_name.as_ref()
-            .ok_or_else(|| WireError::Format("signer_name param was not set".to_string()))?)?;
+            .ok_or_else(|| WireError::Format("signer_name param was not set".to_string()))?, true)?;
 
         context.write(&self.signature)
     }

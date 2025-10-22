@@ -43,7 +43,7 @@ impl RRData for NaptrRRData {
         let mut flags = Vec::new();
 
         for flag in String::from_utf8(buf[off + 5..off + 5 + data_length].to_vec())
-                .map_err(|e| RRDataError(e.to_string()))?.split(",") {
+            .map_err(|e| RRDataError(e.to_string()))?.split(",") {
             let tok = flag.trim();
             if tok.is_empty() {
                 continue;
@@ -206,12 +206,11 @@ impl FromWireLen for NaptrRRData {
         let order = u16::from_wire(context)?;
         let preference = u16::from_wire(context)?;
 
-        /*
-        let data_length = buf[off+4] as usize;
+        let flags_length = u8::from_wire(context)? as usize;
         let mut flags = Vec::new();
 
-        for flag in String::from_utf8(buf[off + 5..off + 5 + data_length].to_vec())
-            .map_err(|e| RRDataError(e.to_string()))?.split(",") {
+        for flag in String::from_utf8(context.take(flags_length)?.to_vec())
+            .map_err(|e| WireError::Format(e.to_string()))?.split(",") {
             let tok = flag.trim();
             if tok.is_empty() {
                 continue;
@@ -219,34 +218,28 @@ impl FromWireLen for NaptrRRData {
 
             flags.push(NaptrFlags::try_from(flag.chars()
                 .next()
-                .ok_or_else(|| RRDataError("empty NAPTR flag token".to_string()))?).map_err(|e| RRDataError(e.to_string()))?);
+                .ok_or_else(|| WireError::Format("empty NAPTR flag token".to_string()))?).map_err(|e| WireError::Format(e.to_string()))?);
         }
 
-        let mut off = off+5+data_length;
+        //let mut off = off+5+data_length;
 
-        let data_length = buf[off] as usize;
-        let service = String::from_utf8(buf[off + 1..off + 1 + data_length].to_vec())
-            .map_err(|e| RRDataError(e.to_string()))?;
+        let service_length = u8::from_wire(context)? as usize;
+        let service = String::from_utf8(context.take(service_length)?.to_vec())
+            .map_err(|e| WireError::Format(e.to_string()))?;
 
-        off += 1+data_length;
+        let regex_length = u8::from_wire(context)? as usize;
+        let regex = String::from_utf8(context.take(regex_length)?.to_vec())
+            .map_err(|e| WireError::Format(e.to_string()))?;
 
-        let data_length = buf[off] as usize;
-        let regex = String::from_utf8(buf[off + 1..off + 1 + data_length].to_vec())
-            .map_err(|e| RRDataError(e.to_string()))?;
-
-        off += 1+data_length;
-
-        let (replacement, _) = unpack_fqdn(buf, off);
-        */
+        let replacement = context.name()?;
 
         Ok(Self {
             order,
             preference,
-            //flags,
-            //service: Some(service),
-            //regex: Some(regex),
-            //replacement: Some(replacement)
-            ..Default::default()
+            flags,
+            service: Some(service),
+            regex: Some(regex),
+            replacement: Some(replacement)
         })
     }
 }
@@ -257,12 +250,12 @@ impl ToWire for NaptrRRData {
         self.order.to_wire(context)?;
         self.preference.to_wire(context)?;
 
-        let length = self.flags.len();
-        (((length * 2) - 1) as u8).to_wire(context)?;
+        let flags_length = self.flags.len();
+        (((flags_length * 2) - 1) as u8).to_wire(context)?;
 
         for (i, flag) in self.flags.iter().enumerate() {
             flag.code().to_wire(context)?;
-            if i < length - 1 {
+            if i < flags_length - 1 {
                 b','.to_wire(context)?;
             }
         }
@@ -275,11 +268,8 @@ impl ToWire for NaptrRRData {
         (regex.len() as u8).to_wire(context)?;
         context.write(&regex)?;
 
-        //WRITE UNPACKED...
-        //buf.extend_from_slice(&pack_fqdn(self.replacement.as_ref()
-        //    .ok_or_else(|| RRDataError("replacement param was not set".to_string()))?));
-
-        Ok(())
+        context.write_name(self.replacement.as_ref()
+                               .ok_or_else(|| WireError::Format("replacement param was not set".to_string()))?, false)
     }
 }
 

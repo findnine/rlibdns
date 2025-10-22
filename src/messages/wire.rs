@@ -4,7 +4,7 @@ use std::fmt::Formatter;
 use std::ops::RangeBounds;
 use std::ops::Bound::*;
 
-const MAX_LABEL: usize = 63;
+const MAX_LABEL: usize = 64;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum WireError {
@@ -27,8 +27,7 @@ impl fmt::Display for WireError {
 pub struct ToWireContext {
     buf: Vec<u8>,
     capacity: usize,
-    compression_map: HashMap<Vec<u8>, u16>,
-    is_compression: bool
+    compression_map: HashMap<Vec<u8>, u16>
 }
 
 impl ToWireContext {
@@ -37,8 +36,7 @@ impl ToWireContext {
         Self {
             buf: Vec::with_capacity(capacity),
             capacity,
-            compression_map: HashMap::new(),
-            is_compression: true
+            compression_map: HashMap::new()
         }
     }
 
@@ -92,22 +90,22 @@ impl ToWireContext {
         }
     }
 
-    pub fn write_name(&mut self, fqdn: &str) -> Result<(), WireError> {
-        if fqdn == "." {
+    pub fn write_name(&mut self, fqdn: &str, emit_pointers: bool) -> Result<(), WireError> {
+        if fqdn.is_empty() {
             self.ensure_space(1)?;
             0u8.to_wire(self)?;
             return Ok(());
         }
 
-        let labels: Vec<&str> = fqdn.trim_end_matches('.').split('.').collect();
+        //REMOVE TRIM
+        let labels: Vec<&str> = fqdn.split('.').collect();
         for l in &labels {
-            if l.len() > MAX_LABEL {
+            if l.len() >= MAX_LABEL {
                 return Err(WireError::Format(format!("label too long: {}", l.len())));
             }
         }
 
-        if self.is_compression {
-            // Try longest-known suffix
+        if emit_pointers {
             for i in 0..labels.len() {
                 let suffix = labels[i..].join(".").into_bytes();
                 if let Some(&off) = self.compression_map.get(&suffix) {
@@ -139,10 +137,9 @@ impl ToWireContext {
             let start = self.pos();
             (l.len() as u8).to_wire(self)?;
             self.buf.extend_from_slice(l.as_bytes());
-            if self.is_compression {
-                let suffix = labels[i..].join(".").into_bytes();
-                self.compression_map.entry(suffix).or_insert(start as u16);
-            }
+
+            let suffix = labels[i..].join(".").into_bytes();
+            self.compression_map.entry(suffix).or_insert(start as u16);
         }
 
         self.ensure_space(1)?;

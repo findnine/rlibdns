@@ -103,7 +103,7 @@ impl ToWire for NsRRData {
 
     fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
         context.write_name(self.server.as_ref()
-            .ok_or_else(|| WireError::Format("server param was not set".to_string()))?)
+            .ok_or_else(|| WireError::Format("server param was not set".to_string()))?, true)
     }
 }
 

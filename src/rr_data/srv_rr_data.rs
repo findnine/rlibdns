@@ -162,7 +162,7 @@ impl ToWire for SrvRRData {
         self.port.to_wire(context)?;
 
         context.write_name(self.target.as_ref()
-            .ok_or_else(|| WireError::Format("target param was not set".to_string()))?)
+            .ok_or_else(|| WireError::Format("target param was not set".to_string()))?, true)
     }
 }
 

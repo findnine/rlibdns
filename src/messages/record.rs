@@ -155,7 +155,7 @@ impl FromWire for Record {
 impl ToWire for Record {
 
     fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
-        context.write_name(self.fqdn())?;
+        context.write_name(self.fqdn(), true)?;
 
         match &self.data {
             Some(data) => {

@@ -183,7 +183,7 @@ impl ToWire for SvcbRRData {
         self.priority.to_wire(context)?;
 
         context.write_name(self.target.as_ref()
-            .ok_or_else(|| WireError::Format("target param was not set".to_string()))?)?;
+            .ok_or_else(|| WireError::Format("target param was not set".to_string()))?, true)?;
 
         for param in self.params.iter() {
             param.code().to_wire(context)?;

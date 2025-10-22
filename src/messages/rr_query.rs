@@ -109,7 +109,7 @@ impl FromWire for RRQuery {
 impl ToWire for RRQuery {
 
     fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
-        context.write_name(self.fqdn())?;
+        context.write_name(self.fqdn(), true)?;
 
         self.rtype.code().to_wire(context)?;
         self.class.code().to_wire(context)?;

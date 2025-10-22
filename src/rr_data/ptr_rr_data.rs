@@ -101,7 +101,7 @@ impl ToWire for PtrRRData {
 
     fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
         context.write_name(self.fqdn.as_ref()
-            .ok_or_else(|| WireError::Format("fqdn param was not set".to_string()))?)
+            .ok_or_else(|| WireError::Format("fqdn param was not set".to_string()))?, true)
     }
 }
 
