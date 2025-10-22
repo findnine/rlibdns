@@ -331,9 +331,15 @@ impl Message {
             (self.response_code.code() as u16 & 0x000F);
         flags.to_wire(&mut context).unwrap();  // RCODE
 
+        let mut total = self.sections.iter().map(|r| r.len()).sum();
+        if self.edns.is_some() {
+            total += 1;
+        }
+
         WireIter {
             message: self,
             position: 0,
+            total,
             context
         }
     }
@@ -759,6 +765,7 @@ impl fmt::Display for Message {
 pub struct WireIter<'a> {
     message: &'a Message,
     position: usize,
+    total: usize,
     context: ToWireContext,
 }
 
@@ -767,7 +774,7 @@ impl<'a> Iterator for WireIter<'a> {
     type Item = Vec<u8>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.position >= self.message.sections.iter().map(|r| r.len()).sum() {
+        if self.position >= self.total {
             return None;
         }
 
@@ -838,30 +845,6 @@ impl<'a> Iterator for WireIter<'a> {
         Some(self.context.to_bytes())
 
 
-
-        /*
-        let mut buf = Vec::with_capacity(self.max_payload_len);
-
-        //SURE ITS UNSAFE BUT I DONT THINK THERE IS ANY WAY FOR THIS TO TRIGGER UNLESS MAX PAYLOAD IS LESS THAN 12...
-        unsafe { buf.set_len(DNS_HEADER_LEN) };
-
-        buf[0..2].copy_from_slice(&self.message.id.to_be_bytes());
-
-        let flags = (if self.message.qr { 0x8000 } else { 0 }) |  // QR bit
-            ((self.message.op_code.code() as u16 & 0x0F) << 11) |  // Opcode
-            (if self.message.authoritative { 0x0400 } else { 0 }) |  // AA bit
-            0 |  // TC bit
-            (if self.message.recursion_desired { 0x0100 } else { 0 }) |  // RD bit
-            (if self.message.recursion_available { 0x0080 } else { 0 }) |  // RA bit
-            //(if self.z { 0x0040 } else { 0 }) |  // Z bit (always 0)
-            (if self.message.authenticated_data { 0x0020 } else { 0 }) |  // AD bit
-            (if self.message.checking_disabled { 0x0010 } else { 0 }) |  // CD bit
-            (self.message.response_code.code() as u16 & 0x000F);  // RCODE
-
-        buf[2..4].copy_from_slice(&flags.to_be_bytes());
-
-        buf[4..6].copy_from_slice(&(self.message.queries.len() as u16).to_be_bytes());
-        */
 
         /*
         let mut compression_data = HashMap::new();
