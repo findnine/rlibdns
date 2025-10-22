@@ -238,7 +238,21 @@ impl FromWireLen for RRSigRRData {
 impl ToWire for RRSigRRData {
 
     fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
-        todo!()
+        self.type_covered.as_ref()
+            .ok_or_else(|| WireError::Format("type_covered param was not set".to_string()))?.code().to_wire(context)?;
+
+        self.algorithm.to_wire(context)?;
+        self.labels.to_wire(context)?;
+
+        self.original_ttl.to_wire(context)?;
+        self.expiration.to_wire(context)?;
+        self.inception.to_wire(context)?;
+        self.key_tag.to_wire(context)?;
+
+        context.write_name(self.signer_name.as_ref()
+            .ok_or_else(|| WireError::Format("signer_name param was not set".to_string()))?)?;
+
+        context.write(&self.signature)
     }
 }
 
