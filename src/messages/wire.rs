@@ -97,7 +97,6 @@ impl ToWireContext {
             return Ok(());
         }
 
-        //REMOVE TRIM
         let labels: Vec<&str> = fqdn.split('.').collect();
         for l in &labels {
             if l.len() >= MAX_LABEL {
