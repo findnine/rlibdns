@@ -2,6 +2,7 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
+use crate::messages::wire::{FromWire, FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::utils::base64;
 use crate::zone::inter::zone_rr_data::ZoneRRData;
@@ -29,8 +30,8 @@ impl Default for DnsKeyRRData {
 
 impl RRData for DnsKeyRRData {
 
-    fn from_bytes(buf: &[u8], off: usize, len: usize) -> Result<Self, RRDataError> {
-        let flags = u16::from_be_bytes([buf[off], buf[off+1]]);
+    fn from_bytes(buf: &[u8]) -> Result<Self, RRDataError> {
+        let flags = u16::from_be_bytes([buf[0], buf[1]]);
         /*
         Flags: 0x0100
             .... ...1 .... .... = Zone Key: This is the zone key for specified zone
@@ -39,10 +40,10 @@ impl RRData for DnsKeyRRData {
             0000 000. .000 000. = Key Signing Key: 0x0000
         */
 
-        let protocol = buf[off+2];
-        let algorithm = buf[off+3];
+        let protocol = buf[2];
+        let algorithm = buf[3];
 
-        let public_key = buf[off+4..off+len].to_vec();
+        let public_key = buf[4..buf.len()].to_vec();
 
         Ok(Self {
             flags,
@@ -50,10 +51,6 @@ impl RRData for DnsKeyRRData {
             algorithm,
             public_key
         })
-    }
-
-    fn to_wire(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RRDataError> {
-        self.to_bytes()
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
@@ -133,6 +130,43 @@ impl DnsKeyRRData {
     }
 }
 
+impl FromWireLen for DnsKeyRRData {
+
+    fn from_wire(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
+        let flags = u16::from_wire(context)?;
+        /*
+        Flags: 0x0100
+            .... ...1 .... .... = Zone Key: This is the zone key for specified zone
+            .... .... 0... .... = Key Revoked: No
+            .... .... .... ...0 = Key Signing Key: No
+            0000 000. .000 000. = Key Signing Key: 0x0000
+        */
+
+        let protocol = u8::from_wire(context)?;
+        let algorithm = u8::from_wire(context)?;
+
+        let public_key = context.take(len as usize - 4)?.to_vec();
+
+        Ok(Self {
+            flags,
+            protocol,
+            algorithm,
+            public_key
+        })
+    }
+}
+
+impl ToWire for DnsKeyRRData {
+
+    fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
+        self.flags.to_wire(context)?;
+        self.protocol.to_wire(context)?;
+        self.algorithm.to_wire(context)?;
+
+        context.write(&self.public_key)
+    }
+}
+
 impl ZoneRRData for DnsKeyRRData {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
@@ -163,6 +197,6 @@ impl fmt::Display for DnsKeyRRData {
 #[test]
 fn test() {
     let buf = vec![ ];
-    let record = DnsKeyRRData::from_bytes(&buf, 0, buf.len()).unwrap();
+    let record = DnsKeyRRData::from_bytes(&buf).unwrap();
     assert_eq!(buf, record.to_bytes().unwrap());
 }

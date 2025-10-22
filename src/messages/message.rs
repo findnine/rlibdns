@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use std::net::SocketAddr;
@@ -10,8 +9,8 @@ use crate::messages::rr_query::RRQuery;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::messages::edns::Edns;
 use crate::messages::record::Record;
-use crate::rr_data::opt_rr_data::OptRRData;
-use crate::utils::fqdn_utils::{pack_fqdn_compressed, unpack_fqdn};
+use crate::messages::wire::{FromWire, FromWireContext, ToWire, ToWireContext, WireError};
+
 /*
                                1  1  1  1  1  1
  0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
@@ -29,8 +28,6 @@ use crate::utils::fqdn_utils::{pack_fqdn_compressed, unpack_fqdn};
 |                    ARCOUNT                    |
 +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 */
-
-pub const DNS_HEADER_LEN: usize = 12;
 
 #[derive(Debug, Clone)]
 pub struct Message {
@@ -89,13 +86,15 @@ impl Message {
         }
     }
 
-    pub fn from_bytes(buf: &[u8]) -> Result<Self, MessageError> {
-        let id = u16::from_be_bytes([buf[0], buf[1]]);
+    pub fn from_bytes<B: AsRef<[u8]>>(buf: B) -> Result<Self, WireError> {
+        let mut context = FromWireContext::new(buf.as_ref());
 
-        let flags = u16::from_be_bytes([buf[2], buf[3]]);
+        let id = u16::from_wire(&mut context)?;
+
+        let flags = u16::from_wire(&mut context)?;
 
         let qr = (flags & 0x8000) != 0;
-        let op_code = OpCodes::try_from(((flags >> 11) & 0x0F) as u8).map_err(|e| MessageError::HeaderError(e.to_string()))?;
+        let op_code = OpCodes::try_from(((flags >> 11) & 0x0F) as u8).map_err(|e| WireError::Format(e.to_string()))?;
         let authoritative = (flags & 0x0400) != 0;
         let truncated = (flags & 0x0200) != 0;
         let recursion_desired = (flags & 0x0100) != 0;
@@ -103,109 +102,79 @@ impl Message {
         //let z = (flags & 0x0040) != 0;
         let authenticated_data = (flags & 0x0020) != 0;
         let checking_disabled = (flags & 0x0010) != 0;
-        let response_code = ResponseCodes::try_from((flags & 0x000F) as u8).map_err(|e| MessageError::HeaderError(e.to_string()))?;
+        let response_code = ResponseCodes::try_from((flags & 0x000F) as u8).map_err(|e| WireError::Format(e.to_string()))?;
 
-        let qd_count = u16::from_be_bytes([buf[4], buf[5]]);
+        let qd_count = u16::from_wire(&mut context)?;
+        let an_count = u16::from_wire(&mut context)?;
+        let ns_count = u16::from_wire(&mut context)?;
+        let ar_count = u16::from_wire(&mut context)?;
 
         let mut queries = Vec::new();
-        let mut off = DNS_HEADER_LEN;
 
         for _ in 0..qd_count {
-            queries.push(RRQuery::from_bytes(buf, &mut off)?);
+            queries.push(RRQuery::from_wire(&mut context)?);
         }
 
-        /*
-        let an = u16::from_be_bytes([buf[6], buf[7]]);
-        let ns = u16::from_be_bytes([buf[8], buf[9]]);
-        let ar = u16::from_be_bytes([buf[10], buf[11]]);
-
         let mut sections: [Vec<Record>; 3] = Default::default();
-        */
 
-        /*
-        // answers + authority: normal
-        for _ in 0..an { sections[0].push(Record::from_bytes(buf, off, 0)?); }
-        for _ in 0..ns { sections[1].push(Record::from_bytes(buf, off, 0)?); }
-        */
-        /*
-        // additional: peel off meta
-        for i in 0..ar {
-            let peek = RecordHeader::peek(buf, off)?; // your light header read: name,type,class,ttl,rdlen (no body)
-            match peek.rtype {
-                RRTypes::OPT => {
-                    // only one OPT allowed
-                    if msg.edns.is_some() { return Err(MessageError::Protocol("multiple OPT RRs".into())); }
-                    let edns = Edns::from_wire(buf, &mut off)?; // parses DO bit, ext_rcode, options, advances off
-                    msg.edns = Some(edns);
-                }
-                RRTypes::TSIG => {
-                    // TSIG should be LAST additional; if not last, you can error or accept but note it.
-                    // Also remember its MAC etc. for verification later.
-                    // let tsig = Tsig::from_wire(buf, &mut off)?;
-                    // msg.tsig = Some(tsig);
-                    // if i != ar - 1 { return Err(MessageError::Protocol("TSIG not last".into())); }
-                    // For now, if you haven't implemented TSIG, you can skip or error.
-                    return Err(MessageError::Protocol("TSIG not yet supported".into()));
-                }
-                _ => {
-                    msg.sections[2].push(Record::from_bytes_with_known_header(buf, &mut off, peek)?);
-                }
-            }
+        for _ in 0..an_count {
+            sections[0].push(Record::from_wire(&mut context)?);
         }
-        */
 
-        let mut sections: [Vec<Record>; 3] = Default::default();
-        sections[0] = section_from_wire(buf, &mut off, u16::from_be_bytes([buf[6], buf[7]]))?;
-        sections[1] = section_from_wire(buf, &mut off, u16::from_be_bytes([buf[8], buf[9]]))?;
-        //sections[0] = section_from_wire(buf, &mut off, u16::from_be_bytes([buf[6], buf[7]]))?;
-
-        //THE FUN ONE
-
-        //let mut section = Vec::new();
+        for _ in 0..ns_count {
+            sections[1].push(Record::from_wire(&mut context)?);
+        }
 
         let mut edns = None;
+        for _ in 0..ar_count {
+            let fqdn = context.name()?;
 
-        for _ in 0..u16::from_be_bytes([buf[10], buf[11]]) {
-            let (fqdn, fqdn_length) = unpack_fqdn(buf, off);
-            off += fqdn_length;
-
-            let rtype = RRTypes::try_from(u16::from_be_bytes([buf[off], buf[off+1]])).map_err(|e| MessageError::RecordError(e.to_string()))?;
+            let rtype = RRTypes::try_from(u16::from_wire(&mut context)?).map_err(|e| WireError::Format(e.to_string()))?;
 
             match rtype {
                 RRTypes::Opt => {
-                    let length = u16::from_be_bytes([buf[off+2], buf[off+3]]) as usize;
-                    //let data = OptRRData::from_bytes(buf, *off+2, length).map_err(|e| MessageError::RecordError(e.to_string()))?;
-                    edns = Some(Edns::from_bytes(buf, off+2, length).map_err(|e| MessageError::RecordError(e.to_string()))?);
-
-                    off += 4+length;
+                    edns = Some(Edns::from_wire(&mut context)?);
                 }
                 _ => {
-                    let class = u16::from_be_bytes([buf[off+2], buf[off+3]]);
-                    let cache_flush = (class & 0x8000) != 0;
-                    let class = RRClasses::try_from(class & 0x7FFF).map_err(|e| MessageError::RecordError(e.to_string()))?;
-                    let ttl = u32::from_be_bytes([buf[off+4], buf[off+5], buf[off+6], buf[off+7]]);
-
-                    let length = u16::from_be_bytes([buf[off+8], buf[off+9]]) as usize;
-                    let data = match length {
-                        0 => None,
-                        _ => Some(<dyn RRData>::from_wire(&rtype, &class, buf, off+10, length).map_err(|e| MessageError::RecordError(e.to_string()))?)
-                    };
-
-                    sections[2].push(Record::new(&fqdn, class, rtype, ttl, data));
-                    off += 10+length;
+                    //sections[2].push(Record::from_wire(context)?);
                 }
             }
+
+            /*
+            let class = u16::from_wire(context)?;
+            let cache_flush = (class & 0x8000) != 0;
+            let class = RRClasses::try_from(class).map_err(|e| WireError::Format(e.to_string()))?;
+            let ttl = u32::from_wire(context)?;
+
+            let len = u16::from_wire(context)?;
+            let data = match len {
+                0 => None,
+                _ => {
+                    match rtype {
+                        RRTypes::A => Some(RRData::upcast(InARRData::from_wire(context, len)?)),
+                        _ => None
+                    }
+                }
+            };
+            */
+
+
+            /*
+            //PEAK HERE FOR EDNS
+            let buf = context.peek(2)?;
+            println!("{:x?}", buf);
+
+            match RRTypes::try_from(u16::from_be_bytes([buf[0], buf[1]])).map_err(|e| WireError::Other(e.to_string()))? {
+                RRTypes::Opt => {
+                    println!("EDNS");
+                    break;
+                }
+                _ => {
+                    sections[2].push(Record::from_wire(context)?);
+                }
+            }
+            */
         }
-
-
-
-        /*
-        let sections = [
-            section_from_wire(buf, &mut off, u16::from_be_bytes([buf[6], buf[7]]))?,
-            section_from_wire(buf, &mut off, u16::from_be_bytes([buf[8], buf[9]]))?,
-            section_from_wire(buf, &mut off, u16::from_be_bytes([buf[10], buf[11]]))?
-        ];
-        */
 
         Ok(Self {
             id,
@@ -226,61 +195,70 @@ impl Message {
         })
     }
 
-    //TRUNCATE WILL BE HANDLED BY ITERATOR...
     pub fn to_bytes(&self, max_payload_len: usize) -> Vec<u8> {
-        let mut buf = Vec::with_capacity(max_payload_len);
+        let mut context = ToWireContext::with_capacity(max_payload_len);
 
-        //SURE ITS UNSAFE BUT I DONT THINK THERE IS ANY WAY FOR THIS TO TRIGGER UNLESS MAX PAYLOAD IS LESS THAN 12...
-        unsafe { buf.set_len(DNS_HEADER_LEN) };
+        self.id.to_wire(&mut context).unwrap();
 
-        buf[0..2].copy_from_slice(&self.id.to_be_bytes());
-        buf[4..6].copy_from_slice(&(self.queries.len() as u16).to_be_bytes());
+        context.skip(10).unwrap();
 
-        let mut compression_data = HashMap::new();
-        let mut off = DNS_HEADER_LEN;
         let mut truncated = false;
 
+        let mut count: u16 = 0;
         for query in &self.queries {
-            let q = query.to_wire(&mut compression_data, off);
-            if off+q.len() > max_payload_len {
+            let checkpoint = context.pos();
+            if let Err(_) = query.to_wire(&mut context) {
                 truncated = true;
+                context.rollback(checkpoint);
                 break;
             }
+            count += 1;
+        }
+        context.patch(4..6, &count.to_be_bytes()).unwrap();
 
-            buf.extend_from_slice(&q);
-            off += q.len();
+        for i in 0..2 {
+            if !truncated {
+                count = 0;
+                for record in self.sections[i].iter() {
+                    let checkpoint = context.pos();
+                    if let Err(_) = record.to_wire(&mut context) {
+                        truncated = true;
+                        context.rollback(checkpoint);
+                        break;
+                    }
+                    count += 1;
+                }
+                context.patch(i*2+6..i*2+8, &count.to_be_bytes()).unwrap();
+            }
         }
 
-        if !truncated {
-            'outer: for (i, section) in self.sections.iter().enumerate() {
-                let mut count: u16 = 0;
-
-                if i == 2 && self.edns.is_some() {
-                    buf.push(0x00);
-                    buf.extend_from_slice(&RRTypes::Opt.code().to_be_bytes());
-                    let edns_buf = self.edns.as_ref().unwrap().to_bytes().unwrap();
-                    buf.extend_from_slice(&edns_buf);
-                    off += edns_buf.len()+3;
+        'ar: {
+            if !truncated {
+                count = 0;
+                if let Some(edns) = self.edns.as_ref() {
+                    let checkpoint = context.pos();
+                    if let Err(_) = {
+                        0u8.to_wire(&mut context).unwrap();
+                        RRTypes::Opt.code().to_wire(&mut context).unwrap();
+                        edns.to_wire(&mut context)
+                    } {
+                        truncated = true;
+                        context.rollback(checkpoint);
+                        break 'ar;
+                    }
                     count += 1;
                 }
 
-                for record in section.iter() {
-                    match record.to_wire(&mut compression_data, off) {
-                        Ok(record_buf) => {
-                            if buf.len()+record_buf.len() > max_payload_len {
-                                truncated = true;
-                                break 'outer;
-                            }
-
-                            buf.extend_from_slice(&record_buf);
-                            off += record_buf.len();
-                            count += 1;
-                        }
-                        Err(_) => continue
+                for record in self.sections[2].iter() {
+                    let checkpoint = context.pos();
+                    if let Err(_) = record.to_wire(&mut context) {
+                        truncated = true;
+                        context.rollback(checkpoint);
+                        break;
                     }
+                    count += 1;
                 }
-
-                buf[i*2+6..i*2+8].copy_from_slice(&count.to_be_bytes());
+                context.patch(10..12, &count.to_be_bytes()).unwrap();
             }
         }
 
@@ -294,17 +272,37 @@ impl Message {
             (if self.authenticated_data { 0x0020 } else { 0 }) |  // AD bit
             (if self.checking_disabled { 0x0010 } else { 0 }) |  // CD bit
             (self.response_code.code() as u16 & 0x000F);  // RCODE
+        context.patch(2..4, &flags.to_be_bytes()).unwrap();
 
-        buf[2..4].copy_from_slice(&flags.to_be_bytes());
-
-        buf
+        context.into_bytes()
     }
 
     pub fn wire_chunks(&self, max_payload_len: usize) -> WireIter {
+        let mut context = ToWireContext::with_capacity(max_payload_len);
+
+        self.id.to_wire(&mut context).unwrap();
+        let flags = (if self.qr { 0x8000 } else { 0 }) |  // QR bit
+            ((self.op_code.code() as u16 & 0x0F) << 11) |  // Opcode
+            (if self.authoritative { 0x0400 } else { 0 }) |  // AA bit
+            //(if truncated { 0x0200 } else { 0 }) |  // TC bit
+            (if self.recursion_desired { 0x0100 } else { 0 }) |  // RD bit
+            (if self.recursion_available { 0x0080 } else { 0 }) |  // RA bit
+            //(if self.z { 0x0040 } else { 0 }) |  // Z bit (always 0)
+            (if self.authenticated_data { 0x0020 } else { 0 }) |  // AD bit
+            (if self.checking_disabled { 0x0010 } else { 0 }) |  // CD bit
+            (self.response_code.code() as u16 & 0x000F);
+        flags.to_wire(&mut context).unwrap();  // RCODE
+
+        let mut total = self.sections.iter().map(|r| r.len()).sum();
+        if self.edns.is_some() {
+            total += 1;
+        }
+
         WireIter {
             message: self,
             position: 0,
-            max_payload_len
+            total,
+            context
         }
     }
 
@@ -535,7 +533,8 @@ impl fmt::Display for Message {
 pub struct WireIter<'a> {
     message: &'a Message,
     position: usize,
-    max_payload_len: usize
+    total: usize,
+    context: ToWireContext,
 }
 
 impl<'a> Iterator for WireIter<'a> {
@@ -543,116 +542,91 @@ impl<'a> Iterator for WireIter<'a> {
     type Item = Vec<u8>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.position >= self.message.sections.iter().map(|r| r.len()).sum() {
+        if self.position >= self.total {
             return None;
         }
 
+        self.context.rollback(4);
+        self.context.skip(8).unwrap();
 
-        let mut buf = Vec::with_capacity(self.max_payload_len);
-
-        //SURE ITS UNSAFE BUT I DONT THINK THERE IS ANY WAY FOR THIS TO TRIGGER UNLESS MAX PAYLOAD IS LESS THAN 12...
-        unsafe { buf.set_len(DNS_HEADER_LEN) };
-
-        buf[0..2].copy_from_slice(&self.message.id.to_be_bytes());
-
-        let flags = (if self.message.qr { 0x8000 } else { 0 }) |  // QR bit
-            ((self.message.op_code.code() as u16 & 0x0F) << 11) |  // Opcode
-            (if self.message.authoritative { 0x0400 } else { 0 }) |  // AA bit
-            0 |  // TC bit
-            (if self.message.recursion_desired { 0x0100 } else { 0 }) |  // RD bit
-            (if self.message.recursion_available { 0x0080 } else { 0 }) |  // RA bit
-            //(if self.z { 0x0040 } else { 0 }) |  // Z bit (always 0)
-            (if self.message.authenticated_data { 0x0020 } else { 0 }) |  // AD bit
-            (if self.message.checking_disabled { 0x0010 } else { 0 }) |  // CD bit
-            (self.message.response_code.code() as u16 & 0x000F);  // RCODE
-
-        buf[2..4].copy_from_slice(&flags.to_be_bytes());
-
-        buf[4..6].copy_from_slice(&(self.message.queries.len() as u16).to_be_bytes());
-
-        let mut compression_data = HashMap::new();
-        let mut off = DNS_HEADER_LEN;
         let mut truncated = false;
 
+        let mut count: u16 = 0;
         for query in &self.message.queries {
-            let q = query.to_wire(&mut compression_data, off);
-            if off+q.len() > self.max_payload_len {
+            let checkpoint = self.context.pos();
+            if let Err(_) = query.to_wire(&mut self.context) {
                 truncated = true;
+                self.context.rollback(checkpoint);
+                self.context.patch(4..6, &count.to_be_bytes()).unwrap();
                 break;
             }
-
-            buf.extend_from_slice(&q);
-            off += q.len();
+            count += 1;
         }
+        self.context.patch(4..6, &count.to_be_bytes()).unwrap();
 
-        if !truncated {
-            let mut total = 0;
-            'outer: for (i, section) in self.message.sections.iter().enumerate() {
-                let mut count: u16 = 0;
+        'sections: {
+            if !truncated {
+                let mut total = 0;
+                for i in 0..2 {
+                    let before = total;
+                    total += self.message.sections[i].len();
+
+                    if self.position < total {
+                        count = 0;
+                        for record in &self.message.sections[i][self.position - before..] {
+                            let checkpoint = self.context.pos();
+                            if let Err(_) = record.to_wire(&mut self.context) {
+                                self.context.rollback(checkpoint);
+                                self.context.patch(i*2+6..i*2+8, &count.to_be_bytes()).unwrap();
+                                self.position += count as usize;
+                                break 'sections;
+                            }
+                            count += 1;
+                        }
+                        self.context.patch(i*2+6..i*2+8, &count.to_be_bytes()).unwrap();
+                        self.position += count as usize;
+                    }
+                }
 
                 let before = total;
-                total += self.message.sections[i].len();
+                total += self.total-before;
 
                 if self.position < total {
-                    if i == 2 && self.message.edns.is_some() {
-                        buf.push(0x00);
-                        buf.extend_from_slice(&RRTypes::Opt.code().to_be_bytes());
-                        let edns_buf = self.message.edns.as_ref().unwrap().to_bytes().unwrap();
-                        buf.extend_from_slice(&edns_buf);
-                        off += edns_buf.len()+3;
+                    count = 0;
+                    let start = self.position - before;
+
+                    if let Some(edns) = self.message.edns.as_ref() {
+                        let checkpoint = self.context.pos();
+                        if let Err(_) = {
+                            0u8.to_wire(&mut self.context).unwrap();
+                            RRTypes::Opt.code().to_wire(&mut self.context).unwrap();
+                            edns.to_wire(&mut self.context)
+                        } {
+                            self.context.rollback(checkpoint);
+                            self.context.patch(10..12, &count.to_be_bytes()).unwrap();
+                            self.position += count as usize;
+                            break 'sections;
+                        }
                         count += 1;
                     }
 
-                    for record in &section[self.position - before..] {
-                        match record.to_wire(&mut compression_data, off) {
-                            Ok(record_buf) => {
-                                if buf.len()+record_buf.len() > self.max_payload_len {
-                                    //truncated = true;
-                                    break 'outer;
-                                }
-
-                                buf.extend_from_slice(&record_buf);
-                                off += record_buf.len();
-                                count += 1;
-                            }
-                            Err(_) => continue
+                    for record in &self.message.sections[2][start..] {
+                        let checkpoint = self.context.pos();
+                        if let Err(_) = record.to_wire(&mut self.context) {
+                            self.context.rollback(checkpoint);
+                            self.context.patch(10..12, &count.to_be_bytes()).unwrap();
+                            self.position += count as usize;
+                            break 'sections;
                         }
+                        count += 1;
                     }
 
-                    buf[i*2+6..i*2+8].copy_from_slice(&count.to_be_bytes());
+                    self.context.patch(10..12, &count.to_be_bytes()).unwrap();
                     self.position += count as usize;
                 }
             }
         }
 
-        Some(buf)
+        Some(self.context.to_bytes())
     }
-}
-
-//ALL BELOW IS TEMPRARY FOR NOW - CHANGE LATER - JUST USING THIS TO GET PAST EDNS / TSIG FOR NOW
-fn section_from_wire(buf: &[u8], off: &mut usize, count: u16) -> Result<Vec<Record>, MessageError> {
-    let mut section = Vec::new();
-
-    for _ in 0..count {
-        let (fqdn, fqdn_length) = unpack_fqdn(buf, *off);
-        *off += fqdn_length;
-
-        let rtype = RRTypes::try_from(u16::from_be_bytes([buf[*off], buf[*off+1]])).map_err(|e| MessageError::RecordError(e.to_string()))?;
-
-        let class = u16::from_be_bytes([buf[*off+2], buf[*off+3]]);
-        let cache_flush = (class & 0x8000) != 0;
-        let class = RRClasses::try_from(class & 0x7FFF).map_err(|e| MessageError::RecordError(e.to_string()))?;
-        let ttl = u32::from_be_bytes([buf[*off+4], buf[*off+5], buf[*off+6], buf[*off+7]]);
-
-        let length = u16::from_be_bytes([buf[*off+8], buf[*off+9]]) as usize;
-        let data = match length {
-            0 => None,
-            _ => Some(<dyn RRData>::from_wire(&rtype, &class, buf, *off+10, length).map_err(|e| MessageError::RecordError(e.to_string()))?)
-        };
-
-        section.push(Record::new(&fqdn, class, rtype, ttl, data));
-        *off += 10+length;
-    }
-
-    Ok(section)
 }

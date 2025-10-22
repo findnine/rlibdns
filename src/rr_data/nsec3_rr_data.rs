@@ -1,9 +1,9 @@
 use std::any::Any;
-use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use std::str::FromStr;
 use crate::messages::inter::rr_types::RRTypes;
+use crate::messages::wire::{FromWire, FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::utils::{base32, hex};
 use crate::zone::inter::zone_rr_data::ZoneRRData;
@@ -35,40 +35,40 @@ impl Default for NSec3RRData {
 
 impl RRData for NSec3RRData {
 
-    fn from_bytes(buf: &[u8], off: usize, len: usize) -> Result<Self, RRDataError> {
-        let algorithm = buf[off];
-        let flags = buf[off+1];
-        let iterations = u16::from_be_bytes([buf[off+2], buf[off+3]]);
+    fn from_bytes(buf: &[u8]) -> Result<Self, RRDataError> {
+        let algorithm = buf[0];
+        let flags = buf[1];
+        let iterations = u16::from_be_bytes([buf[2], buf[3]]);
 
-        let salt_length = buf[off+4] as usize;
-        let salt = buf[off + 5..off + 5 + salt_length].to_vec();
+        let salt_length = buf[4] as usize;
+        let salt = buf[5..5 + salt_length].to_vec();
 
-        let mut off = off+5+salt_length;
-        let next_hash_length = buf[off+1] as usize;
-        let next_hash = buf[off + 1..off + 1 + next_hash_length].to_vec();
-        off += 1+next_hash_length;
+        let mut i = 5+salt_length;
+        let next_hash_length = buf[i+1] as usize;
+        let next_hash = buf[i+1..i+1+next_hash_length].to_vec();
+        i += 1+next_hash_length;
 
 
         let mut types = Vec::new();
 
-        while off < len {
-            if off+2 > len {
+        while i < buf.len() {
+            if i+2 > buf.len() {
                 return Err(RRDataError("truncated NSEC window header".to_string()));
             }
 
-            let window = buf[off];
-            let data_length = buf[off + 1] as usize;
-            off += 2;
+            let window = buf[i];
+            let data_length = buf[i+1] as usize;
+            i += 2;
 
             if data_length == 0 || data_length > 32 {
                 return Err(RRDataError("invalid NSEC window length".to_string()));
             }
 
-            if off + data_length > len {
+            if i+data_length > buf.len() {
                 return Err(RRDataError("truncated NSEC bitmap".to_string()));
             }
 
-            for (i, &byte) in buf[off..off + data_length].iter().enumerate() {
+            for (i, &byte) in buf[i..i+data_length].iter().enumerate() {
                 for bit in 0..8 {
                     if (byte & (1 << (7 - bit))) != 0 {
                         let _type = RRTypes::try_from((window as u16) * 256 + (i as u16 * 8 + bit as u16))
@@ -78,7 +78,7 @@ impl RRData for NSec3RRData {
                 }
             }
 
-            off += data_length;
+            i += data_length;
         }
 
         Ok(Self {
@@ -89,10 +89,6 @@ impl RRData for NSec3RRData {
             next_hash,
             types
         })
-    }
-
-    fn to_wire(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RRDataError> {
-        self.to_bytes()
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
@@ -188,6 +184,72 @@ impl NSec3RRData {
     }
 }
 
+impl FromWireLen for NSec3RRData {
+
+    fn from_wire(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
+        let algorithm = u8::from_wire(context)?;
+        let flags = u8::from_wire(context)?;
+        let iterations = u16::from_wire(context)?;
+
+        let salt_length = u8::from_wire(context)? as usize;
+        let salt = context.take(salt_length)?.to_vec();
+
+        let next_hash_length = u8::from_wire(context)? as usize;
+        let next_hash = context.take(next_hash_length)?.to_vec();
+
+        let mut types = Vec::new();
+
+        /*
+        let mut i = len-6-salt_length as u16-next_hash_length as u16;
+        while i < len {
+            if i+2 > len {
+                return Err(RRDataError("truncated NSEC window header".to_string()));
+            }
+
+            let window = buf[off];
+            let data_length = buf[off + 1] as usize;
+            off += 2;
+
+            if data_length == 0 || data_length > 32 {
+                return Err(RRDataError("invalid NSEC window length".to_string()));
+            }
+
+            if off + data_length > len {
+                return Err(RRDataError("truncated NSEC bitmap".to_string()));
+            }
+
+            for (i, &byte) in buf[off..off + data_length].iter().enumerate() {
+                for bit in 0..8 {
+                    if (byte & (1 << (7 - bit))) != 0 {
+                        let _type = RRTypes::try_from((window as u16) * 256 + (i as u16 * 8 + bit as u16))
+                            .map_err(|e| RRDataError(e.to_string()))?;
+                        types.push(_type);
+                    }
+                }
+            }
+
+            off += data_length;
+        }
+        */
+
+        Ok(Self {
+            algorithm,
+            flags,
+            iterations,
+            salt,
+            next_hash,
+            types
+        })
+    }
+}
+
+impl ToWire for NSec3RRData {
+
+    fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
+        todo!()
+    }
+}
+
 impl ZoneRRData for NSec3RRData {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
@@ -228,6 +290,6 @@ impl fmt::Display for NSec3RRData {
 #[test]
 fn test() {
     let buf = vec![ ];
-    let record = NSec3RRData::from_bytes(&buf, 0, buf.len()).unwrap();
+    let record = NSec3RRData::from_bytes(&buf).unwrap();
     assert_eq!(buf, record.to_bytes().unwrap());
 }

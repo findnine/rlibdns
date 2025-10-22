@@ -1,7 +1,7 @@
 use std::any::Any;
-use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
+use crate::messages::wire::{FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::utils::hex;
 use crate::zone::inter::zone_rr_data::ZoneRRData;
@@ -29,7 +29,7 @@ impl Default for DsRRData {
 
 impl RRData for DsRRData {
 
-    fn from_bytes(buf: &[u8], off: usize, _len: usize) -> Result<Self, RRDataError> {
+    fn from_bytes(buf: &[u8]) -> Result<Self, RRDataError> {
         let key_tag = 0;
         let algorithm = 0;
         let digest_type = 0;
@@ -41,10 +41,6 @@ impl RRData for DsRRData {
             digest_type,
             digest
         })
-    }
-
-    fn to_wire(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RRDataError> {
-        self.to_bytes()
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
@@ -86,6 +82,20 @@ impl DsRRData {
     }
 }
 
+impl FromWireLen for DsRRData {
+
+    fn from_wire(context: &mut FromWireContext, _len: u16) -> Result<Self, WireError> {
+        todo!()
+    }
+}
+
+impl ToWire for DsRRData {
+
+    fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
+        todo!()
+    }
+}
+
 impl ZoneRRData for DsRRData {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
@@ -116,6 +126,6 @@ impl fmt::Display for DsRRData {
 #[test]
 fn test() {
     let buf = vec![ ];
-    let record = DsRRData::from_bytes(&buf, 0, buf.len()).unwrap();
+    let record = DsRRData::from_bytes(&buf).unwrap();
     assert_eq!(buf, record.to_bytes().unwrap());
 }

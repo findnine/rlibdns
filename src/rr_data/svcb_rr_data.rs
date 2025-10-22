@@ -1,12 +1,12 @@
 use std::any::Any;
-use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use std::str::FromStr;
+use crate::messages::wire::{FromWire, FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::rr_data::inter::svc_param::SvcParams;
 use crate::rr_data::inter::svc_param_keys::SvcParamKeys;
-use crate::utils::fqdn_utils::{pack_fqdn, pack_fqdn_compressed, unpack_fqdn};
+use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 use crate::zone::inter::zone_rr_data::ZoneRRData;
 use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
 
@@ -30,22 +30,22 @@ impl Default for SvcbRRData {
 
 impl RRData for SvcbRRData {
 
-    fn from_bytes(buf: &[u8], off: usize, len: usize) -> Result<Self, RRDataError> {
-        let priority = u16::from_be_bytes([buf[off], buf[off+1]]);
+    fn from_bytes(buf: &[u8]) -> Result<Self, RRDataError> {
+        let priority = u16::from_be_bytes([buf[0], buf[1]]);
 
-        let (target, target_length) = unpack_fqdn(&buf, off+2);
+        let (target, target_length) = unpack_fqdn(&buf, 2);
 
-        let mut off = off+2+target_length;
+        let mut i = 2+target_length;
         let mut params = Vec::new();
 
-        while off < len {
-            let key = SvcParamKeys::try_from(u16::from_be_bytes([buf[off], buf[off+1]]))
+        while i < buf.len() {
+            let key = SvcParamKeys::try_from(u16::from_be_bytes([buf[i], buf[i+1]]))
                 .map_err(|e| RRDataError(e.to_string()))?;
-            let length = u16::from_be_bytes([buf[off+2], buf[off+3]]) as usize;
-            params.push(SvcParams::from_bytes(key, &buf[off+4..off+4+length])
+            let length = u16::from_be_bytes([buf[i+2], buf[i+3]]) as usize;
+            params.push(SvcParams::from_bytes(key, &buf[i+4..i+4+length])
                 .map_err(|e| RRDataError(e.to_string()))?);
 
-            off += length+4;
+            i += length+4;
         }
 
         Ok(Self {
@@ -53,24 +53,6 @@ impl RRData for SvcbRRData {
             target: Some(target),
             params
         })
-    }
-
-    fn to_wire(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = Vec::with_capacity(158);
-
-        buf.extend_from_slice(&self.priority.to_be_bytes());
-
-        buf.extend_from_slice(&pack_fqdn_compressed(self.target.as_ref()
-            .ok_or_else(|| RRDataError("target param was not set".to_string()))?.as_str(), compression_data, off+2));
-
-        for param in self.params.iter() {
-            buf.extend_from_slice(&param.code().to_be_bytes());
-            let param_buf = param.to_bytes();
-            buf.extend_from_slice(&(param_buf.len() as u16).to_be_bytes());
-            buf.extend_from_slice(&param_buf);
-        }
-
-        Ok(buf)
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
@@ -147,6 +129,54 @@ impl SvcbRRData {
     }
 }
 
+impl FromWireLen for SvcbRRData {
+
+    fn from_wire(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
+        let priority = u16::from_wire(context)?;
+
+        let checkpoint = context.pos();
+        let target = context.name()?;
+
+        let mut i = (context.pos()-checkpoint) as u16;
+        let mut params = Vec::new();
+
+        while i < len {
+            let key = SvcParamKeys::try_from(u16::from_wire(context)?)
+                .map_err(|e| WireError::Format(e.to_string()))?;
+            let length = u16::from_wire(context)?;
+            params.push(SvcParams::from_bytes(key, context.take(length as usize)?)
+                .map_err(|e| WireError::Format(e.to_string()))?);
+
+            i += length+4;
+        }
+
+        Ok(Self {
+            priority,
+            target: Some(target),
+            params
+        })
+    }
+}
+
+impl ToWire for SvcbRRData {
+
+    fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
+        self.priority.to_wire(context)?;
+
+        context.write_name(self.target.as_ref()
+            .ok_or_else(|| WireError::Format("target param was not set".to_string()))?, true)?;
+
+        for param in self.params.iter() {
+            param.code().to_wire(context)?;
+            let param_buf = param.to_bytes();
+            (param_buf.len() as u16).to_wire(context)?;
+            context.write(&param_buf)?;
+        }
+
+        Ok(())
+    }
+}
+
 impl ZoneRRData for SvcbRRData {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
@@ -179,6 +209,6 @@ impl fmt::Display for SvcbRRData {
 #[test]
 fn test() {
     let buf = vec![ 0x0, 0x1, 0x3, 0x77, 0x77, 0x77, 0x5, 0x66, 0x69, 0x6e, 0x64, 0x39, 0x3, 0x6e, 0x65, 0x74, 0x0, 0x0, 0x1, 0x0, 0x6, 0x2, 0x68, 0x33, 0x2, 0x68, 0x32, 0x0, 0x4, 0x0, 0x4, 0x7f, 0x0, 0x0, 0x1, 0x0, 0x6, 0x0, 0x10, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1 ];
-    let record = SvcbRRData::from_bytes(&buf, 0, buf.len()).unwrap();
+    let record = SvcbRRData::from_bytes(&buf).unwrap();
     assert_eq!(buf, record.to_bytes().unwrap());
 }

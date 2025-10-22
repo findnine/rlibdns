@@ -1,7 +1,7 @@
 use std::any::Any;
-use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
+use crate::messages::wire::{FromWire, FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::utils::hex;
 use crate::zone::inter::zone_rr_data::ZoneRRData;
@@ -29,13 +29,13 @@ impl Default for NSec3ParamRRData {
 
 impl RRData for NSec3ParamRRData {
 
-    fn from_bytes(buf: &[u8], off: usize, _len: usize) -> Result<Self, RRDataError> {
-        let algorithm = buf[off];
-        let flags = buf[off+1];
-        let iterations = u16::from_be_bytes([buf[off+2], buf[off+3]]);
+    fn from_bytes(buf: &[u8]) -> Result<Self, RRDataError> {
+        let algorithm = buf[0];
+        let flags = buf[1];
+        let iterations = u16::from_be_bytes([buf[2], buf[3]]);
 
-        let salt_length = buf[off+4] as usize;
-        let salt = buf[off + 5..off + 5 + salt_length].to_vec();
+        let salt_length = buf[4] as usize;
+        let salt = buf[5..5+salt_length].to_vec();
 
         Ok(Self {
             algorithm,
@@ -43,10 +43,6 @@ impl RRData for NSec3ParamRRData {
             iterations,
             salt
         })
-    }
-
-    fn to_wire(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RRDataError> {
-        self.to_bytes()
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
@@ -127,6 +123,37 @@ impl NSec3ParamRRData {
     }
 }
 
+impl FromWireLen for NSec3ParamRRData {
+
+    fn from_wire(context: &mut FromWireContext, _len: u16) -> Result<Self, WireError> {
+        let algorithm = u8::from_wire(context)?;
+        let flags = u8::from_wire(context)?;
+        let iterations = u16::from_wire(context)?;
+
+        let salt_length = u8::from_wire(context)? as usize;
+        let salt = context.take(salt_length)?.to_vec();
+
+        Ok(Self {
+            algorithm,
+            flags,
+            iterations,
+            salt
+        })
+    }
+}
+
+impl ToWire for NSec3ParamRRData {
+
+    fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
+        self.algorithm.to_wire(context)?;
+        self.flags.to_wire(context)?;
+        self.iterations.to_wire(context)?;
+
+        (self.salt.len() as u8).to_wire(context)?;
+        context.write(&self.salt)
+    }
+}
+
 impl ZoneRRData for NSec3ParamRRData {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
@@ -157,6 +184,6 @@ impl fmt::Display for NSec3ParamRRData {
 #[test]
 fn test() {
     let buf = vec![ 0x1, 0x0, 0x0, 0x0, 0x0 ];
-    let record = NSec3ParamRRData::from_bytes(&buf, 0, buf.len()).unwrap();
+    let record = NSec3ParamRRData::from_bytes(&buf).unwrap();
     assert_eq!(buf, record.to_bytes().unwrap());
 }

@@ -1,8 +1,8 @@
 use std::any::Any;
-use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use std::net::Ipv4Addr;
+use crate::messages::wire::{FromWireLen, FromWireContext, ToWire, ToWireContext, WireError};
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::zone::inter::zone_rr_data::ZoneRRData;
 use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
@@ -23,19 +23,15 @@ impl Default for InARRData {
 
 impl RRData for InARRData {
 
-    fn from_bytes(buf: &[u8], off: usize, len: usize) -> Result<Self, RRDataError> {
-        let address = match len {
-            4 => Ipv4Addr::new(buf[off], buf[off+1], buf[off+2], buf[off+3]),
+    fn from_bytes(buf: &[u8]) -> Result<Self, RRDataError> {
+        let address = match buf.len() {
+            4 => Ipv4Addr::new(buf[0], buf[1], buf[2], buf[3]),
             _ => return Err(RRDataError("invalid inet address".to_string()))
         };
 
         Ok(Self {
             address: Some(address)
         })
-    }
-
-    fn to_wire(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RRDataError> {
-        self.to_bytes()
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
@@ -84,6 +80,30 @@ impl InARRData {
     }
 }
 
+impl FromWireLen for InARRData {
+
+    fn from_wire(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
+        let address = match len {
+            4 => {
+                let buf = context.take(len as usize)?;
+                Ipv4Addr::new(buf[0], buf[1], buf[2], buf[3])
+            },
+            _ => return Err(WireError::Format("invalid inet address".to_string()))
+        };
+
+        Ok(Self {
+            address: Some(address)
+        })
+    }
+}
+
+impl ToWire for InARRData {
+
+    fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
+        context.write(&self.address.ok_or_else(|| WireError::Format("address param was not set".to_string()))?.octets())
+    }
+}
+
 impl ZoneRRData for InARRData {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
@@ -108,6 +128,6 @@ impl fmt::Display for InARRData {
 #[test]
 fn test() {
     let buf = vec![ 0x7f, 0x0, 0x0, 0x1 ];
-    let record = InARRData::from_bytes(&buf, 0, buf.len()).unwrap();
+    let record = InARRData::from_bytes(&buf).unwrap();
     assert_eq!(buf, record.to_bytes().unwrap());
 }

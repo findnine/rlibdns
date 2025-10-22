@@ -1,9 +1,9 @@
 use std::fmt;
 use std::fmt::Formatter;
 use std::net::{Ipv4Addr, Ipv6Addr};
+use crate::messages::wire::{FromWire, FromWireContext, ToWire, ToWireContext, WireError};
 use crate::rr_data::inter::opt_codes::OptCodes;
 use crate::rr_data::inter::rr_data::RRDataError;
-use crate::rr_data::txt_rr_data::TxtRRData;
 use crate::utils::hex;
 
 #[derive(Debug, Clone)]
@@ -89,18 +89,17 @@ impl Edns {
         }
     }
 
-    pub fn from_bytes(buf: &[u8], off: usize, _len: usize) -> Result<Self, RRDataError> {
-        let payload_size = u16::from_be_bytes([buf[off], buf[off+1]]);
-        let ext_rcode = buf[off+2];
-        let version = buf[off+3];
-        //let z_flags = u16::from_be_bytes([buf[off+4], buf[off+5]]);
+    pub fn from_bytes(buf: &[u8]) -> Result<Self, RRDataError> {
+        let payload_size = u16::from_be_bytes([buf[0], buf[1]]);
+        let ext_rcode = buf[2];
+        let version = buf[3];
 
-        let z = u16::from_be_bytes([buf[off + 4], buf[off + 5]]);
+        let z = u16::from_be_bytes([buf[4], buf[5]]);
         let do_bit = (z & 0x8000) != 0;
         let z_flags = z & 0x7FFF;
 
-        let data_length = off+8+u16::from_be_bytes([buf[off+6], buf[off+7]]) as usize;
-        let mut off = off+8;
+        let data_length = 8+u16::from_be_bytes([buf[6], buf[7]]) as usize;
+        let mut off = 8;
         let mut options = Vec::new();
 
         while off < data_length {
@@ -201,6 +200,70 @@ impl Edns {
     }
 }
 
+impl FromWire for Edns {
+
+    fn from_wire(context: &mut FromWireContext) -> Result<Self, WireError> {
+        let payload_size = u16::from_wire(context)?;
+        let ext_rcode = u8::from_wire(context)?;
+        let version = u8::from_wire(context)?;
+        //let z_flags = u16::from_be_bytes([buf[off+4], buf[off+5]]);
+
+        let z = u16::from_wire(context)?;
+        let do_bit = (z & 0x8000) != 0;
+        let z_flags = z & 0x7FFF;
+
+        let data_length = u16::from_wire(context)?;
+        //let data_length = off+8+u16::from_be_bytes([buf[off+6], buf[off+7]]) as usize;
+        //let mut off = off+8;
+        let mut options = Vec::new();
+
+        let mut i = 0;
+        while i < data_length {
+            let opt_code = OptCodes::try_from(u16::from_wire(context)?).map_err(|e| WireError::Format(e.to_string()))?;
+            let length = u16::from_wire(context)?;
+            options.push(EdnsOption::new(opt_code, context.take(length as usize)?));
+            i += 4+length;
+        }
+
+        Ok(Self {
+            payload_size,
+            ext_rcode,
+            version,
+            do_bit,
+            z_flags,
+            options
+        })
+    }
+}
+
+impl ToWire for Edns {
+
+    fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
+        self.payload_size.to_wire(context)?;
+
+        self.ext_rcode.to_wire(context)?;
+        self.version.to_wire(context)?;
+
+        let z = ((self.do_bit as u16) << 15) | (self.z_flags & 0x7FFF);
+        z.to_wire(context)?;
+
+        let checkpoint = context.pos();
+        context.skip(2)?;
+
+        let mut opt_length = 0u16;
+        for option in self.options.iter() {
+            option.code.code().to_wire(context)?;
+            (option.data.len() as u16).to_wire(context)?;
+            context.write(&option.data)?;
+            opt_length += 4+option.data.len() as u16;
+        }
+
+        context.patch(checkpoint..checkpoint+2, &opt_length.to_be_bytes())?;
+
+        Ok(())
+    }
+}
+
 impl fmt::Display for Edns {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
@@ -217,6 +280,6 @@ impl fmt::Display for Edns {
 #[test]
 fn test() {
     let buf = vec![ 0x4, 0xd0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xc, 0x0, 0xa, 0x0, 0x8, 0x3c, 0x79, 0xda, 0xbb, 0x15, 0xdc, 0x64, 0x77 ];
-    let record = Edns::from_bytes(&buf, 0, buf.len()).unwrap();
+    let record = Edns::from_bytes(&buf).unwrap();
     assert_eq!(buf, record.to_bytes().unwrap());
 }

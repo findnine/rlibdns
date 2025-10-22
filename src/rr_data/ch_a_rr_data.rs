@@ -1,9 +1,9 @@
 use std::any::Any;
-use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
+use crate::messages::wire::{FromWire, FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
-use crate::utils::fqdn_utils::{pack_fqdn, pack_fqdn_compressed, unpack_fqdn};
+use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 use crate::utils::octal;
 use crate::zone::inter::zone_rr_data::ZoneRRData;
 use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
@@ -26,26 +26,15 @@ impl Default for ChARRData {
 
 impl RRData for ChARRData {
 
-    fn from_bytes(buf: &[u8], off: usize, _len: usize) -> Result<Self, RRDataError> {
-        let (network, network_length) = unpack_fqdn(buf, off);
+    fn from_bytes(buf: &[u8]) -> Result<Self, RRDataError> {
+        let (network, network_length) = unpack_fqdn(buf, 0);
 
-        let address = u16::from_be_bytes([buf[off+network_length], buf[off+1+network_length]]);
+        let address = u16::from_be_bytes([buf[network_length], buf[1+network_length]]);
 
         Ok(Self {
             network: Some(network),
             address
         })
-    }
-
-    fn to_wire(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, RRDataError> {
-        let mut buf = Vec::with_capacity(34);
-
-        buf.extend_from_slice(&pack_fqdn_compressed(self.network.as_ref()
-            .ok_or_else(|| RRDataError("network param was not set".to_string()))?, compression_data, off));
-
-        buf.extend_from_slice(&self.address.to_be_bytes());
-
-        Ok(buf)
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
@@ -106,6 +95,28 @@ impl ChARRData {
     }
 }
 
+impl FromWireLen for ChARRData {
+
+    fn from_wire(context: &mut FromWireContext, _len: u16) -> Result<Self, WireError> {
+        let network = context.name()?;
+        let address = u16::from_wire(context)?;
+
+        Ok(Self {
+            network: Some(network),
+            address
+        })
+    }
+}
+
+impl ToWire for ChARRData {
+
+    fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
+        context.write_name(self.network.as_ref()
+            .ok_or_else(|| WireError::Format("network param was not set".to_string()))?, true)?;
+        self.address.to_wire(context)
+    }
+}
+
 impl ZoneRRData for ChARRData {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
@@ -133,6 +144,6 @@ impl fmt::Display for ChARRData {
 #[test]
 fn test() {
     let buf = vec![ 0x7, 0x43, 0x48, 0x2d, 0x41, 0x44, 0x44, 0x52, 0x0, 0x6, 0x61 ];
-    let record = ChARRData::from_bytes(&buf, 0, buf.len()).unwrap();
+    let record = ChARRData::from_bytes(&buf).unwrap();
     assert_eq!(buf, record.to_bytes().unwrap());
 }

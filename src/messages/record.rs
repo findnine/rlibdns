@@ -1,11 +1,10 @@
-use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
-use crate::messages::message::MessageError;
-use crate::rr_data::inter::rr_data::{RRData, RRDataError};
-use crate::utils::fqdn_utils::pack_fqdn_compressed;
+use crate::messages::wire::{FromWire, FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
+use crate::rr_data::in_a_rr_data::InARRData;
+use crate::rr_data::inter::rr_data::RRData;
 
 #[derive(Debug, Clone)]
 pub struct Record {
@@ -26,53 +25,6 @@ impl Record {
             ttl,
             data
         }
-    }
-
-    /*
-    pub fn from_bytes(buf: &[u8], off: usize, _len: usize) -> Result<Self, MessageError> {
-        let (fqdn, fqdn_length) = unpack_fqdn(buf, off);
-        let mut off = off+fqdn_length;
-
-        let rtype = RRTypes::try_from(u16::from_be_bytes([buf[off], buf[off+1]])).map_err(|e| MessageError::RecordError(e.to_string()))?;
-
-
-        Ok(Self {
-            fqdn,
-            rtype
-        })
-    }
-    */
-
-    pub fn to_wire(&self, compression_data: &mut HashMap<String, usize>, off: usize) -> Result<Vec<u8>, MessageError> {
-        let fqdn = pack_fqdn_compressed(&self.fqdn, compression_data, off);
-
-        let mut buf = Vec::new();
-
-        match &self.data {
-            Some(data) => {
-                let data = data.to_wire(compression_data, off+fqdn.len()+10).map_err(|e| MessageError::RecordError(e.to_string()))?;
-
-                buf.extend_from_slice(&fqdn);
-                buf.extend_from_slice(&self.rtype.code().to_be_bytes());
-
-                buf.extend_from_slice(&self.class.code().to_be_bytes());
-                buf.extend_from_slice(&self.ttl.to_be_bytes());
-
-                buf.extend_from_slice(&(data.len() as u16).to_be_bytes());
-                buf.extend_from_slice(&data);
-            }
-            None => {
-                buf.extend_from_slice(&fqdn);
-                buf.extend_from_slice(&self.rtype.code().to_be_bytes());
-
-                buf.extend_from_slice(&self.class.code().to_be_bytes());
-                buf.extend_from_slice(&self.ttl.to_be_bytes());
-
-                buf.extend_from_slice(&0u16.to_be_bytes());
-            }
-        }
-
-        Ok(buf)
     }
 
     pub fn set_fqdn(&mut self, fqdn: &str) {
@@ -113,6 +65,72 @@ impl Record {
 
     pub fn data(&self) -> Option<&Box<dyn RRData>> {
         self.data.as_ref()
+    }
+}
+
+impl FromWire for Record {
+
+    fn from_wire(context: &mut FromWireContext) -> Result<Self, WireError> {
+        let fqdn = context.name()?;
+
+        let rtype = RRTypes::try_from(u16::from_wire(context)?).map_err(|e| WireError::Format(e.to_string()))?;
+
+        let class = u16::from_wire(context)?;
+        let cache_flush = (class & 0x8000) != 0;
+        let class = RRClasses::try_from(class).map_err(|e| WireError::Format(e.to_string()))?;
+        let ttl = u32::from_wire(context)?;
+
+        let len = u16::from_wire(context)?;
+        let data = match len {
+            0 => None,
+            _ => {
+                match rtype {
+                    RRTypes::A => Some(RRData::upcast(InARRData::from_wire(context, len)?)),
+                    _ => None
+                }
+            }
+        };
+
+        Ok(Self {
+            fqdn,
+            class,
+            rtype,
+            ttl,
+            data
+        })
+    }
+}
+
+impl ToWire for Record {
+
+    fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
+        context.write_name(self.fqdn(), true)?;
+
+        match &self.data {
+            Some(data) => {
+                self.rtype.code().to_wire(context)?;
+
+                self.class.code().to_wire(context)?;
+                self.ttl.to_wire(context)?;
+
+                let checkpoint = context.pos();
+                context.skip(2)?;
+
+                data.to_wire(context)?;
+
+                context.patch(checkpoint..checkpoint+2, &((context.pos()-checkpoint-2) as u16).to_be_bytes())?;
+            }
+            None => {
+                self.rtype.code().to_wire(context)?;
+
+                self.class.code().to_wire(context)?;
+                self.ttl.to_wire(context)?;
+
+                0u16.to_wire(context)?;
+            }
+        }
+
+        Ok(())
     }
 }
 

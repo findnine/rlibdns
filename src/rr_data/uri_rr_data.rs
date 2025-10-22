@@ -2,6 +2,7 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
+use crate::messages::wire::{FromWire, FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::zone::inter::zone_rr_data::ZoneRRData;
 use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
@@ -26,11 +27,11 @@ impl Default for UriRRData {
 
 impl RRData for UriRRData {
 
-    fn from_bytes(buf: &[u8], off: usize, len: usize) -> Result<Self, RRDataError> {
-        let priority = u16::from_be_bytes([buf[off], buf[off+1]]);
-        let weight = u16::from_be_bytes([buf[off+2], buf[off+3]]);
+    fn from_bytes(buf: &[u8]) -> Result<Self, RRDataError> {
+        let priority = u16::from_be_bytes([buf[0], buf[1]]);
+        let weight = u16::from_be_bytes([buf[2], buf[3]]);
 
-        let target = String::from_utf8(buf[off+4..off+len].to_vec())
+        let target = String::from_utf8(buf[4..buf.len()].to_vec())
             .map_err(|e| RRDataError(e.to_string()))?;
 
         Ok(Self {
@@ -38,10 +39,6 @@ impl RRData for UriRRData {
             weight,
             target: Some(target)
         })
-    }
-
-    fn to_wire(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RRDataError> {
-        self.to_bytes()
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
@@ -111,6 +108,33 @@ impl UriRRData {
     }
 }
 
+impl FromWireLen for UriRRData {
+
+    fn from_wire(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
+        let priority = u16::from_wire(context)?;
+        let weight = u16::from_wire(context)?;
+
+        let target = String::from_utf8(context.take(len as usize - 4)?.to_vec())
+            .map_err(|e| WireError::Format(e.to_string()))?;
+
+        Ok(Self {
+            priority,
+            weight,
+            target: Some(target)
+        })
+    }
+}
+
+impl ToWire for UriRRData {
+
+    fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
+        self.priority.to_wire(context)?;
+        self.weight.to_wire(context)?;
+
+        context.write(self.target.as_ref().ok_or_else(|| WireError::Format("target param was not set".to_string()))?.as_bytes())
+    }
+}
+
 impl ZoneRRData for UriRRData {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
@@ -139,6 +163,6 @@ impl fmt::Display for UriRRData {
 #[test]
 fn test() {
     let buf = vec![ 0x0, 0x1, 0x66, 0x69, 0x6e, 0x64, 0x39, 0x3a, 0x2f, 0x2f, 0x6e, 0x61, 0x6d, 0x65, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72 ];
-    let record = UriRRData::from_bytes(&buf, 0, buf.len()).unwrap();
+    let record = UriRRData::from_bytes(&buf).unwrap();
     assert_eq!(buf, record.to_bytes().unwrap());
 }

@@ -1,8 +1,8 @@
 use std::any::Any;
-use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use std::net::Ipv6Addr;
+use crate::messages::wire::{FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::zone::inter::zone_rr_data::ZoneRRData;
 use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
@@ -23,11 +23,11 @@ impl Default for AaaaRRData {
 
 impl RRData for AaaaRRData {
 
-    fn from_bytes(buf: &[u8], off: usize, len: usize) -> Result<Self, RRDataError> {
-        let address = match len {
+    fn from_bytes(buf: &[u8]) -> Result<Self, RRDataError> {
+        let address = match buf.len() {
             16 => {
                 let mut octets = [0u8; 16];
-                octets.copy_from_slice(&buf[off..off+len]);
+                octets.copy_from_slice(&buf);
                 Ipv6Addr::from(octets)
             }
             _ => return Err(RRDataError("invalid inet address".to_string()))
@@ -36,10 +36,6 @@ impl RRData for AaaaRRData {
         Ok(Self {
             address: Some(address)
         })
-    }
-
-    fn to_wire(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RRDataError> {
-        self.to_bytes()
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
@@ -88,6 +84,31 @@ impl AaaaRRData {
     }
 }
 
+impl FromWireLen for AaaaRRData {
+
+    fn from_wire(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
+        let address = match len {
+            16 => {
+                let mut octets = [0u8; 16];
+                octets.copy_from_slice(context.take(len as usize)?);
+                Ipv6Addr::from(octets)
+            }
+            _ => return Err(WireError::Format("invalid inet address".to_string()))
+        };
+
+        Ok(Self {
+            address: Some(address)
+        })
+    }
+}
+
+impl ToWire for AaaaRRData {
+
+    fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
+        context.write(&self.address.ok_or_else(|| WireError::Format("address param was not set".to_string()))?.octets())
+    }
+}
+
 impl ZoneRRData for AaaaRRData {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
@@ -112,6 +133,6 @@ impl fmt::Display for AaaaRRData {
 #[test]
 fn test() {
     let buf = vec![ 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1 ];
-    let record = AaaaRRData::from_bytes(&buf, 0, buf.len()).unwrap();
+    let record = AaaaRRData::from_bytes(&buf).unwrap();
     assert_eq!(buf, record.to_bytes().unwrap());
 }

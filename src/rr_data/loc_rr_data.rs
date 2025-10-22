@@ -1,7 +1,7 @@
 use std::any::Any;
-use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
+use crate::messages::wire::{FromWire, FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::utils::coord_utils::{encode_loc_precision, CoordUtils};
 use crate::zone::inter::zone_rr_data::ZoneRRData;
@@ -35,14 +35,14 @@ impl Default for LocRRData {
 
 impl RRData for LocRRData {
 
-    fn from_bytes(buf: &[u8], off: usize, _len: usize) -> Result<Self, RRDataError> {
-        let version = buf[off];
-        let size = buf[off+1];
-        let h_precision = buf[off+2];
-        let v_precision = buf[off+3];
-        let latitude = u32::from_be_bytes([buf[off+4], buf[off+5], buf[off+6], buf[off+7]]);
-        let longitude = u32::from_be_bytes([buf[off+8], buf[off+9], buf[off+10], buf[off+11]]);
-        let altitude = u32::from_be_bytes([buf[off+12], buf[off+13], buf[off+14], buf[off+15]]);
+    fn from_bytes(buf: &[u8]) -> Result<Self, RRDataError> {
+        let version = buf[0];
+        let size = buf[1];
+        let h_precision = buf[2];
+        let v_precision = buf[3];
+        let latitude = u32::from_be_bytes([buf[4], buf[5], buf[6], buf[7]]);
+        let longitude = u32::from_be_bytes([buf[8], buf[9], buf[10], buf[11]]);
+        let altitude = u32::from_be_bytes([buf[12], buf[13], buf[14], buf[15]]);
 
         Ok(Self {
             version,
@@ -53,10 +53,6 @@ impl RRData for LocRRData {
             longitude,
             altitude
         })
-    }
-
-    fn to_wire(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RRDataError> {
-        self.to_bytes()
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
@@ -165,6 +161,45 @@ impl LocRRData {
     }
 }
 
+impl FromWireLen for LocRRData {
+
+    fn from_wire(context: &mut FromWireContext, _len: u16) -> Result<Self, WireError> {
+        let version = u8::from_wire(context)?;
+        let size = u8::from_wire(context)?;
+        let h_precision = u8::from_wire(context)?;
+        let v_precision = u8::from_wire(context)?;
+        let latitude = u32::from_wire(context)?;
+        let longitude = u32::from_wire(context)?;
+        let altitude = u32::from_wire(context)?;
+
+        Ok(Self {
+            version,
+            size,
+            h_precision,
+            v_precision,
+            latitude,
+            longitude,
+            altitude
+        })
+    }
+}
+
+impl ToWire for LocRRData {
+
+    fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
+        self.version.to_wire(context)?;
+        self.size.to_wire(context)?;
+        self.h_precision.to_wire(context)?;
+        self.v_precision.to_wire(context)?;
+
+        self.latitude.to_wire(context)?;
+        self.longitude.to_wire(context)?;
+        self.altitude.to_wire(context)?;
+
+        Ok(())
+    }
+}
+
 impl ZoneRRData for LocRRData {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
@@ -243,6 +278,6 @@ impl fmt::Display for LocRRData {
 #[test]
 fn test() {
     let buf = vec![ 0x0, 0x0, 0x0, 0x0, 0x6e, 0x67, 0x2d, 0xa0, 0x9c, 0xf7, 0xc5, 0x80, 0x0, 0x0, 0x0, 0x0 ];
-    let record = LocRRData::from_bytes(&buf, 0, buf.len()).unwrap();
+    let record = LocRRData::from_bytes(&buf).unwrap();
     assert_eq!(buf, record.to_bytes().unwrap());
 }

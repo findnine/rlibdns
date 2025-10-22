@@ -1,7 +1,7 @@
 use std::any::Any;
-use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
+use crate::messages::wire::{FromWire, FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::zone::inter::zone_rr_data::ZoneRRData;
 use crate::zone::zone_reader::{ErrorKind, ZoneReaderError};
@@ -24,22 +24,18 @@ impl Default for HInfoRRData {
 
 impl RRData for HInfoRRData {
 
-    fn from_bytes(buf: &[u8], off: usize, _len: usize) -> Result<Self, RRDataError> {
-        let data_length = buf[off] as usize;
-        let cpu = String::from_utf8(buf[off+1..off+1+data_length].to_vec()).unwrap();
-        let off = off+1+data_length;
+    fn from_bytes(buf: &[u8]) -> Result<Self, RRDataError> {
+        let cpu_length = buf[0] as usize;
+        let cpu = String::from_utf8(buf[1..1+cpu_length].to_vec()).unwrap();
 
-        let data_length = buf[off] as usize;
-        let os = String::from_utf8(buf[off+1..off+1+data_length].to_vec()).unwrap();
+        let i = 1+cpu_length;
+        let os_length = buf[i] as usize;
+        let os = String::from_utf8(buf[1+i..1+i+os_length].to_vec()).unwrap();
 
         Ok(Self {
             cpu: Some(cpu),
             os: Some(os)
         })
-    }
-
-    fn to_wire(&self, _compression_data: &mut HashMap<String, usize>, _off: usize) -> Result<Vec<u8>, RRDataError> {
-        self.to_bytes()
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
@@ -105,6 +101,37 @@ impl HInfoRRData {
     }
 }
 
+impl FromWireLen for HInfoRRData {
+
+    fn from_wire(context: &mut FromWireContext, _len: u16) -> Result<Self, WireError> {
+        let data_length = u8::from_wire(context)? as usize;
+        let cpu = String::from_utf8(context.take(data_length)?.to_vec()).unwrap();
+
+        let data_length = u8::from_wire(context)? as usize;
+        let os = String::from_utf8(context.take(data_length)?.to_vec()).unwrap();
+
+        Ok(Self {
+            cpu: Some(cpu),
+            os: Some(os)
+        })
+    }
+}
+
+impl ToWire for HInfoRRData {
+
+    fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
+        let cpu = self.cpu.as_ref()
+            .ok_or_else(|| WireError::Format("cpu param was not set".to_string()))?.as_bytes();
+        (cpu.len() as u8).to_wire(context)?;
+        context.write(cpu)?;
+
+        let os = self.os.as_ref()
+            .ok_or_else(|| WireError::Format("os param was not set".to_string()))?.as_bytes();
+        (os.len() as u8).to_wire(context)?;
+        context.write(os)
+    }
+}
+
 impl ZoneRRData for HInfoRRData {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
@@ -131,6 +158,6 @@ impl fmt::Display for HInfoRRData {
 #[test]
 fn test() {
     let buf = vec![ 0x3, 0x41, 0x4d, 0x44, 0x0 ];
-    let record = HInfoRRData::from_bytes(&buf, 0, buf.len()).unwrap();
+    let record = HInfoRRData::from_bytes(&buf).unwrap();
     assert_eq!(buf, record.to_bytes().unwrap());
 }
