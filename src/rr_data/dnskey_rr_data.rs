@@ -171,10 +171,10 @@ impl ZoneRRData for DnsKeyRRData {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
         Ok(match index {
-            0 => self.flags = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse flags param for record type DNSKEY"))?,
-            1 => self.protocol = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse protocol param for record type DNSKEY"))?,
-            2 => self.algorithm = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse algorithm param for record type DNSKEY"))?,
-            3 => self.public_key = base64::decode(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse public_key param for record type DNSKEY"))?,
+            0 => self.flags = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::Format, "unable to parse flags param for record type DNSKEY"))?,
+            1 => self.protocol = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::Format, "unable to parse protocol param for record type DNSKEY"))?,
+            2 => self.algorithm = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::Format, "unable to parse algorithm param for record type DNSKEY"))?,
+            3 => self.public_key = base64::decode(value).map_err(|_| ZoneReaderError::new(ErrorKind::Format, "unable to parse public_key param for record type DNSKEY"))?,
             _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found for record type DNSKEY"))
         })
     }

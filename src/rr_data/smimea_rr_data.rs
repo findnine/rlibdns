@@ -154,10 +154,10 @@ impl ZoneRRData for SmimeaRRData {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
         Ok(match index {
-            0 => self.usage = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse usage param for record type SMIMEA"))?,
-            1 => self.selector = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse selector param for record type SMIMEA"))?,
-            2 => self.matching_type = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse matching_type param for record type SMIMEA"))?,
-            3 => self.certificate = hex::decode(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse certificate param for record type SMIMEA"))?,
+            0 => self.usage = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::Format, "unable to parse usage param for record type SMIMEA"))?,
+            1 => self.selector = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::Format, "unable to parse selector param for record type SMIMEA"))?,
+            2 => self.matching_type = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::Format, "unable to parse matching_type param for record type SMIMEA"))?,
+            3 => self.certificate = hex::decode(value).map_err(|_| ZoneReaderError::new(ErrorKind::Format, "unable to parse certificate param for record type SMIMEA"))?,
             _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found for record type SMIMEA"))
         })
     }

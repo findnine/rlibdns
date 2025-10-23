@@ -35,9 +35,9 @@ pub struct ZoneReaderError {
 pub enum ErrorKind {
     PathNotFound,
     TypeNotFound,
-    ParseErr,
+    Parsing,
     WrongClass,
-    FormErr,
+    Format,
     ExtraRRData,
     UnexpectedEof
 }
@@ -136,7 +136,7 @@ impl ZoneReader {
                         match state {
                             ParserState::Init => {
                                 let word = String::from_utf8(part[0..word_len].to_vec())
-                                    .map_err(|_| ZoneReaderError::new(ErrorKind::ParseErr, "unable to parse string"))?.to_lowercase();
+                                    .map_err(|_| ZoneReaderError::new(ErrorKind::Parsing, "unable to parse string"))?.to_lowercase();
 
                                 if pos == 0 && paren_count == 0 {
                                     if word.starts_with('$') {
@@ -154,7 +154,7 @@ impl ZoneReader {
                             }
                             ParserState::Common => {
                                 let word = String::from_utf8(part[0..word_len].to_vec())
-                                    .map_err(|_| ZoneReaderError::new(ErrorKind::ParseErr, "unable to parse string"))?.to_uppercase();
+                                    .map_err(|_| ZoneReaderError::new(ErrorKind::Parsing, "unable to parse string"))?.to_uppercase();
 
                                 if let Ok(c) = RRClasses::from_str(&word) {
                                     if !c.eq(&self.class) {
@@ -169,19 +169,19 @@ impl ZoneReader {
                                         .ok_or_else(|| ZoneReaderError::new(ErrorKind::TypeNotFound, &format!("record type {} not found", _type)))?));
 
                                 } else {
-                                    ttl = word.parse().map_err(|_| ZoneReaderError::new(ErrorKind::ParseErr, &format!("unable to parse ttl {}", word)))?;
+                                    ttl = word.parse().map_err(|_| ZoneReaderError::new(ErrorKind::Parsing, &format!("unable to parse ttl {}", word)))?;
                                 }
                             }
                             ParserState::Directive => {
                                 let value = String::from_utf8(part[0..word_len].to_vec())
-                                    .map_err(|_| ZoneReaderError::new(ErrorKind::ParseErr, "unable to parse string"))?.to_lowercase();
+                                    .map_err(|_| ZoneReaderError::new(ErrorKind::Parsing, "unable to parse string"))?.to_lowercase();
 
                                 match directive_buf.as_str() {
                                     "$ttl" => self.default_ttl = value.parse()
-                                        .map_err(|_| ZoneReaderError::new(ErrorKind::ParseErr, &format!("unable to parse default_ttl {}", value)))?,
+                                        .map_err(|_| ZoneReaderError::new(ErrorKind::Parsing, &format!("unable to parse default_ttl {}", value)))?,
                                     "$origin" => self.origin = value.strip_suffix('.')
-                                        .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, &format!("origin is not fully qualified (missing trailing dot) {}", value)))?.to_string(),
-                                    _ => return Err(ZoneReaderError::new(ErrorKind::FormErr, &format!("unknown directive {}", directive_buf)))
+                                        .ok_or_else(|| ZoneReaderError::new(ErrorKind::Format, &format!("origin is not fully qualified (missing trailing dot) {}", value)))?.to_string(),
+                                    _ => return Err(ZoneReaderError::new(ErrorKind::Format, &format!("unknown directive {}", directive_buf)))
                                 }
 
                                 state = ParserState::Init;
@@ -190,19 +190,19 @@ impl ZoneReader {
                                 if part[0] == b'"' {
                                     if part[word_len - 1] == b'"' {
                                         record.as_mut().unwrap().3.set_data(data_count, &String::from_utf8(part[1..word_len - 1].to_vec())
-                                            .map_err(|_| ZoneReaderError::new(ErrorKind::ParseErr, "unable to parse string"))?)?;
+                                            .map_err(|_| ZoneReaderError::new(ErrorKind::Parsing, "unable to parse string"))?)?;
 
                                         data_count += 1;
 
                                     } else {
                                         state = ParserState::QString;
                                         quoted_buf = format!("{}{}", String::from_utf8(part[1..word_len].to_vec())
-                                            .map_err(|_| ZoneReaderError::new(ErrorKind::ParseErr, "unable to parse string"))?, part[word_len] as char);
+                                            .map_err(|_| ZoneReaderError::new(ErrorKind::Parsing, "unable to parse string"))?, part[word_len] as char);
                                     }
 
                                 } else {
                                     record.as_mut().unwrap().3.set_data(data_count, &String::from_utf8(part[0..word_len].to_vec())
-                                        .map_err(|_| ZoneReaderError::new(ErrorKind::ParseErr, "unable to parse string"))?)?;
+                                        .map_err(|_| ZoneReaderError::new(ErrorKind::Parsing, "unable to parse string"))?)?;
 
                                     data_count += 1;
                                 }
@@ -210,7 +210,7 @@ impl ZoneReader {
                             ParserState::QString => {
                                 if part[word_len - 1] == b'"' {
                                     quoted_buf.push_str(&format!("{}", String::from_utf8(part[0..word_len - 1].to_vec())
-                                        .map_err(|_| ZoneReaderError::new(ErrorKind::ParseErr, "unable to parse string"))?));
+                                        .map_err(|_| ZoneReaderError::new(ErrorKind::Parsing, "unable to parse string"))?));
 
                                     record.as_mut().unwrap().3.set_data(data_count, &quoted_buf)?;
 
@@ -219,7 +219,7 @@ impl ZoneReader {
 
                                 } else {
                                     quoted_buf.push_str(&format!("{}{}", String::from_utf8(part[0..word_len].to_vec())
-                                        .map_err(|_| ZoneReaderError::new(ErrorKind::ParseErr, "unable to parse string"))?, part[word_len] as char));
+                                        .map_err(|_| ZoneReaderError::new(ErrorKind::Parsing, "unable to parse string"))?, part[word_len] as char));
                                 }
                             }
                         }

@@ -185,11 +185,11 @@ impl ZoneRRData for HttpsRRData {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
         Ok(match index {
-            0 => self.priority = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse priority param for record type HTTPS"))?,
+            0 => self.priority = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::Format, "unable to parse priority param for record type HTTPS"))?,
             1 => self.target = Some(value.strip_suffix('.')
-                .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "target param is not fully qualified (missing trailing dot) for record type HTTPS"))?.to_string()),
+                .ok_or_else(|| ZoneReaderError::new(ErrorKind::Format, "target param is not fully qualified (missing trailing dot) for record type HTTPS"))?.to_string()),
             _ => self.params.push(SvcParams::from_str(value)
-                .map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse svc_params param for record type HTTPS"))?)
+                .map_err(|_| ZoneReaderError::new(ErrorKind::Format, "unable to parse svc_params param for record type HTTPS"))?)
         })
     }
 

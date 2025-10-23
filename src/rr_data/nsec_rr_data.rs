@@ -178,9 +178,9 @@ impl ZoneRRData for NSecRRData {
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
         Ok(match index {
             0 => self.next_domain = Some(value.strip_suffix('.')
-                .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "next_domain param is not fully qualified (missing trailing dot) for record type NSEC"))?.to_string()),
+                .ok_or_else(|| ZoneReaderError::new(ErrorKind::Format, "next_domain param is not fully qualified (missing trailing dot) for record type NSEC"))?.to_string()),
             _ => self.types.push(RRTypes::from_str(value)
-                .map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse types param for record type NSEC"))?)
+                .map_err(|_| ZoneReaderError::new(ErrorKind::Format, "unable to parse types param for record type NSEC"))?)
         })
     }
 

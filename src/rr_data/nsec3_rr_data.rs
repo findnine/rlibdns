@@ -254,17 +254,17 @@ impl ZoneRRData for NSec3RRData {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
         Ok(match index {
-            0 => self.algorithm = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse algorithm param for record type NSEC3"))?,
-            1 => self.flags = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse flags param for record type NSEC3"))?,
-            2 => self.iterations = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse iterations param for record type NSEC3"))?,
+            0 => self.algorithm = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::Format, "unable to parse algorithm param for record type NSEC3"))?,
+            1 => self.flags = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::Format, "unable to parse flags param for record type NSEC3"))?,
+            2 => self.iterations = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::Format, "unable to parse iterations param for record type NSEC3"))?,
             3 => {
                 if !value.eq("-") {
-                    self.salt = hex::decode(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse salt param for record type NSEC3"))?
+                    self.salt = hex::decode(value).map_err(|_| ZoneReaderError::new(ErrorKind::Format, "unable to parse salt param for record type NSEC3"))?
                 }
             }
-            4 => self.next_hash = base32::hex_decode(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse next_hash param for record type NSEC3"))?,
+            4 => self.next_hash = base32::hex_decode(value).map_err(|_| ZoneReaderError::new(ErrorKind::Format, "unable to parse next_hash param for record type NSEC3"))?,
             _ => self.types.push(RRTypes::from_str(value)
-                .map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse types param for record type NSEC3"))?)
+                .map_err(|_| ZoneReaderError::new(ErrorKind::Format, "unable to parse types param for record type NSEC3"))?)
         })
     }
 

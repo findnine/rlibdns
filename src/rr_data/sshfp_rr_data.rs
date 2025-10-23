@@ -124,9 +124,9 @@ impl ZoneRRData for SshFpRRData {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
         Ok(match index {
-            0 => self.algorithm = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse algorithm param for record type SSHFP"))?,
-            1 => self.fingerprint_type = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse fingerprint_type param for record type SSHFP"))?,
-            2 => self.fingerprint = hex::decode(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse fingerprint param for record type SSHFP"))?,
+            0 => self.algorithm = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::Format, "unable to parse algorithm param for record type SSHFP"))?,
+            1 => self.fingerprint_type = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::Format, "unable to parse fingerprint_type param for record type SSHFP"))?,
+            2 => self.fingerprint = hex::decode(value).map_err(|_| ZoneReaderError::new(ErrorKind::Format, "unable to parse fingerprint param for record type SSHFP"))?,
             _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found for record type SSHFP"))
         })
     }

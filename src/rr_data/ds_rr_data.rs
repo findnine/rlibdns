@@ -100,10 +100,10 @@ impl ZoneRRData for DsRRData {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
         Ok(match index {
-            0 => self.key_tag = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse key_tag param for record type DS"))?,
-            1 => self.algorithm = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse algorithm param for record type DS"))?,
-            2 => self.digest_type = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse digest_type param for record type DS"))?,
-            3 => self.digest = hex::decode(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse digest param for record type DS"))?,
+            0 => self.key_tag = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::Format, "unable to parse key_tag param for record type DS"))?,
+            1 => self.algorithm = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::Format, "unable to parse algorithm param for record type DS"))?,
+            2 => self.digest_type = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::Format, "unable to parse digest_type param for record type DS"))?,
+            3 => self.digest = hex::decode(value).map_err(|_| ZoneReaderError::new(ErrorKind::Format, "unable to parse digest param for record type DS"))?,
             _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found for record type DS"))
         })
     }

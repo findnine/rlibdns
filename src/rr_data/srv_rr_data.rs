@@ -156,11 +156,11 @@ impl ZoneRRData for SrvRRData {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
         Ok(match index {
-            0 => self.priority = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse priority param for record type SRV"))?,
-            1 => self.weight = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to weight port param for record type SRV"))?,
-            2 => self.port = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse port param for record type SRV"))?,
+            0 => self.priority = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::Format, "unable to parse priority param for record type SRV"))?,
+            1 => self.weight = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::Format, "unable to weight port param for record type SRV"))?,
+            2 => self.port = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::Format, "unable to parse port param for record type SRV"))?,
             3 => self.target = Some(value.strip_suffix('.')
-                .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "target param is not fully qualified (missing trailing dot) for record type SRV"))?.to_string()),
+                .ok_or_else(|| ZoneReaderError::new(ErrorKind::Format, "target param is not fully qualified (missing trailing dot) for record type SRV"))?.to_string()),
             _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found for record type SRV"))
         })
     }

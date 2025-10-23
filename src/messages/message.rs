@@ -10,6 +10,7 @@ use crate::messages::inter::rr_types::RRTypes;
 use crate::messages::edns::Edns;
 use crate::messages::record::Record;
 use crate::messages::wire::{FromWire, FromWireContext, ToWire, ToWireContext, WireError};
+
 /*
                                1  1  1  1  1  1
  0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
@@ -70,12 +71,6 @@ impl Default for Message {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub enum MessageError {
-    HeaderError(String),
-    RecordError(String)
-}
-
 impl Message {
 
     pub fn new(id: u16) -> Self {
@@ -131,9 +126,7 @@ impl Message {
             let rtype = RRTypes::try_from(u16::from_wire(&mut context)?).map_err(|e| WireError::Format(e.to_string()))?;
 
             match rtype {
-                RRTypes::Opt => {
-                    edns = Some(Edns::from_wire(&mut context)?);
-                }
+                RRTypes::Opt => edns = Some(Edns::from_wire(&mut context)?),
                 _ => {
                     let class = u16::from_wire(&mut context)?;
                     let cache_flush = (class & 0x8000) != 0;

@@ -181,11 +181,11 @@ impl ZoneRRData for SvcbRRData {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
         Ok(match index {
-            0 => self.priority = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse priority param for record type SVCB"))?,
+            0 => self.priority = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::Format, "unable to parse priority param for record type SVCB"))?,
             1 => self.target = Some(value.strip_suffix('.')
-                .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "target param is not fully qualified (missing trailing dot) for record type SVCB"))?.to_string()),
+                .ok_or_else(|| ZoneReaderError::new(ErrorKind::Format, "target param is not fully qualified (missing trailing dot) for record type SVCB"))?.to_string()),
             _ => self.params.push(SvcParams::from_str(value)
-                .map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse svc_params param for record type SVCB"))?)
+                .map_err(|_| ZoneReaderError::new(ErrorKind::Format, "unable to parse svc_params param for record type SVCB"))?)
         })
     }
 

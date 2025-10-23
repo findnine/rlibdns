@@ -102,7 +102,7 @@ impl ZoneRRData for NsRRData {
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
         Ok(match index {
             0 => self.server = Some(value.strip_suffix('.')
-                .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "server param is not fully qualified (missing trailing dot) for record type NS"))?.to_string()),
+                .ok_or_else(|| ZoneReaderError::new(ErrorKind::Format, "server param is not fully qualified (missing trailing dot) for record type NS"))?.to_string()),
             _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found for record type NS"))
         })
     }

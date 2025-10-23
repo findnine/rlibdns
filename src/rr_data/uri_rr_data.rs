@@ -139,8 +139,8 @@ impl ZoneRRData for UriRRData {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
         Ok(match index {
-            0 => self.priority = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse priority param for record type URI"))?,
-            1 => self.weight = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse weight param for record type URI"))?,
+            0 => self.priority = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::Format, "unable to parse priority param for record type URI"))?,
+            1 => self.weight = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::Format, "unable to parse weight param for record type URI"))?,
             2 => self.target = Some(value.to_string()),
             _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found for record type URI"))
         })

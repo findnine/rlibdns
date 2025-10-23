@@ -102,7 +102,7 @@ impl ZoneRRData for CNameRRData {
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
         Ok(match index {
             0 => self.target = Some(value.strip_suffix('.')
-                .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "network param is not fully qualified (missing trailing dot) for record type CNAME"))?.to_string()),
+                .ok_or_else(|| ZoneReaderError::new(ErrorKind::Format, "network param is not fully qualified (missing trailing dot) for record type CNAME"))?.to_string()),
             _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found for record type CNAME"))
         })
     }

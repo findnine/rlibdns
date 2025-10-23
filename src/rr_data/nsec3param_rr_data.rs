@@ -158,10 +158,10 @@ impl ZoneRRData for NSec3ParamRRData {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
         Ok(match index {
-            0 => self.algorithm = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse algorithm param for record type NSEC3PARAM"))?,
-            1 => self.flags = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse flags param for record type NSEC3PARAM"))?,
-            2 => self.iterations = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse iterations param for record type NSEC3PARAM"))?,
-            3 => self.salt = hex::decode(value).map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse salt param for record type NSEC3PARAM"))?,
+            0 => self.algorithm = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::Format, "unable to parse algorithm param for record type NSEC3PARAM"))?,
+            1 => self.flags = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::Format, "unable to parse flags param for record type NSEC3PARAM"))?,
+            2 => self.iterations = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::Format, "unable to parse iterations param for record type NSEC3PARAM"))?,
+            3 => self.salt = hex::decode(value).map_err(|_| ZoneReaderError::new(ErrorKind::Format, "unable to parse salt param for record type NSEC3PARAM"))?,
             _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found for record type NSEC3PARAM"))
         })
     }

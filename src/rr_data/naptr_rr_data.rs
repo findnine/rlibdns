@@ -272,8 +272,8 @@ impl ZoneRRData for NaptrRRData {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
         Ok(match index {
-            0 => self.order = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse order param for record type NAPTR"))?,
-            1 => self.preference = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse preference param for record type NAPTR"))?,
+            0 => self.order = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::Format, "unable to parse order param for record type NAPTR"))?,
+            1 => self.preference = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::Format, "unable to parse preference param for record type NAPTR"))?,
             2 => {
                 let mut flags = Vec::new();
 
@@ -285,8 +285,8 @@ impl ZoneRRData for NaptrRRData {
 
                     flags.push(NaptrFlags::try_from(flag.chars()
                         .next()
-                        .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "empty NAPTR flag token for record type NAPTR"))?)
-                        .map_err(|e|ZoneReaderError::new(ErrorKind::FormErr, &e.to_string()))?);
+                        .ok_or_else(|| ZoneReaderError::new(ErrorKind::Format, "empty NAPTR flag token for record type NAPTR"))?)
+                        .map_err(|e|ZoneReaderError::new(ErrorKind::Format, &e.to_string()))?);
                 }
 
                 self.flags = flags;
@@ -294,7 +294,7 @@ impl ZoneRRData for NaptrRRData {
             3 => self.service = Some(value.to_string()),
             4 => self.regex = Some(value.to_string()),
             5 => self.replacement = Some(value.strip_suffix('.')
-                .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "replacement param is not fully qualified (missing trailing dot) for record type NAPTR"))?.to_string()),
+                .ok_or_else(|| ZoneReaderError::new(ErrorKind::Format, "replacement param is not fully qualified (missing trailing dot) for record type NAPTR"))?.to_string()),
             _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found for record type NAPTR"))
         })
     }

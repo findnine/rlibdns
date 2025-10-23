@@ -216,14 +216,14 @@ impl ZoneRRData for SoaRRData {
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
         Ok(match index {
             0 => self.fqdn = Some(value.strip_suffix('.')
-                .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "fqdn param is not fully qualified (missing trailing dot) for record type SOA"))?.to_string()),
+                .ok_or_else(|| ZoneReaderError::new(ErrorKind::Format, "fqdn param is not fully qualified (missing trailing dot) for record type SOA"))?.to_string()),
             1 => self.mailbox = Some(value.strip_suffix('.')
-                .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "mailbox param is not fully qualified (missing trailing dot) for record type SOA"))?.to_string()),
-            2 => self.serial = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse serial param for record type SOA"))?,
-            3 => self.refresh = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse refresh param for record type SOA"))?,
-            4 => self.retry = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse retry param for record type SOA"))?,
-            5 => self.expire = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse expire param for record type SOA"))?,
-            6 => self.minimum_ttl = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse minimum_ttl param for record type SOA"))?,
+                .ok_or_else(|| ZoneReaderError::new(ErrorKind::Format, "mailbox param is not fully qualified (missing trailing dot) for record type SOA"))?.to_string()),
+            2 => self.serial = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::Format, "unable to parse serial param for record type SOA"))?,
+            3 => self.refresh = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::Format, "unable to parse refresh param for record type SOA"))?,
+            4 => self.retry = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::Format, "unable to parse retry param for record type SOA"))?,
+            5 => self.expire = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::Format, "unable to parse expire param for record type SOA"))?,
+            6 => self.minimum_ttl = value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::Format, "unable to parse minimum_ttl param for record type SOA"))?,
             _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found for record type SOA"))
         })
     }

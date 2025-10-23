@@ -113,7 +113,7 @@ impl ZoneRRData for AaaaRRData {
 
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
         Ok(match index {
-            0 => self.address = Some(value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::FormErr, "unable to parse address param for record type AAAA"))?),
+            0 => self.address = Some(value.parse().map_err(|_| ZoneReaderError::new(ErrorKind::Format, "unable to parse address param for record type AAAA"))?),
             _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found for record type AAAA"))
         })
     }

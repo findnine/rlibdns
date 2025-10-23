@@ -101,7 +101,7 @@ impl ZoneRRData for PtrRRData {
     fn set_data(&mut self, index: usize, value: &str) -> Result<(), ZoneReaderError> {
         Ok(match index {
             0 => self.fqdn = Some(value.strip_suffix('.')
-                .ok_or_else(|| ZoneReaderError::new(ErrorKind::FormErr, "fqdn param is not fully qualified (missing trailing dot) for record type PTR"))?.to_string()),
+                .ok_or_else(|| ZoneReaderError::new(ErrorKind::Format, "fqdn param is not fully qualified (missing trailing dot) for record type PTR"))?.to_string()),
             _ => return Err(ZoneReaderError::new(ErrorKind::ExtraRRData, "extra record data found for record type PTR"))
         })
     }

@@ -127,6 +127,54 @@ impl dyn RRData {
         })
     }
 
+    pub fn from_bytes(buf: &[u8], rtype: &RRTypes, class: &RRClasses) -> Result<Box<dyn RRData>, RRDataError> {
+        Ok(match rtype {
+            RRTypes::A      => {
+                match class {
+                    RRClasses::Ch => ChARRData::from_bytes(buf)?.upcast(),
+                    _ => InARRData::from_bytes(buf)?.upcast()
+                }
+            }
+            RRTypes::Aaaa   => AaaaRRData::from_bytes(buf)?.upcast(),
+            RRTypes::Ns     => NsRRData::from_bytes(buf)?.upcast(),
+            RRTypes::CName  => CNameRRData::from_bytes(buf)?.upcast(),
+            RRTypes::Soa    => SoaRRData::from_bytes(buf)?.upcast(),
+            RRTypes::Ptr    => PtrRRData::from_bytes(buf)?.upcast(),
+            RRTypes::HInfo  => HInfoRRData::from_bytes(buf)?.upcast(),
+            RRTypes::Mx     => MxRRData::from_bytes(buf)?.upcast(),
+            RRTypes::Txt    => TxtRRData::from_bytes(buf)?.upcast(),
+            RRTypes::Loc    => LocRRData::from_bytes(buf)?.upcast(),
+            RRTypes::Srv    => SrvRRData::from_bytes(buf)?.upcast(),
+            RRTypes::Naptr  => NaptrRRData::from_bytes(buf)?.upcast(),
+            RRTypes::Ds     => DsRRData::from_bytes(buf)?.upcast(),
+            RRTypes::SshFp  => SshFpRRData::from_bytes(buf)?.upcast(),
+            RRTypes::RRSig  => RRSigRRData::from_bytes(buf)?.upcast(),
+            RRTypes::NSec   => NSecRRData::from_bytes(buf)?.upcast(),
+            RRTypes::DnsKey => DnsKeyRRData::from_bytes(buf)?.upcast(),
+            RRTypes::NSec3   => NSec3RRData::from_bytes(buf)?.upcast(),
+            RRTypes::NSec3Param  => NSec3ParamRRData::from_bytes(buf)?.upcast(),
+            RRTypes::Smimea => SmimeaRRData::from_bytes(buf)?.upcast(),
+            RRTypes::Svcb   => SvcbRRData::from_bytes(buf)?.upcast(),
+            RRTypes::Https  => HttpsRRData::from_bytes(buf)?.upcast(),
+            /*
+            RRTypes::Spf => {
+                todo!()
+            }*/
+            RRTypes::TKey   => TKeyRRData::from_bytes(buf)?.upcast(),
+            RRTypes::TSig   => TSigRRData::from_bytes(buf)?.upcast(),
+            RRTypes::Uri    => UriRRData::from_bytes(buf)?.upcast(),
+            /*RRTypes::Caa => {
+                todo!()
+            }
+            _ => {
+                todo!()
+            }
+            */
+            // pseudo/unsupported types:
+            _ => return Err(RRDataError("invalid rr_type".to_string()))
+        })
+    }
+
     pub fn from_wire(context: &mut FromWireContext, len: u16, rtype: &RRTypes, class: &RRClasses) -> Result<Box<dyn RRData>, WireError> {
         Ok(match rtype {
             RRTypes::A      => {

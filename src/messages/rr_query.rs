@@ -1,8 +1,7 @@
 use std::fmt;
-use std::fmt::Formatter;
+use std::fmt::{Display, Formatter};
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
-use crate::messages::message::MessageError;
 use crate::messages::wire::{FromWire, FromWireContext, ToWire, ToWireContext, WireError};
 use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 
@@ -11,6 +10,16 @@ pub struct RRQuery {
     fqdn: String,
     rtype: RRTypes,
     class: RRClasses
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct RRQueryError(pub String);
+
+impl Display for RRQueryError {
+
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
 }
 
 impl RRQuery {
@@ -23,11 +32,13 @@ impl RRQuery {
         }
     }
 
-    pub fn from_bytes(buf: &[u8]) -> Result<Self, MessageError> {
+    pub fn from_bytes(buf: &[u8]) -> Result<Self, RRQueryError> {
         let (fqdn, fqdn_length) = unpack_fqdn(buf, 0);
 
-        let rtype = RRTypes::try_from(u16::from_be_bytes([buf[fqdn_length], buf[1+fqdn_length]])).map_err(|e| MessageError::RecordError(e.to_string()))?;
-        let class = RRClasses::try_from(u16::from_be_bytes([buf[2+fqdn_length], buf[3+fqdn_length]])).map_err(|e| MessageError::RecordError(e.to_string()))?;
+        let rtype = RRTypes::try_from(u16::from_be_bytes([buf[fqdn_length], buf[1+fqdn_length]]))
+            .map_err(|e| RRQueryError(e.to_string()))?;
+        let class = RRClasses::try_from(u16::from_be_bytes([buf[2+fqdn_length], buf[3+fqdn_length]]))
+            .map_err(|e| RRQueryError(e.to_string()))?;
 
         Ok(Self {
             fqdn,
