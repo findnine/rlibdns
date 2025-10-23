@@ -9,6 +9,7 @@ use crate::messages::rr_query::RRQuery;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::messages::edns::Edns;
 use crate::messages::record::Record;
+use crate::messages::tsig::TSig;
 use crate::messages::wire::{FromWire, FromWireContext, ToWire, ToWireContext, WireError};
 
 /*
@@ -46,7 +47,7 @@ pub struct Message {
     queries: Vec<RRQuery>,
     sections: [Vec<Record>; 3],
     edns: Option<Edns>,
-    //tsig: Option<Tsig>
+    tsig: Option<TSig>
 }
 
 impl Default for Message {
@@ -67,7 +68,8 @@ impl Default for Message {
             destination: None,
             queries: Vec::new(),
             sections: Default::default(),
-            edns: None
+            edns: None,
+            tsig: None
         }
     }
 }
@@ -128,6 +130,13 @@ impl Message {
 
             match rtype {
                 RRTypes::Opt => edns = Some(Edns::from_wire(&mut context)?),
+                RRTypes::TSig => {
+                    //BASIC IDEA
+                    //REMOVE 1 FROM AR
+                    //GO BACK BEFORE FQDN SO CHECKPOINT
+                    //GET AS VEC UP TO THAT CHECKPOINT 0-CHECKPOINT
+                    //VERIFY SIGNATURE MATCHES VIA TKEY (UNSURE HOW TO CHECK THIS...)
+                }
                 _ => {
                     let class = u16::from_wire(&mut context)?;
                     let cache_flush = (class & 0x8000) != 0;
@@ -160,7 +169,8 @@ impl Message {
             destination: None,
             queries,
             sections,
-            edns
+            edns,
+            tsig: None
         })
     }
 
