@@ -127,7 +127,7 @@ impl dyn RRData {
         })
     }
 
-    pub fn from_bytes(buf: &[u8], rtype: &RRTypes, class: &RRClasses) -> Result<Box<dyn RRData>, RRDataError> {
+    pub fn from_bytes_ambiguous(buf: &[u8], rtype: &RRTypes, class: &RRClasses) -> Result<Box<dyn RRData>, RRDataError> {
         Ok(match rtype {
             RRTypes::A      => {
                 match class {
