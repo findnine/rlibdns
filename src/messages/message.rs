@@ -165,6 +165,11 @@ impl Message {
     }
 
     pub fn to_bytes(&self, max_payload_len: usize) -> Vec<u8> {
+        let max_payload_len = match self.edns.as_ref() {
+            Some(edns) => edns.payload_size() as usize,
+            None => max_payload_len
+        };
+
         let mut context = ToWireContext::with_capacity(max_payload_len);
 
         self.id.to_wire(&mut context).unwrap();
@@ -247,6 +252,11 @@ impl Message {
     }
 
     pub fn wire_chunks(&self, max_payload_len: usize) -> WireIter {
+        let max_payload_len = match self.edns.as_ref() {
+            Some(edns) => edns.payload_size() as usize,
+            None => max_payload_len
+        };
+
         let mut context = ToWireContext::with_capacity(max_payload_len);
 
         self.id.to_wire(&mut context).unwrap();
