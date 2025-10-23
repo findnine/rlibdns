@@ -132,7 +132,7 @@ impl DnsKeyRRData {
 
 impl FromWireLen for DnsKeyRRData {
 
-    fn from_wire(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
+    fn from_wire_len(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
         let flags = u16::from_wire(context)?;
         /*
         Flags: 0x0100

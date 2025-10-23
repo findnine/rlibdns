@@ -110,7 +110,7 @@ impl UriRRData {
 
 impl FromWireLen for UriRRData {
 
-    fn from_wire(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
+    fn from_wire_len(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
         let priority = u16::from_wire(context)?;
         let weight = u16::from_wire(context)?;
 

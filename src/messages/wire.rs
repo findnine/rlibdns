@@ -244,7 +244,7 @@ pub trait FromWire {
 
 pub trait FromWireLen {
 
-    fn from_wire(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> where Self: Sized;
+    fn from_wire_len(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> where Self: Sized;
 }
 
 pub trait ToWire {

@@ -80,7 +80,7 @@ impl NsRRData {
 
 impl FromWireLen for NsRRData {
 
-    fn from_wire(context: &mut FromWireContext, _len: u16) -> Result<Self, WireError> {
+    fn from_wire_len(context: &mut FromWireContext, _len: u16) -> Result<Self, WireError> {
         let server = context.name()?;
 
         Ok(Self {

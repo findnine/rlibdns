@@ -161,7 +161,7 @@ impl NSecRRData {
 
 impl FromWireLen for NSecRRData {
 
-    fn from_wire(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
+    fn from_wire_len(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
         todo!()
     }
 }

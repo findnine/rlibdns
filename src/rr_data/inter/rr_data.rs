@@ -32,7 +32,7 @@ use std::fmt;
 use std::fmt::{Debug, Display, Formatter};
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
-use crate::messages::wire::{FromWireLen, ToWire};
+use crate::messages::wire::{FromWireContext, FromWireLen, ToWire, WireError};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct RRDataError(pub String);
@@ -74,6 +74,7 @@ impl PartialEq for dyn RRData {
         self.eq_box(other)
     }
 }
+
 impl Eq for dyn RRData {}
 
 impl dyn RRData {
@@ -123,6 +124,54 @@ impl dyn RRData {
             */
             // pseudo/unsupported types:
             _ => return None
+        })
+    }
+
+    pub fn from_wire(context: &mut FromWireContext, len: u16, rtype: &RRTypes, class: &RRClasses) -> Result<Box<dyn RRData>, WireError> {
+        Ok(match rtype {
+            RRTypes::A      => {
+                match class {
+                    RRClasses::Ch => ChARRData::from_wire_len(context, len)?.upcast(),
+                    _ => InARRData::from_wire_len(context, len)?.upcast()
+                }
+            }
+            RRTypes::Aaaa   => AaaaRRData::from_wire_len(context, len)?.upcast(),
+            RRTypes::Ns     => NsRRData::from_wire_len(context, len)?.upcast(),
+            RRTypes::CName  => CNameRRData::from_wire_len(context, len)?.upcast(),
+            RRTypes::Soa    => SoaRRData::from_wire_len(context, len)?.upcast(),
+            RRTypes::Ptr    => PtrRRData::from_wire_len(context, len)?.upcast(),
+            RRTypes::HInfo  => HInfoRRData::from_wire_len(context, len)?.upcast(),
+            RRTypes::Mx     => MxRRData::from_wire_len(context, len)?.upcast(),
+            RRTypes::Txt    => TxtRRData::from_wire_len(context, len)?.upcast(),
+            RRTypes::Loc    => LocRRData::from_wire_len(context, len)?.upcast(),
+            RRTypes::Srv    => SrvRRData::from_wire_len(context, len)?.upcast(),
+            RRTypes::Naptr  => NaptrRRData::from_wire_len(context, len)?.upcast(),
+            RRTypes::Ds     => DsRRData::from_wire_len(context, len)?.upcast(),
+            RRTypes::SshFp  => SshFpRRData::from_wire_len(context, len)?.upcast(),
+            RRTypes::RRSig  => RRSigRRData::from_wire_len(context, len)?.upcast(),
+            RRTypes::NSec   => NSecRRData::from_wire_len(context, len)?.upcast(),
+            RRTypes::DnsKey => DnsKeyRRData::from_wire_len(context, len)?.upcast(),
+            RRTypes::NSec3   => NSec3RRData::from_wire_len(context, len)?.upcast(),
+            RRTypes::NSec3Param  => NSec3ParamRRData::from_wire_len(context, len)?.upcast(),
+            RRTypes::Smimea => SmimeaRRData::from_wire_len(context, len)?.upcast(),
+            RRTypes::Svcb   => SvcbRRData::from_wire_len(context, len)?.upcast(),
+            RRTypes::Https  => HttpsRRData::from_wire_len(context, len)?.upcast(),
+            /*
+            RRTypes::Spf => {
+                todo!()
+            }*/
+            RRTypes::TKey   => TKeyRRData::from_wire_len(context, len)?.upcast(),
+            RRTypes::TSig   => TSigRRData::from_wire_len(context, len)?.upcast(),
+            RRTypes::Uri    => UriRRData::from_wire_len(context, len)?.upcast(),
+            /*RRTypes::Caa => {
+                todo!()
+            }
+            _ => {
+                todo!()
+            }
+            */
+            // pseudo/unsupported types:
+            _ => return Err(WireError::Format("invalid rr_type".to_string()))
         })
     }
 }

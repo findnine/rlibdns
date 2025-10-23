@@ -103,7 +103,7 @@ impl HInfoRRData {
 
 impl FromWireLen for HInfoRRData {
 
-    fn from_wire(context: &mut FromWireContext, _len: u16) -> Result<Self, WireError> {
+    fn from_wire_len(context: &mut FromWireContext, _len: u16) -> Result<Self, WireError> {
         let data_length = u8::from_wire(context)? as usize;
         let cpu = String::from_utf8(context.take(data_length)?.to_vec()).unwrap();
 

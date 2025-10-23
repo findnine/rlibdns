@@ -80,7 +80,7 @@ impl CNameRRData {
 
 impl FromWireLen for CNameRRData {
 
-    fn from_wire(context: &mut FromWireContext, _len: u16) -> Result<Self, WireError> {
+    fn from_wire_len(context: &mut FromWireContext, _len: u16) -> Result<Self, WireError> {
         let target = context.name()?;
 
         Ok(Self {

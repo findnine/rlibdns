@@ -177,7 +177,7 @@ impl TKeyRRData {
 
 impl FromWireLen for TKeyRRData {
 
-    fn from_wire(context: &mut FromWireContext, _len: u16) -> Result<Self, WireError> {
+    fn from_wire_len(context: &mut FromWireContext, _len: u16) -> Result<Self, WireError> {
         let algorithm_name = context.name()?;
 
         let inception = u32::from_wire(context)?;

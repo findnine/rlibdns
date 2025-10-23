@@ -197,7 +197,7 @@ impl NaptrRRData {
 
 impl FromWireLen for NaptrRRData {
 
-    fn from_wire(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
+    fn from_wire_len(context: &mut FromWireContext, _len: u16) -> Result<Self, WireError> {
         let order = u16::from_wire(context)?;
         let preference = u16::from_wire(context)?;
 

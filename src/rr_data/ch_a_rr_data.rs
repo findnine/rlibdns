@@ -97,7 +97,7 @@ impl ChARRData {
 
 impl FromWireLen for ChARRData {
 
-    fn from_wire(context: &mut FromWireContext, _len: u16) -> Result<Self, WireError> {
+    fn from_wire_len(context: &mut FromWireContext, _len: u16) -> Result<Self, WireError> {
         let network = context.name()?;
         let address = u16::from_wire(context)?;
 

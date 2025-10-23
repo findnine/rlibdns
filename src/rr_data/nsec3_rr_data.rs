@@ -186,7 +186,7 @@ impl NSec3RRData {
 
 impl FromWireLen for NSec3RRData {
 
-    fn from_wire(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
+    fn from_wire_len(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
         let algorithm = u8::from_wire(context)?;
         let flags = u8::from_wire(context)?;
         let iterations = u16::from_wire(context)?;

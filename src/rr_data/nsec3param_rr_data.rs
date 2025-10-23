@@ -125,7 +125,7 @@ impl NSec3ParamRRData {
 
 impl FromWireLen for NSec3ParamRRData {
 
-    fn from_wire(context: &mut FromWireContext, _len: u16) -> Result<Self, WireError> {
+    fn from_wire_len(context: &mut FromWireContext, _len: u16) -> Result<Self, WireError> {
         let algorithm = u8::from_wire(context)?;
         let flags = u8::from_wire(context)?;
         let iterations = u16::from_wire(context)?;

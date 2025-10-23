@@ -123,7 +123,7 @@ impl SmimeaRRData {
 
 impl FromWireLen for SmimeaRRData {
 
-    fn from_wire(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
+    fn from_wire_len(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
         let usage = u8::from_wire(context)?;
         let selector = u8::from_wire(context)?;
         let matching_type = u8::from_wire(context)?;

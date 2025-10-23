@@ -86,7 +86,7 @@ impl AaaaRRData {
 
 impl FromWireLen for AaaaRRData {
 
-    fn from_wire(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
+    fn from_wire_len(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
         let address = match len {
             16 => {
                 let mut octets = [0u8; 16];

@@ -163,7 +163,7 @@ impl LocRRData {
 
 impl FromWireLen for LocRRData {
 
-    fn from_wire(context: &mut FromWireContext, _len: u16) -> Result<Self, WireError> {
+    fn from_wire_len(context: &mut FromWireContext, _len: u16) -> Result<Self, WireError> {
         let version = u8::from_wire(context)?;
         let size = u8::from_wire(context)?;
         let h_precision = u8::from_wire(context)?;

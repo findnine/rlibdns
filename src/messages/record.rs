@@ -2,8 +2,7 @@ use std::fmt;
 use std::fmt::Formatter;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
-use crate::messages::wire::{FromWire, FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
-use crate::rr_data::in_a_rr_data::InARRData;
+use crate::messages::wire::{FromWire, FromWireContext, ToWire, ToWireContext, WireError};
 use crate::rr_data::inter::rr_data::RRData;
 
 #[derive(Debug, Clone)]
@@ -83,12 +82,7 @@ impl FromWire for Record {
         let len = u16::from_wire(context)?;
         let data = match len {
             0 => None,
-            _ => {
-                match rtype {
-                    RRTypes::A => Some(RRData::upcast(InARRData::from_wire(context, len)?)),
-                    _ => None
-                }
-            }
+            _ => Some(<dyn RRData>::from_wire(context, len, &rtype, &class)?)
         };
 
         Ok(Self {

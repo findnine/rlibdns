@@ -97,7 +97,7 @@ impl MxRRData {
 
 impl FromWireLen for MxRRData {
 
-    fn from_wire(context: &mut FromWireContext, _len: u16) -> Result<Self, WireError> {
+    fn from_wire_len(context: &mut FromWireContext, _len: u16) -> Result<Self, WireError> {
         let priority = u16::from_wire(context)?;
 
         let server = context.name()?;

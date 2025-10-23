@@ -95,7 +95,7 @@ impl TxtRRData {
 
 impl FromWireLen for TxtRRData {
 
-    fn from_wire(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
+    fn from_wire_len(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
         let mut data = Vec::new();
 
         let mut i = 0;

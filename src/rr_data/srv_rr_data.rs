@@ -124,7 +124,7 @@ impl SrvRRData {
 
 impl FromWireLen for SrvRRData {
 
-    fn from_wire(context: &mut FromWireContext, _len: u16) -> Result<Self, WireError> {
+    fn from_wire_len(context: &mut FromWireContext, _len: u16) -> Result<Self, WireError> {
         let priority = u16::from_wire(context)?;
         let weight = u16::from_wire(context)?;
         let port = u16::from_wire(context)?;

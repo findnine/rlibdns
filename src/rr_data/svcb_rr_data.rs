@@ -131,7 +131,7 @@ impl SvcbRRData {
 
 impl FromWireLen for SvcbRRData {
 
-    fn from_wire(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
+    fn from_wire_len(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
         let priority = u16::from_wire(context)?;
 
         let checkpoint = context.pos();

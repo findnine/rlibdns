@@ -108,7 +108,7 @@ impl SshFpRRData {
 
 impl FromWireLen for SshFpRRData {
 
-    fn from_wire(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
+    fn from_wire_len(context: &mut FromWireContext, len: u16) -> Result<Self, WireError> {
         todo!()
     }
 }

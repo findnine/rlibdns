@@ -10,7 +10,6 @@ use crate::messages::inter::rr_types::RRTypes;
 use crate::messages::edns::Edns;
 use crate::messages::record::Record;
 use crate::messages::wire::{FromWire, FromWireContext, ToWire, ToWireContext, WireError};
-
 /*
                                1  1  1  1  1  1
  0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
@@ -136,44 +135,20 @@ impl Message {
                     edns = Some(Edns::from_wire(&mut context)?);
                 }
                 _ => {
-                    //sections[2].push(Record::from_wire(context)?);
+                    let class = u16::from_wire(&mut context)?;
+                    let cache_flush = (class & 0x8000) != 0;
+                    let class = RRClasses::try_from(class).map_err(|e| WireError::Format(e.to_string()))?;
+                    let ttl = u32::from_wire(&mut context)?;
+
+                    let len = u16::from_wire(&mut context)?;
+                    let data = match len {
+                        0 => None,
+                        _ => Some(<dyn RRData>::from_wire(&mut context, len, &rtype, &class)?)
+                    };
+
+                    sections[2].push(Record::new(&fqdn, class, rtype, ttl, data));
                 }
             }
-
-            /*
-            let class = u16::from_wire(context)?;
-            let cache_flush = (class & 0x8000) != 0;
-            let class = RRClasses::try_from(class).map_err(|e| WireError::Format(e.to_string()))?;
-            let ttl = u32::from_wire(context)?;
-
-            let len = u16::from_wire(context)?;
-            let data = match len {
-                0 => None,
-                _ => {
-                    match rtype {
-                        RRTypes::A => Some(RRData::upcast(InARRData::from_wire(context, len)?)),
-                        _ => None
-                    }
-                }
-            };
-            */
-
-
-            /*
-            //PEAK HERE FOR EDNS
-            let buf = context.peek(2)?;
-            println!("{:x?}", buf);
-
-            match RRTypes::try_from(u16::from_be_bytes([buf[0], buf[1]])).map_err(|e| WireError::Other(e.to_string()))? {
-                RRTypes::Opt => {
-                    println!("EDNS");
-                    break;
-                }
-                _ => {
-                    sections[2].push(Record::from_wire(context)?);
-                }
-            }
-            */
         }
 
         Ok(Self {
