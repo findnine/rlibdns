@@ -515,7 +515,7 @@ impl<'a> Iterator for WireIter<'a> {
         }
 
         self.context.rollback(4);
-        self.context.skip(8).unwrap();
+        self.context.write(&[0; 8]).unwrap();
 
         let mut truncated = false;
 
