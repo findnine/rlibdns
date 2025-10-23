@@ -8,4 +8,3 @@ pub mod hex;
 pub mod octal;
 pub mod coord_utils;
 pub mod time_utils;
-pub mod name_list;

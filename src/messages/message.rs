@@ -45,7 +45,8 @@ pub struct Message {
     destination: Option<SocketAddr>,
     queries: Vec<RRQuery>,
     sections: [Vec<Record>; 3],
-    edns: Option<Edns>
+    edns: Option<Edns>,
+    //tsig: Option<Tsig>
 }
 
 impl Default for Message {
