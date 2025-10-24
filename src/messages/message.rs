@@ -9,7 +9,6 @@ use crate::messages::rr_query::RRQuery;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::messages::edns::Edns;
 use crate::messages::record::Record;
-use crate::messages::tsig::TSig;
 use crate::messages::wire::{FromWire, FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
 use crate::rr_data::tsig_rr_data::TSigRRData;
 use crate::utils::base64;
@@ -50,8 +49,7 @@ pub struct Message {
     destination: Option<SocketAddr>,
     queries: Vec<RRQuery>,
     sections: [Vec<Record>; 3],
-    edns: Option<Edns>,
-    tsig: Option<TSig>
+    edns: Option<Edns>
 }
 
 impl Default for Message {
@@ -72,8 +70,7 @@ impl Default for Message {
             destination: None,
             queries: Vec::new(),
             sections: Default::default(),
-            edns: None,
-            tsig: None
+            edns: None
         }
     }
 }
@@ -149,6 +146,7 @@ impl Message {
                             //WE MAY NEED TO PASS IN CONTEXT OF THE KEY SOMEHOW - MAYBE CALLBACK???
 
                             let tsig = TSigRRData::from_wire_len(&mut context, len)?;
+                            println!("{}", tsig);
 
                             let mut payload = context.range(0..checkpoint)?.to_vec();
                             payload[10..12].copy_from_slice(&(ar_count - 1).to_be_bytes());
@@ -156,8 +154,8 @@ impl Message {
                             payload.extend_from_slice(&RRClasses::Any.code().to_be_bytes());
                             payload.extend_from_slice(&0u32.to_be_bytes());
 
-                            payload.extend_from_slice(&pack_fqdn(tsig.algorithm_name().as_ref()
-                                .ok_or_else(|| WireError::Format("algorithm_name param was not set".to_string()))?)); //PROBABLY NO COMPRESS
+                            payload.extend_from_slice(&pack_fqdn(&tsig.algorithm().as_ref()
+                                .ok_or_else(|| WireError::Format("algorithm_name param was not set".to_string()))?.to_string())); //PROBABLY NO COMPRESS
 
                             payload.extend_from_slice(&[
                                 ((tsig.time_signed() >> 40) & 0xFF) as u8,
@@ -239,8 +237,7 @@ impl Message {
             destination: None,
             queries,
             sections,
-            edns,
-            tsig: None
+            edns
         })
     }
 

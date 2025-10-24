@@ -1,6 +1,8 @@
 use std::any::Any;
 use std::fmt;
 use std::fmt::Formatter;
+use std::str::FromStr;
+use crate::keyring::inter::algorithms::Algorithms;
 use crate::messages::wire::{FromWire, FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
@@ -8,7 +10,7 @@ use crate::utils::hex;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct TSigRRData {
-    algorithm_name: Option<String>,
+    algorithm: Option<Algorithms>,
     time_signed: u64,
     fudge: u16,
     mac: Vec<u8>,
@@ -21,7 +23,7 @@ impl Default for TSigRRData {
 
     fn default() -> Self {
         Self {
-            algorithm_name: None,
+            algorithm: None,
             time_signed: 0,
             fudge: 0,
             mac: Vec::new(),
@@ -35,8 +37,10 @@ impl Default for TSigRRData {
 impl RRData for TSigRRData {
 
     fn from_bytes(buf: &[u8]) -> Result<Self, RRDataError> {
-        let (algorithm_name, algorithm_name_length) = unpack_fqdn(buf, 0);
-        let mut i = algorithm_name_length;
+        let (algorithm, algorithm_length) = unpack_fqdn(buf, 0);
+        let algorithm = Algorithms::from_str(&algorithm)
+            .map_err(|e| RRDataError(e.to_string()))?;
+        let mut i = algorithm_length;
 
         let time_signed = ((buf[i] as u64) << 40)
                 | ((buf[i+1] as u64) << 32)
@@ -57,7 +61,7 @@ impl RRData for TSigRRData {
         let data = buf[i+6..data_length].to_vec();
 
         Ok(Self {
-            algorithm_name: Some(algorithm_name),
+            algorithm: Some(algorithm),
             time_signed,
             fudge,
             mac,
@@ -70,8 +74,8 @@ impl RRData for TSigRRData {
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
         let mut buf = Vec::with_capacity(158);
 
-        buf.extend_from_slice(&pack_fqdn(self.algorithm_name.as_ref()
-            .ok_or_else(|| RRDataError("algorithm_name param was not set".to_string()))?)); //PROBABLY NO COMPRESS
+        buf.extend_from_slice(&pack_fqdn(&self.algorithm.as_ref()
+            .ok_or_else(|| RRDataError("algorithm param was not set".to_string()))?.to_string())); //PROBABLY NO COMPRESS
 
         buf.extend_from_slice(&[
             ((self.time_signed >> 40) & 0xFF) as u8,
@@ -118,9 +122,9 @@ impl RRData for TSigRRData {
 
 impl TSigRRData {
 
-    pub fn new(algorithm_name: &str, time_signed: u64, fudge: u16, mac: &[u8], original_id: u16, error: u16, data: &[u8]) -> Self {
+    pub fn new(algorithm: Algorithms, time_signed: u64, fudge: u16, mac: &[u8], original_id: u16, error: u16, data: &[u8]) -> Self {
         Self {
-            algorithm_name: Some(algorithm_name.to_string()),
+            algorithm: Some(algorithm),
             time_signed,
             fudge,
             mac: mac.to_vec(),
@@ -130,12 +134,12 @@ impl TSigRRData {
         }
     }
 
-    pub fn set_algorithm_name(&mut self, algorithm_name: &str) {
-        self.algorithm_name = Some(algorithm_name.to_string());
+    pub fn set_algorithm(&mut self, algorithm: Algorithms) {
+        self.algorithm = Some(algorithm);
     }
 
-    pub fn algorithm_name(&self) -> Option<&String> {
-        self.algorithm_name.as_ref()
+    pub fn algorithm(&self) -> Option<&Algorithms> {
+        self.algorithm.as_ref()
     }
 
     pub fn set_time_signed(&mut self, time_signed: u64) {
@@ -190,7 +194,8 @@ impl TSigRRData {
 impl FromWireLen for TSigRRData {
 
     fn from_wire_len(context: &mut FromWireContext, _len: u16) -> Result<Self, WireError> {
-        let algorithm_name = context.name()?;
+        let algorithm = Algorithms::from_str(&context.name()?)
+            .map_err(|e| WireError::Format(e.to_string()))?;
 
         let time_signed = context.take(6)?;
         let time_signed = ((time_signed[0] as u64) << 40)
@@ -211,7 +216,7 @@ impl FromWireLen for TSigRRData {
         let data = context.take(data_length)?.to_vec();
 
         Ok(Self {
-            algorithm_name: Some(algorithm_name),
+            algorithm: Some(algorithm),
             time_signed,
             fudge,
             mac,
@@ -225,8 +230,8 @@ impl FromWireLen for TSigRRData {
 impl ToWire for TSigRRData {
 
     fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
-        context.write_name(self.algorithm_name.as_ref()
-            .ok_or_else(|| WireError::Format("algorithm_name param was not set".to_string()))?, true)?; //PROBABLY NO COMPRESS
+        context.write_name(&self.algorithm.as_ref()
+            .ok_or_else(|| WireError::Format("algorithm param was not set".to_string()))?.to_string(), true)?; //PROBABLY NO COMPRESS
 
         context.write(&[
             ((self.time_signed >> 40) & 0xFF) as u8,
@@ -252,7 +257,7 @@ impl ToWire for TSigRRData {
 impl fmt::Display for TSigRRData {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{} {} {} {} {} {} {}", format!("{}.", self.algorithm_name.as_ref().unwrap()),
+        write!(f, "{} {} {} {} {} {} {}", format!("{}.", self.algorithm.as_ref().unwrap()),
                self.time_signed,
                self.fudge,
                hex::encode(&self.mac),

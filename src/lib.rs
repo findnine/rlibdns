@@ -3,6 +3,7 @@ pub mod rr_data;
 pub mod utils;
 pub mod zone;
 pub mod journal;
+mod keyring;
 
 #[cfg(test)]
 mod tests {
@@ -45,6 +46,9 @@ mod tests {
 
     //DONT USE UNWRAPS - MODIFY ALL ENUMS DOING IT - THEN CHANGE io::Result for from_bytes on Message to our own Result
 
+
+
+    //APPARENTLY TCP MULTI PART / CHUNK SHOULD NOT REPEAT QUERY EACH MESSAGE...
 
 
 

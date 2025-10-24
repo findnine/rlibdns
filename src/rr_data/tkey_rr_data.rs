@@ -1,6 +1,8 @@
 use std::any::Any;
 use std::fmt;
 use std::fmt::Formatter;
+use std::str::FromStr;
+use crate::keyring::inter::algorithms::Algorithms;
 use crate::messages::wire::{FromWire, FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
 use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::utils::base64;
@@ -8,7 +10,7 @@ use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct TKeyRRData {
-    algorithm_name: Option<String>,
+    algorithm: Option<Algorithms>,
     inception: u32,
     expiration: u32,
     mode: u16, //ENUM PLEASE
@@ -21,7 +23,7 @@ impl Default for TKeyRRData {
 
     fn default() -> Self {
         Self {
-            algorithm_name: None,
+            algorithm: None,
             inception: 0,
             expiration: 0,
             mode: 0,
@@ -35,8 +37,10 @@ impl Default for TKeyRRData {
 impl RRData for TKeyRRData {
 
     fn from_bytes(buf: &[u8]) -> Result<Self, RRDataError> {
-        let (algorithm_name, algorithm_name_length) = unpack_fqdn(buf, 0);
-        let mut i = algorithm_name_length;
+        let (algorithm, algorithm_length) = unpack_fqdn(buf, 0);
+        let algorithm = Algorithms::from_str(&algorithm)
+            .map_err(|e| RRDataError(e.to_string()))?;
+        let mut i = algorithm_length;
 
         let inception = u32::from_be_bytes([buf[i], buf[i+1], buf[i+2], buf[i+3]]);
         let expiration = u32::from_be_bytes([buf[i+4], buf[i+5], buf[i+6], buf[i+7]]);
@@ -52,7 +56,7 @@ impl RRData for TKeyRRData {
         let data = buf[i+2..data_length].to_vec();
 
         Ok(Self {
-            algorithm_name: Some(algorithm_name),
+            algorithm: Some(algorithm),
             inception,
             expiration,
             mode,
@@ -65,8 +69,8 @@ impl RRData for TKeyRRData {
     fn to_bytes(&self) -> Result<Vec<u8>, RRDataError> {
         let mut buf = Vec::with_capacity(158);
 
-        buf.extend_from_slice(&pack_fqdn(self.algorithm_name.as_ref()
-            .ok_or_else(|| RRDataError("algorithm_name param was not set".to_string()))?)); //PROBABLY NO COMPRESS
+        buf.extend_from_slice(&pack_fqdn(&self.algorithm.as_ref()
+            .ok_or_else(|| RRDataError("algorithm param was not set".to_string()))?.to_string())); //PROBABLY NO COMPRESS
 
         buf.extend_from_slice(&self.inception.to_be_bytes());
         buf.extend_from_slice(&self.expiration.to_be_bytes());
@@ -106,9 +110,9 @@ impl RRData for TKeyRRData {
 
 impl TKeyRRData {
 
-    pub fn new(algorithm_name: &str, inception: u32, expiration: u32, mode: u16, error: u16, key: &[u8], data: &[u8]) -> Self {
+    pub fn new(algorithm: Algorithms, inception: u32, expiration: u32, mode: u16, error: u16, key: &[u8], data: &[u8]) -> Self {
         Self {
-            algorithm_name: Some(algorithm_name.to_string()),
+            algorithm: Some(algorithm),
             inception,
             expiration,
             mode,
@@ -118,12 +122,12 @@ impl TKeyRRData {
         }
     }
 
-    pub fn set_algorithm_name(&mut self, algorithm_name: &str) {
-        self.algorithm_name = Some(algorithm_name.to_string());
+    pub fn set_algorithm(&mut self, algorithm: Algorithms) {
+        self.algorithm = Some(algorithm);
     }
 
-    pub fn algorithm_name(&self) -> Option<&String> {
-        self.algorithm_name.as_ref()
+    pub fn algorithm(&self) -> Option<&Algorithms> {
+        self.algorithm.as_ref()
     }
 
     pub fn set_inception(&mut self, inception: u32) {
@@ -178,7 +182,8 @@ impl TKeyRRData {
 impl FromWireLen for TKeyRRData {
 
     fn from_wire_len(context: &mut FromWireContext, _len: u16) -> Result<Self, WireError> {
-        let algorithm_name = context.name()?;
+        let algorithm = Algorithms::from_str(&context.name()?)
+            .map_err(|e| WireError::Format(e.to_string()))?;
 
         let inception = u32::from_wire(context)?;
         let expiration = u32::from_wire(context)?;
@@ -193,7 +198,7 @@ impl FromWireLen for TKeyRRData {
         let data = context.take(data_length)?.to_vec();
 
         Ok(Self {
-            algorithm_name: Some(algorithm_name),
+            algorithm: Some(algorithm),
             inception,
             expiration,
             mode,
@@ -207,8 +212,8 @@ impl FromWireLen for TKeyRRData {
 impl ToWire for TKeyRRData {
 
     fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
-        context.write_name(self.algorithm_name.as_ref()
-            .ok_or_else(|| WireError::Format("algorithm_name param was not set".to_string()))?, true)?; //PROBABLY NO COMPRESS
+        context.write_name(&self.algorithm.as_ref()
+            .ok_or_else(|| WireError::Format("algorithm param was not set".to_string()))?.to_string(), true)?; //PROBABLY NO COMPRESS
 
         self.inception.to_wire(context)?;
         self.expiration.to_wire(context)?;
@@ -227,7 +232,7 @@ impl ToWire for TKeyRRData {
 impl fmt::Display for TKeyRRData {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{} {} {} {} {} {} {}", format!("{}.", self.algorithm_name.as_ref().unwrap()),
+        write!(f, "{} {} {} {} {} {} {}", format!("{}.", self.algorithm.as_ref().unwrap()),
                self.inception,
                self.expiration,
                self.mode,
