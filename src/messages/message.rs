@@ -155,7 +155,7 @@ impl Message {
                             payload.extend_from_slice(&0u32.to_be_bytes());
 
                             payload.extend_from_slice(&pack_fqdn(&tsig.algorithm().as_ref()
-                                .ok_or_else(|| WireError::Format("algorithm_name param was not set".to_string()))?.to_string())); //PROBABLY NO COMPRESS
+                                .ok_or_else(|| WireError::Format("algorithm param was not set".to_string()))?.to_string())); //PROBABLY NO COMPRESS
 
                             payload.extend_from_slice(&[
                                 ((tsig.time_signed() >> 40) & 0xFF) as u8,
