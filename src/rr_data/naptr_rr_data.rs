@@ -264,7 +264,7 @@ impl ToWire for NaptrRRData {
         context.write(&regex)?;
 
         context.write_name(self.replacement.as_ref()
-                               .ok_or_else(|| WireError::Format("replacement param was not set".to_string()))?, false)
+            .ok_or_else(|| WireError::Format("replacement param was not set".to_string()))?, false)
     }
 }
 

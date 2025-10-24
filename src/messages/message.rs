@@ -4,7 +4,7 @@ use std::net::SocketAddr;
 use crate::messages::inter::op_codes::OpCodes;
 use crate::messages::inter::response_codes::ResponseCodes;
 use crate::messages::inter::rr_classes::RRClasses;
-use crate::rr_data::inter::rr_data::RRData;
+use crate::rr_data::inter::rr_data::{RRData, RRDataError};
 use crate::messages::rr_query::RRQuery;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::messages::edns::Edns;
@@ -13,6 +13,7 @@ use crate::messages::tsig::TSig;
 use crate::messages::wire::{FromWire, FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
 use crate::rr_data::tsig_rr_data::TSigRRData;
 use crate::utils::base64;
+use crate::utils::fqdn_utils::pack_fqdn;
 use crate::utils::hash::hmac::hmac;
 use crate::utils::hash::sha256::Sha256;
 /*
@@ -141,37 +142,100 @@ impl Message {
                     //VERIFY SIGNATURE MATCHES VIA TKEY (UNSURE HOW TO CHECK THIS...)
 
 
+                    /*
+
+                    Take the original DNS message bytes up to—but not including—the TSIG RR.
+                    (Exclude the entire TSIG RR: its owner name, TYPE, CLASS, TTL, RDLENGTH, and RDATA are all not part of this chunk.)
+
+                    Decrement ARCOUNT by 1 in that copy (bytes 10..12 of the DNS header).
+
+                    Append the TSIG “variables” block (canonical, no compression, lower-case):
+
+                    Key Name (TSIG owner name) as a domain-name
+
+                    Class = ANY (u16 = 255)
+
+                    TTL = 0 (u32)
+
+                    Algorithm Name as a domain-name (e.g., hmac-sha256.)
+
+                    Time Signed (u48 = 6 bytes, big-endian)
+
+                    Fudge (u16)
+
+                    Error (u16)
+
+                    Other Len (u16)
+
+                    Other Data (Other Len bytes)
+
+                    Note: Do not include the TSIG RDLENGTH, the MAC length, or the MAC itself in what you sign.
+
+                    HMAC over the result using the shared key. Compare the computed MAC to the MAC in the TSIG RDATA.
+                    */
 
 
                     let class = u16::from_wire(&mut context)?;
                     let cache_flush = (class & 0x8000) != 0;
                     let class = RRClasses::try_from(class).map_err(|e| WireError::Format(e.to_string()))?;
                     let ttl = u32::from_wire(&mut context)?;
-                    
+
                     let checkpoint = context.pos();
 
                     let len = u16::from_wire(&mut context)?;
-                    let data = match len {
-                        0 => None,
-                        _ => Some(TSigRRData::from_wire_len(&mut context, len,)?)
+                    match len {
+                        0 => {}
+                        _ => {
+                            let tsig = TSigRRData::from_wire_len(&mut context, len)?;
+
+
+
+
+                            let mut payload = context.range(0..checkpoint)?.to_vec();
+                            payload[10..12].copy_from_slice(&ar_count.to_be_bytes());
+
+
+                            payload.extend_from_slice(&pack_fqdn(tsig.algorithm_name().as_ref()
+                                .ok_or_else(|| WireError::Format("algorithm_name param was not set".to_string()))?)); //PROBABLY NO COMPRESS
+
+                            payload.extend_from_slice(&[
+                                ((tsig.time_signed() >> 40) & 0xFF) as u8,
+                                ((tsig.time_signed() >> 32) & 0xFF) as u8,
+                                ((tsig.time_signed() >> 24) & 0xFF) as u8,
+                                ((tsig.time_signed() >> 16) & 0xFF) as u8,
+                                ((tsig.time_signed() >>  8) & 0xFF) as u8,
+                                ( tsig.time_signed()        & 0xFF) as u8
+                            ]);
+                            payload.extend_from_slice(&tsig.fudge().to_be_bytes());
+
+                            //buf.extend_from_slice(&(self.mac.len() as u16).to_be_bytes());
+                            //buf.extend_from_slice(&self.mac);
+
+                            payload.extend_from_slice(&tsig.original_id().to_be_bytes());
+                            payload.extend_from_slice(&tsig.error().to_be_bytes());
+
+                            payload.extend_from_slice(&(tsig.data().len() as u16).to_be_bytes());
+                            payload.extend_from_slice(&tsig.data());
+
+
+
+                            println!("{:x?}", payload);
+
+
+                            let mac = tsig.mac();
+                            let key = base64::decode("H/tfAC1roWthhErCSNJ9qjAZg5nc9QwDyTBkEV/76FA=").unwrap();
+
+                            let x = hmac::<Sha256>(&key, &payload);
+
+                            println!("KEY  {:x?}", key);
+                            println!("CALC {:x?}", x);
+                            println!("MAC  {:x?}", mac);
+                        }
                     };
 
 
 
 
-                    let mut payload = context.range(0..checkpoint)?.to_vec();
-                    payload[10..12].copy_from_slice(&ar_count.to_be_bytes());
-                    println!("{:x?}", payload);
-
-
-                    let mac = data.as_ref().unwrap().mac();
-                    let key = base64::decode("H/tfAC1roWthhErCSNJ9qjAZg5nc9QwDyTBkEV/76FA=").unwrap();
-
-                    let x = hmac::<Sha256>(&key, &payload);
-
-                    println!("KEY  {:x?}", key);
-                    println!("CALC {:x?}", x);
-                    println!("MAC  {:x?}", mac);
 
 
                     //println!("{:?}", data);
