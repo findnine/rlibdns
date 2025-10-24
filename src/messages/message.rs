@@ -10,8 +10,8 @@ use crate::messages::inter::rr_types::RRTypes;
 use crate::messages::edns::Edns;
 use crate::messages::record::Record;
 use crate::messages::tsig::TSig;
-use crate::messages::wire::{FromWire, FromWireContext, ToWire, ToWireContext, WireError};
-
+use crate::messages::wire::{FromWire, FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
+use crate::rr_data::tsig_rr_data::TSigRRData;
 /*
                                1  1  1  1  1  1
  0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
@@ -138,8 +138,28 @@ impl Message {
                     //GET AS VEC UP TO THAT CHECKPOINT 0-CHECKPOINT
                     //VERIFY SIGNATURE MATCHES VIA TKEY (UNSURE HOW TO CHECK THIS...)
 
-                    let payload = context.range(0..checkpoint)?;
+                    let mut payload = context.range(0..checkpoint)?.to_vec();
+                    payload[10..12].copy_from_slice(&ar_count.to_be_bytes());
                     println!("{:x?}", payload);
+
+
+
+
+                    let class = u16::from_wire(&mut context)?;
+                    let cache_flush = (class & 0x8000) != 0;
+                    let class = RRClasses::try_from(class).map_err(|e| WireError::Format(e.to_string()))?;
+                    let ttl = u32::from_wire(&mut context)?;
+
+                    let len = u16::from_wire(&mut context)?;
+                    let data = match len {
+                        0 => None,
+                        _ => Some(TSigRRData::from_wire_len(&mut context, len,)?)
+                    };
+
+
+                    println!("{:?}", data);
+
+
                 }
                 _ => {
                     let class = u16::from_wire(&mut context)?;
