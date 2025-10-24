@@ -127,7 +127,6 @@ impl Message {
 
         let mut edns = None;
         for _ in 0..ar_count {
-            let checkpoint = context.pos();
             let fqdn = context.name()?;
 
             let rtype = RRTypes::try_from(u16::from_wire(&mut context)?).map_err(|e| WireError::Format(e.to_string()))?;
@@ -141,10 +140,6 @@ impl Message {
                     //GET AS VEC UP TO THAT CHECKPOINT 0-CHECKPOINT
                     //VERIFY SIGNATURE MATCHES VIA TKEY (UNSURE HOW TO CHECK THIS...)
 
-                    let mut payload = context.range(0..checkpoint)?.to_vec();
-                    payload[10..12].copy_from_slice(&ar_count.to_be_bytes());
-                    println!("{:x?}", payload);
-
 
 
 
@@ -152,12 +147,21 @@ impl Message {
                     let cache_flush = (class & 0x8000) != 0;
                     let class = RRClasses::try_from(class).map_err(|e| WireError::Format(e.to_string()))?;
                     let ttl = u32::from_wire(&mut context)?;
+                    
+                    let checkpoint = context.pos();
 
                     let len = u16::from_wire(&mut context)?;
                     let data = match len {
                         0 => None,
                         _ => Some(TSigRRData::from_wire_len(&mut context, len,)?)
                     };
+
+
+
+
+                    let mut payload = context.range(0..checkpoint)?.to_vec();
+                    payload[10..12].copy_from_slice(&ar_count.to_be_bytes());
+                    println!("{:x?}", payload);
 
 
                     let mac = data.as_ref().unwrap().mac();
