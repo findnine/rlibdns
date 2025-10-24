@@ -146,8 +146,9 @@ impl Message {
                     match len {
                         0 => {}
                         _ => {
+                            //WE MAY NEED TO PASS IN CONTEXT OF THE KEY SOMEHOW - MAYBE CALLBACK???
+
                             let tsig = TSigRRData::from_wire_len(&mut context, len)?;
-                            println!("{} {}", class, ttl);
 
                             let mut payload = context.range(0..checkpoint)?.to_vec();
                             payload[10..12].copy_from_slice(&(ar_count - 1).to_be_bytes());
