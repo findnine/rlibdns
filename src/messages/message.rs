@@ -124,6 +124,7 @@ impl Message {
 
         let mut edns = None;
         for _ in 0..ar_count {
+            let checkpoint = context.pos();
             let fqdn = context.name()?;
 
             let rtype = RRTypes::try_from(u16::from_wire(&mut context)?).map_err(|e| WireError::Format(e.to_string()))?;
@@ -136,6 +137,9 @@ impl Message {
                     //GO BACK BEFORE FQDN SO CHECKPOINT
                     //GET AS VEC UP TO THAT CHECKPOINT 0-CHECKPOINT
                     //VERIFY SIGNATURE MATCHES VIA TKEY (UNSURE HOW TO CHECK THIS...)
+
+                    let payload = context.range(0..checkpoint)?;
+                    println!("{:x?}", payload);
                 }
                 _ => {
                     let class = u16::from_wire(&mut context)?;

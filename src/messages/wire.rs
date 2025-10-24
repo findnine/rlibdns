@@ -66,12 +66,12 @@ impl ToWireContext {
         let start = match range.start_bound() {
             Included(&x) => x,
             Excluded(&x) => x + 1,
-            Unbounded => 0,
+            Unbounded => 0
         };
         let end = match range.end_bound() {
             Included(&x) => x + 1,
             Excluded(&x) => x,
-            Unbounded => self.buf.len(),
+            Unbounded => self.buf.len()
         };
 
         if end > self.buf.len() || start > end || buf.len() != (end - start) {
@@ -190,6 +190,21 @@ impl<'a> FromWireContext<'a> {
         }
 
         Ok(&self.buf[self.pos..end])
+    }
+
+    pub fn range<R: RangeBounds<usize>>(&mut self, range: R) -> Result<&[u8], WireError> {
+        let start = match range.start_bound() {
+            Included(&x) => x,
+            Excluded(&x) => x + 1,
+            Unbounded => 0
+        };
+        let end = match range.end_bound() {
+            Included(&x) => x + 1,
+            Excluded(&x) => x,
+            Unbounded => self.buf.len()
+        };
+
+        Ok(&self.buf[start..end])
     }
 
     pub fn name(&mut self) -> Result<String, WireError> {
