@@ -129,6 +129,7 @@ impl Message {
         let mut edns = None;
         for _ in 0..ar_count {
             let fqdn = context.name()?;
+            let checkpoint = context.pos();
 
             let rtype = RRTypes::try_from(u16::from_wire(&mut context)?).map_err(|e| WireError::Format(e.to_string()))?;
 
@@ -180,7 +181,6 @@ impl Message {
                     let class = RRClasses::try_from(class).map_err(|e| WireError::Format(e.to_string()))?;
                     let ttl = u32::from_wire(&mut context)?;
 
-                    let checkpoint = context.pos();
 
                     let len = u16::from_wire(&mut context)?;
                     match len {
@@ -191,8 +191,13 @@ impl Message {
 
 
 
-                            let mut payload = context.range(0..checkpoint)?.to_vec();
-                            payload[10..12].copy_from_slice(&ar_count.to_be_bytes());
+                            let mut payload = context.range(2..checkpoint-2)?.to_vec();
+                            payload[8..10].copy_from_slice(&ar_count.to_be_bytes());
+
+
+                            payload.extend_from_slice(&RRClasses::Any.code().to_be_bytes());
+                            payload.extend_from_slice(&0u32.to_be_bytes());
+
 
 
                             payload.extend_from_slice(&pack_fqdn(tsig.algorithm_name().as_ref()
@@ -219,7 +224,7 @@ impl Message {
 
 
 
-                            println!("{:x?}", payload);
+                            println!("PAY  {:x?}", payload);
 
 
                             let mac = tsig.mac();
