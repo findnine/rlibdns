@@ -12,6 +12,9 @@ use crate::messages::record::Record;
 use crate::messages::tsig::TSig;
 use crate::messages::wire::{FromWire, FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
 use crate::rr_data::tsig_rr_data::TSigRRData;
+use crate::utils::base64;
+use crate::utils::hash::hmac::hmac;
+use crate::utils::hash::sha256::Sha256;
 /*
                                1  1  1  1  1  1
  0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
@@ -157,7 +160,17 @@ impl Message {
                     };
 
 
-                    println!("{:?}", data);
+                    let mac = data.as_ref().unwrap().mac();
+                    let key = base64::decode("H/tfAC1roWthhErCSNJ9qjAZg5nc9QwDyTBkEV/76FA=").unwrap();
+
+                    let x = hmac::<Sha256>(&key, &payload);
+
+                    println!("KEY  {:x?}", key);
+                    println!("CALC {:x?}", x);
+                    println!("MAC  {:x?}", mac);
+
+
+                    //println!("{:?}", data);
 
 
                 }

@@ -1,6 +1,7 @@
+pub mod trie;
+pub mod hash;
 pub mod fqdn_utils;
 pub mod index_map;
-pub mod trie;
 pub mod random;
 pub mod base64;
 pub mod base32;
