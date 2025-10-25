@@ -1,17 +1,16 @@
 use std::io;
 use crate::journal::txn::Txn;
-use crate::utils::index_map::IndexMap;
 
 #[derive(Debug, Clone)]
 pub struct Journal {
-    txns: IndexMap<u32, Txn>
+    //txns: IndexMap<u32, Txn>
 }
 
 impl Journal {
 
     pub fn new() -> Self {
         Self {
-            txns: IndexMap::new()
+            //txns: IndexMap::new()
         }
     }
 
@@ -30,7 +29,7 @@ impl Journal {
         */
         todo!()
     }
-
+/*
     pub fn txns(&self) -> &IndexMap<u32, Txn> {
         self.txns.as_ref()
     }
@@ -42,7 +41,7 @@ impl Journal {
     pub fn txns_from(&self, start: u32) -> impl Iterator<Item = (&u32, &Txn)> {
         self.txns.range(start..)
     }
-
+*/
     pub fn as_ref(&self) -> &Self {
         self
     }
