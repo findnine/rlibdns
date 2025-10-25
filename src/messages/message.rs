@@ -1,6 +1,8 @@
 use std::fmt;
 use std::fmt::Formatter;
 use std::net::SocketAddr;
+use crate::keyring::key::Key;
+use crate::keyring::keyring::KeyRing;
 use crate::messages::inter::op_codes::OpCodes;
 use crate::messages::inter::response_codes::ResponseCodes;
 use crate::messages::inter::rr_classes::RRClasses;
@@ -85,7 +87,7 @@ impl Message {
     }
 
     //ADD KEYRING REF - BUT MAKE 2 METHODS 1 WITH KEY RING AND ONE WITHOUT IT...
-    pub fn from_bytes<B: AsRef<[u8]>>(buf: B) -> Result<Self, WireError> {
+    pub fn from_bytes<B: AsRef<[u8]>>(buf: B, keyring: &KeyRing) -> Result<Self, WireError> {
         let mut context = FromWireContext::new(buf.as_ref());
 
         let id = u16::from_wire(&mut context)?;
@@ -149,51 +151,59 @@ impl Message {
                             let tsig = TSigRRData::from_wire_len(&mut context, len)?;
                             println!("{}", tsig);
 
-                            let mut payload = context.range(0..checkpoint)?.to_vec();
-                            payload[10..12].copy_from_slice(&(ar_count - 1).to_be_bytes());
 
-                            payload.extend_from_slice(&RRClasses::Any.code().to_be_bytes());
-                            payload.extend_from_slice(&0u32.to_be_bytes());
+                            match keyring.get_key(&fqdn, tsig.algorithm().unwrap()) {
+                                Some(kr) => {
+                                    let mut payload = context.range(0..checkpoint)?.to_vec();
+                                    payload[10..12].copy_from_slice(&(ar_count - 1).to_be_bytes());
 
-                            payload.extend_from_slice(&pack_fqdn(&tsig.algorithm().as_ref()
-                                .ok_or_else(|| WireError::Format("algorithm param was not set".to_string()))?.to_string())); //PROBABLY NO COMPRESS
+                                    payload.extend_from_slice(&RRClasses::Any.code().to_be_bytes());
+                                    payload.extend_from_slice(&0u32.to_be_bytes());
 
-                            payload.extend_from_slice(&[
-                                ((tsig.time_signed() >> 40) & 0xFF) as u8,
-                                ((tsig.time_signed() >> 32) & 0xFF) as u8,
-                                ((tsig.time_signed() >> 24) & 0xFF) as u8,
-                                ((tsig.time_signed() >> 16) & 0xFF) as u8,
-                                ((tsig.time_signed() >>  8) & 0xFF) as u8,
-                                ( tsig.time_signed()        & 0xFF) as u8
-                            ]);
-                            payload.extend_from_slice(&tsig.fudge().to_be_bytes());
+                                    payload.extend_from_slice(&pack_fqdn(&tsig.algorithm().as_ref()
+                                        .ok_or_else(|| WireError::Format("algorithm param was not set".to_string()))?.to_string())); //PROBABLY NO COMPRESS
 
-                            //buf.extend_from_slice(&(self.mac.len() as u16).to_be_bytes());
-                            //buf.extend_from_slice(&self.mac);
+                                    payload.extend_from_slice(&[
+                                        ((tsig.time_signed() >> 40) & 0xFF) as u8,
+                                        ((tsig.time_signed() >> 32) & 0xFF) as u8,
+                                        ((tsig.time_signed() >> 24) & 0xFF) as u8,
+                                        ((tsig.time_signed() >> 16) & 0xFF) as u8,
+                                        ((tsig.time_signed() >>  8) & 0xFF) as u8,
+                                        ( tsig.time_signed()        & 0xFF) as u8
+                                    ]);
+                                    payload.extend_from_slice(&tsig.fudge().to_be_bytes());
 
-                            //payload.extend_from_slice(&tsig.original_id().to_be_bytes());
-                            payload.extend_from_slice(&tsig.error().to_be_bytes());
+                                    //buf.extend_from_slice(&(self.mac.len() as u16).to_be_bytes());
+                                    //buf.extend_from_slice(&self.mac);
 
-                            payload.extend_from_slice(&(tsig.data().len() as u16).to_be_bytes());
-                            payload.extend_from_slice(&tsig.data());
+                                    //payload.extend_from_slice(&tsig.original_id().to_be_bytes());
+                                    payload.extend_from_slice(&tsig.error().to_be_bytes());
 
-
-
-                            println!("PAY  {:x?}", payload);
-
-
-                            let mac = tsig.mac();
-                            let key = base64::decode("H/tfAC1roWthhErCSNJ9qjAZg5nc9QwDyTBkEV/76FA=").unwrap();
-
-                            let calc = hmac::<Sha256>(&key, &payload);
-
-                            println!("KEY  {:x?}", key);
-                            println!("CALC {:x?}", calc);
-                            println!("MAC  {:x?}", mac);
+                                    payload.extend_from_slice(&(tsig.data().len() as u16).to_be_bytes());
+                                    payload.extend_from_slice(&tsig.data());
 
 
-                            let ok = mac.len()==calc.len() && mac.iter().zip(calc).fold(0u8, |d,(a,b)| d | (a^b)) == 0;
-                            println!("TSIG valid? {}", ok);
+
+                                    println!("PAY  {:x?}", payload);
+                                    //base64::decode("H/tfAC1roWthhErCSNJ9qjAZg5nc9QwDyTBkEV/76FA=").unwrap()
+
+
+                                    let mac = tsig.mac();
+
+                                    let calc = hmac::<Sha256>(kr.secret(), &payload);
+
+                                    println!("KEY  {:x?}", kr.secret());
+                                    println!("CALC {:x?}", calc);
+                                    println!("MAC  {:x?}", mac);
+
+
+                                    let ok = mac.len()==calc.len() && mac.iter().zip(calc).fold(0u8, |d,(a,b)| d | (a^b)) == 0;
+                                    println!("TSIG valid? {}", ok);
+                                }
+                                None => {}
+                            }
+
+
                         }
                     };
 

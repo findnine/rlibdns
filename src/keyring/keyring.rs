@@ -15,6 +15,10 @@ impl KeyRing {
         }
     }
 
+    pub fn put_key(&mut self, fqdn: &str, key: Key) {
+        self.ring.entry(String::from(fqdn)).or_insert_with(Vec::new).push(key)
+    }
+
     pub fn get_key(&self, fqdn: &str, algorithm: &Algorithms) -> Option<&Key> {
         self.ring.get(fqdn)?.iter().find(|r| r.algorithm().eq(algorithm))
     }
