@@ -1,3 +1,4 @@
+use crate::keyring::inter::algorithms::Algorithms;
 use crate::keyring::key::Key;
 
 #[derive(Debug, Clone)]
@@ -13,7 +14,7 @@ impl KeyRing {
         }
     }
 
-    pub fn get_key(&self, fqdn: &str) -> Key {
+    pub fn get_key(&self, fqdn: &str, algorithm: &Algorithms) -> Key {
         todo!()
     }
 }

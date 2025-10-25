@@ -84,6 +84,7 @@ impl Message {
         }
     }
 
+    //ADD KEYRING REF - BUT MAKE 2 METHODS 1 WITH KEY RING AND ONE WITHOUT IT...
     pub fn from_bytes<B: AsRef<[u8]>>(buf: B) -> Result<Self, WireError> {
         let mut context = FromWireContext::new(buf.as_ref());
 
