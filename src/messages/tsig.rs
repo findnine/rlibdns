@@ -2,9 +2,12 @@ use std::fmt;
 use std::fmt::Formatter;
 use std::str::FromStr;
 use crate::keyring::inter::algorithms::Algorithms;
+use crate::keyring::key::Key;
 use crate::messages::wire::{FromWire, FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
 use crate::rr_data::inter::rr_data::RRDataError;
 use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
+use crate::utils::hash::hmac::hmac;
+use crate::utils::hash::sha256::Sha256;
 use crate::utils::hex;
 
 #[derive(Debug, Clone)]
@@ -155,12 +158,17 @@ impl TSig {
         self.data.as_ref()
     }
 
-    pub fn set_payload(&mut self, payload: &[u8]) {
-        self.signed_payload = payload.to_vec();
+    pub fn set_signed_payload(&mut self, signed_payload: &[u8]) {
+        self.signed_payload = signed_payload.to_vec();
     }
 
-    pub fn payload(&self) -> &[u8] {
+    pub fn signed_payload(&self) -> &[u8] {
         &self.signed_payload
+    }
+
+    pub fn verify(&self, key: &Key) -> bool {
+        let calc = hmac::<Sha256>(key.secret(), &self.signed_payload);
+        self.mac.len() == calc.len() && self.mac.iter().zip(calc).fold(0u8, |d,(a,b)| d | (a^b)) == 0
     }
 }
 

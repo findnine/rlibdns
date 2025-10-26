@@ -89,8 +89,7 @@ impl Message {
         }
     }
 
-    //ADD KEYRING REF - BUT MAKE 2 METHODS 1 WITH KEY RING AND ONE WITHOUT IT...
-    pub fn from_bytes<B: AsRef<[u8]>>(buf: B/*, keyring: &KeyRing*/) -> Result<Self, WireError> {
+    pub fn from_bytes<B: AsRef<[u8]>>(buf: B) -> Result<Self, WireError> {
         let mut context = FromWireContext::new(buf.as_ref());
 
         let id = u16::from_wire(&mut context)?;
@@ -140,7 +139,6 @@ impl Message {
             match rtype {
                 RRTypes::Opt => edns = Some(Edns::from_wire(&mut context)?),
                 RRTypes::TSig => {
-
                     let class = u16::from_wire(&mut context)?;
                     let cache_flush = (class & 0x8000) != 0;
                     let class = RRClasses::try_from(class).map_err(|e| WireError::Format(e.to_string()))?;
@@ -150,94 +148,40 @@ impl Message {
                     match len {
                         0 => {}
                         _ => {
-                            let mut tsig = TSig::from_wire_len(&mut context, len)?;
+                            match TSig::from_wire_len(&mut context, len) {
+                                Ok(mut ts) => {
 
-                            let mut payload = context.range(0..checkpoint)?.to_vec();
-                            payload[10..12].copy_from_slice(&(ar_count - 1).to_be_bytes());
+                                    let mut signed_payload = context.range(0..checkpoint)?.to_vec();
+                                    signed_payload[10..12].copy_from_slice(&(ar_count - 1).to_be_bytes());
 
-                            payload.extend_from_slice(&RRClasses::Any.code().to_be_bytes());
-                            payload.extend_from_slice(&0u32.to_be_bytes());
+                                    signed_payload.extend_from_slice(&RRClasses::Any.code().to_be_bytes());
+                                    signed_payload.extend_from_slice(&0u32.to_be_bytes());
 
-                            payload.extend_from_slice(&pack_fqdn(&tsig.algorithm().as_ref()
-                                .ok_or_else(|| WireError::Format("algorithm param was not set".to_string()))?.to_string())); //PROBABLY NO COMPRESS
-
-                            payload.extend_from_slice(&[
-                                ((tsig.time_signed() >> 40) & 0xFF) as u8,
-                                ((tsig.time_signed() >> 32) & 0xFF) as u8,
-                                ((tsig.time_signed() >> 24) & 0xFF) as u8,
-                                ((tsig.time_signed() >> 16) & 0xFF) as u8,
-                                ((tsig.time_signed() >>  8) & 0xFF) as u8,
-                                ( tsig.time_signed()        & 0xFF) as u8
-                            ]);
-                            payload.extend_from_slice(&tsig.fudge().to_be_bytes());
-
-                            payload.extend_from_slice(&tsig.error().to_be_bytes());
-
-                            payload.extend_from_slice(&(tsig.data().len() as u16).to_be_bytes());
-                            payload.extend_from_slice(&tsig.data());
-
-                            tsig.set_payload(&payload);
-
-                            /*
-                            match keyring.get_key(&fqdn, tsig.algorithm().unwrap()) {
-                                Some(kr) => {
-                                    let mut payload = context.range(0..checkpoint)?.to_vec();
-                                    payload[10..12].copy_from_slice(&(ar_count - 1).to_be_bytes());
-
-                                    payload.extend_from_slice(&RRClasses::Any.code().to_be_bytes());
-                                    payload.extend_from_slice(&0u32.to_be_bytes());
-
-                                    payload.extend_from_slice(&pack_fqdn(&tsig.algorithm().as_ref()
+                                    signed_payload.extend_from_slice(&pack_fqdn(&ts.algorithm().as_ref()
                                         .ok_or_else(|| WireError::Format("algorithm param was not set".to_string()))?.to_string())); //PROBABLY NO COMPRESS
 
-                                    payload.extend_from_slice(&[
-                                        ((tsig.time_signed() >> 40) & 0xFF) as u8,
-                                        ((tsig.time_signed() >> 32) & 0xFF) as u8,
-                                        ((tsig.time_signed() >> 24) & 0xFF) as u8,
-                                        ((tsig.time_signed() >> 16) & 0xFF) as u8,
-                                        ((tsig.time_signed() >>  8) & 0xFF) as u8,
-                                        ( tsig.time_signed()        & 0xFF) as u8
+                                    signed_payload.extend_from_slice(&[
+                                        ((ts.time_signed() >> 40) & 0xFF) as u8,
+                                        ((ts.time_signed() >> 32) & 0xFF) as u8,
+                                        ((ts.time_signed() >> 24) & 0xFF) as u8,
+                                        ((ts.time_signed() >> 16) & 0xFF) as u8,
+                                        ((ts.time_signed() >>  8) & 0xFF) as u8,
+                                        ( ts.time_signed()        & 0xFF) as u8
                                     ]);
-                                    payload.extend_from_slice(&tsig.fudge().to_be_bytes());
+                                    signed_payload.extend_from_slice(&ts.fudge().to_be_bytes());
 
-                                    payload.extend_from_slice(&tsig.error().to_be_bytes());
+                                    signed_payload.extend_from_slice(&ts.error().to_be_bytes());
 
-                                    payload.extend_from_slice(&(tsig.data().len() as u16).to_be_bytes());
-                                    payload.extend_from_slice(&tsig.data());
+                                    signed_payload.extend_from_slice(&(ts.data().len() as u16).to_be_bytes());
+                                    signed_payload.extend_from_slice(&ts.data());
 
-
-
-                                    println!("PAY  {:x?}", payload);
-
-
-                                    let mac = tsig.mac();
-
-                                    let calc = hmac::<Sha256>(kr.secret(), &payload);
-
-                                    println!("KEY  {:x?}", kr.secret());
-                                    println!("CALC {:x?}", calc);
-                                    println!("MAC  {:x?}", mac);
-
-
-                                    let ok = mac.len()==calc.len() && mac.iter().zip(calc).fold(0u8, |d,(a,b)| d | (a^b)) == 0;
-                                    println!("TSIG valid? {}", ok);
+                                    ts.set_signed_payload(&signed_payload);
+                                    tsig = Some(ts);
                                 }
-                                None => {}
+                                Err(_) => {}
                             }
-                            */
-
-
                         }
                     };
-
-
-
-
-
-
-                    //println!("{:?}", data);
-
-
                 }
                 _ => {
                     let class = u16::from_wire(&mut context)?;
@@ -274,6 +218,12 @@ impl Message {
             edns,
             tsig
         })
+    }
+
+    pub fn to_bytes_with_sig(&self, max_payload_len: usize, key: &Key) -> Vec<u8> {
+        let buf = self.to_bytes(max_payload_len);
+
+        buf
     }
 
     pub fn to_bytes(&self, max_payload_len: usize) -> Vec<u8> {
