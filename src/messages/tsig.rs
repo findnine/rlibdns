@@ -1,8 +1,11 @@
+use std::fmt;
+use std::fmt::Formatter;
 use std::str::FromStr;
 use crate::keyring::inter::algorithms::Algorithms;
 use crate::messages::wire::{FromWire, FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
 use crate::rr_data::inter::rr_data::RRDataError;
 use crate::utils::fqdn_utils::{pack_fqdn, unpack_fqdn};
+use crate::utils::hex;
 
 #[derive(Debug, Clone)]
 pub struct TSig {
@@ -222,5 +225,18 @@ impl ToWire for TSig {
 
         (self.data.len() as u16).to_wire(context)?;
         context.write(&self.data)
+    }
+}
+
+impl fmt::Display for TSig {
+
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{} {} {} {} {} {} {}", format!("{}.", self.algorithm.as_ref().unwrap()),
+               self.time_signed,
+               self.fudge,
+               hex::encode(&self.mac),
+               self.original_id,
+               self.error,
+               hex::encode(&self.data))
     }
 }
