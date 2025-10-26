@@ -2,7 +2,6 @@ use std::fmt;
 use std::fmt::Formatter;
 use std::net::SocketAddr;
 use crate::keyring::key::Key;
-use crate::keyring::keyring::KeyRing;
 use crate::messages::inter::op_codes::OpCodes;
 use crate::messages::inter::response_codes::ResponseCodes;
 use crate::messages::inter::rr_classes::RRClasses;
@@ -13,11 +12,8 @@ use crate::messages::edns::Edns;
 use crate::messages::record::Record;
 use crate::messages::tsig::TSig;
 use crate::messages::wire::{FromWire, FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
-use crate::rr_data::tsig_rr_data::TSigRRData;
-use crate::utils::base64;
 use crate::utils::fqdn_utils::pack_fqdn;
-use crate::utils::hash::hmac::hmac;
-use crate::utils::hash::sha256::Sha256;
+
 /*
                                1  1  1  1  1  1
  0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
