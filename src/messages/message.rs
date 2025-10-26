@@ -11,6 +11,7 @@ use crate::messages::rr_query::RRQuery;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::messages::edns::Edns;
 use crate::messages::record::Record;
+use crate::messages::tsig::TSig;
 use crate::messages::wire::{FromWire, FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
 use crate::rr_data::tsig_rr_data::TSigRRData;
 use crate::utils::base64;
@@ -51,7 +52,8 @@ pub struct Message {
     destination: Option<SocketAddr>,
     queries: Vec<RRQuery>,
     sections: [Vec<Record>; 3],
-    edns: Option<Edns>
+    edns: Option<Edns>,
+    tsig: Option<TSig>
 }
 
 impl Default for Message {
@@ -72,7 +74,8 @@ impl Default for Message {
             destination: None,
             queries: Vec::new(),
             sections: Default::default(),
-            edns: None
+            edns: None,
+            tsig: None
         }
     }
 }
@@ -87,7 +90,7 @@ impl Message {
     }
 
     //ADD KEYRING REF - BUT MAKE 2 METHODS 1 WITH KEY RING AND ONE WITHOUT IT...
-    pub fn from_bytes<B: AsRef<[u8]>>(buf: B, keyring: &KeyRing) -> Result<Self, WireError> {
+    pub fn from_bytes<B: AsRef<[u8]>>(buf: B/*, keyring: &KeyRing*/) -> Result<Self, WireError> {
         let mut context = FromWireContext::new(buf.as_ref());
 
         let id = u16::from_wire(&mut context)?;
@@ -127,6 +130,7 @@ impl Message {
         }
 
         let mut edns = None;
+        let mut tsig = None;
         for _ in 0..ar_count {
             let fqdn = context.name()?;
             let checkpoint = context.pos();
@@ -146,11 +150,35 @@ impl Message {
                     match len {
                         0 => {}
                         _ => {
-                            //WE MAY NEED TO PASS IN CONTEXT OF THE KEY SOMEHOW - MAYBE CALLBACK???
+                            let mut tsig = TSig::from_wire_len(&mut context, len)?;
 
-                            let tsig = TSigRRData::from_wire_len(&mut context, len)?;
+                            let mut payload = context.range(0..checkpoint)?.to_vec();
+                            payload[10..12].copy_from_slice(&(ar_count - 1).to_be_bytes());
 
+                            payload.extend_from_slice(&RRClasses::Any.code().to_be_bytes());
+                            payload.extend_from_slice(&0u32.to_be_bytes());
 
+                            payload.extend_from_slice(&pack_fqdn(&tsig.algorithm().as_ref()
+                                .ok_or_else(|| WireError::Format("algorithm param was not set".to_string()))?.to_string())); //PROBABLY NO COMPRESS
+
+                            payload.extend_from_slice(&[
+                                ((tsig.time_signed() >> 40) & 0xFF) as u8,
+                                ((tsig.time_signed() >> 32) & 0xFF) as u8,
+                                ((tsig.time_signed() >> 24) & 0xFF) as u8,
+                                ((tsig.time_signed() >> 16) & 0xFF) as u8,
+                                ((tsig.time_signed() >>  8) & 0xFF) as u8,
+                                ( tsig.time_signed()        & 0xFF) as u8
+                            ]);
+                            payload.extend_from_slice(&tsig.fudge().to_be_bytes());
+
+                            payload.extend_from_slice(&tsig.error().to_be_bytes());
+
+                            payload.extend_from_slice(&(tsig.data().len() as u16).to_be_bytes());
+                            payload.extend_from_slice(&tsig.data());
+
+                            tsig.set_payload(&payload);
+
+                            /*
                             match keyring.get_key(&fqdn, tsig.algorithm().unwrap()) {
                                 Some(kr) => {
                                     let mut payload = context.range(0..checkpoint)?.to_vec();
@@ -196,6 +224,7 @@ impl Message {
                                 }
                                 None => {}
                             }
+                            */
 
 
                         }
@@ -242,7 +271,8 @@ impl Message {
             destination: None,
             queries,
             sections,
-            edns
+            edns,
+            tsig
         })
     }
 
