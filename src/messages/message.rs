@@ -149,7 +149,6 @@ impl Message {
                             //WE MAY NEED TO PASS IN CONTEXT OF THE KEY SOMEHOW - MAYBE CALLBACK???
 
                             let tsig = TSigRRData::from_wire_len(&mut context, len)?;
-                            println!("{}", tsig);
 
 
                             match keyring.get_key(&fqdn, tsig.algorithm().unwrap()) {
