@@ -172,10 +172,6 @@ impl Message {
                                     ]);
                                     payload.extend_from_slice(&tsig.fudge().to_be_bytes());
 
-                                    //buf.extend_from_slice(&(self.mac.len() as u16).to_be_bytes());
-                                    //buf.extend_from_slice(&self.mac);
-
-                                    //payload.extend_from_slice(&tsig.original_id().to_be_bytes());
                                     payload.extend_from_slice(&tsig.error().to_be_bytes());
 
                                     payload.extend_from_slice(&(tsig.data().len() as u16).to_be_bytes());
@@ -184,7 +180,6 @@ impl Message {
 
 
                                     println!("PAY  {:x?}", payload);
-                                    //base64::decode("H/tfAC1roWthhErCSNJ9qjAZg5nc9QwDyTBkEV/76FA=").unwrap()
 
 
                                     let mac = tsig.mac();
