@@ -192,7 +192,8 @@ impl FromWireLen for TSig {
             mac,
             original_id,
             error,
-            data
+            data,
+            signed_payload: Vec::new()
         })
     }
 }
