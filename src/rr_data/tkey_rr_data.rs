@@ -13,7 +13,7 @@ pub struct TKeyRRData {
     algorithm: Option<Algorithms>,
     inception: u32,
     expiration: u32,
-    mode: u16, //ENUM PLEASE
+    mode: u16, //CAN WE ENUM???
     error: u16,
     key: Vec<u8>,
     data: Vec<u8>
