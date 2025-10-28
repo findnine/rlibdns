@@ -147,6 +147,7 @@ impl Message {
                             match TSig::from_wire_len(&mut context, len) {
                                 Ok(mut ts) => {
 
+                                    /*
                                     let mut signed_payload = context.range(0..checkpoint)?.to_vec();
                                     signed_payload[10..12].copy_from_slice(&(ar_count - 1).to_be_bytes());
 
@@ -172,6 +173,7 @@ impl Message {
                                     signed_payload.extend_from_slice(&ts.data());
 
                                     ts.set_signed_payload(&signed_payload);
+                                    */
                                     tsig = Some(ts);
                                 }
                                 Err(_) => {}
