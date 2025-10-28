@@ -10,7 +10,7 @@ use crate::utils::hash::sha256::Sha256;
 
 #[derive(Debug, Clone)]
 pub struct TSig {
-    owner: Option<String>,
+    owner: String,
     data: TSigRRData,
     signed_payload: Vec<u8>
 }
@@ -19,7 +19,7 @@ impl TSig {
 
     pub fn new(owner: &str, data: TSigRRData) -> Self {
         Self {
-            owner: Some(owner.to_string()),
+            owner: owner.to_string(),
             data,
             signed_payload: Vec::new()
         }
@@ -45,8 +45,19 @@ impl FromWireLen for TSig {
 impl ToWire for TSig {
 
     fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
+        context.write_name(&self.owner, true)?;
 
-        todo!()
+        RRTypes::TSig.code().to_wire(context)?;
+
+        RRClasses::Any.code().to_wire(context)?;
+        0u32.to_wire(context)?;
+
+        let checkpoint = context.pos();
+        context.skip(2)?;
+
+        self.data.to_wire(context)?;
+
+        context.patch(checkpoint..checkpoint+2, &((context.pos()-checkpoint-2) as u16).to_be_bytes())
     }
 }
 
@@ -54,7 +65,7 @@ impl fmt::Display for TSig {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{:<24}{:<8}{:<8}{:<8}{}",
-               format!("{}.", self.owner.as_ref().unwrap()),
+               format!("{}.", self.owner),
                0,
                RRTypes::TSig.to_string(),
                RRClasses::Any,
