@@ -36,8 +36,6 @@ impl FromWireLen for TSig {
 
     fn from_wire_len(context: &mut FromWireContext, _len: u16) -> Result<Self, WireError> {
 
-        //Ok(Self {
-        //})
         todo!()
     }
 }
