@@ -12,6 +12,7 @@ use crate::messages::edns::Edns;
 use crate::messages::record::Record;
 use crate::messages::tsig::TSig;
 use crate::messages::wire::{FromWire, FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
+use crate::rr_data::tsig_rr_data::TSigRRData;
 use crate::utils::fqdn_utils::pack_fqdn;
 
 /*
@@ -144,36 +145,35 @@ impl Message {
                     match len {
                         0 => {}
                         _ => {
-                            match TSig::from_wire_len(&mut context, len) {
-                                Ok(mut ts) => {
-
-                                    /*
+                            match TSigRRData::from_wire_len(&mut context, len) {
+                                Ok(mut data) => {
                                     let mut signed_payload = context.range(0..checkpoint)?.to_vec();
                                     signed_payload[10..12].copy_from_slice(&(ar_count - 1).to_be_bytes());
 
                                     signed_payload.extend_from_slice(&RRClasses::Any.code().to_be_bytes());
                                     signed_payload.extend_from_slice(&0u32.to_be_bytes());
 
-                                    signed_payload.extend_from_slice(&pack_fqdn(&ts.algorithm().as_ref()
+                                    signed_payload.extend_from_slice(&pack_fqdn(&data.algorithm().as_ref()
                                         .ok_or_else(|| WireError::Format("algorithm param was not set".to_string()))?.to_string())); //PROBABLY NO COMPRESS
 
                                     signed_payload.extend_from_slice(&[
-                                        ((ts.time_signed() >> 40) & 0xFF) as u8,
-                                        ((ts.time_signed() >> 32) & 0xFF) as u8,
-                                        ((ts.time_signed() >> 24) & 0xFF) as u8,
-                                        ((ts.time_signed() >> 16) & 0xFF) as u8,
-                                        ((ts.time_signed() >>  8) & 0xFF) as u8,
-                                        ( ts.time_signed()        & 0xFF) as u8
+                                        ((data.time_signed() >> 40) & 0xFF) as u8,
+                                        ((data.time_signed() >> 32) & 0xFF) as u8,
+                                        ((data.time_signed() >> 24) & 0xFF) as u8,
+                                        ((data.time_signed() >> 16) & 0xFF) as u8,
+                                        ((data.time_signed() >>  8) & 0xFF) as u8,
+                                        ( data.time_signed()        & 0xFF) as u8
                                     ]);
-                                    signed_payload.extend_from_slice(&ts.fudge().to_be_bytes());
+                                    signed_payload.extend_from_slice(&data.fudge().to_be_bytes());
 
-                                    signed_payload.extend_from_slice(&ts.error().to_be_bytes());
+                                    signed_payload.extend_from_slice(&data.error().to_be_bytes());
 
-                                    signed_payload.extend_from_slice(&(ts.data().len() as u16).to_be_bytes());
-                                    signed_payload.extend_from_slice(&ts.data());
+                                    signed_payload.extend_from_slice(&(data.data().len() as u16).to_be_bytes());
+                                    signed_payload.extend_from_slice(&data.data());
 
+                                    let mut ts = TSig::new(&fqdn, data);
                                     ts.set_signed_payload(&signed_payload);
-                                    */
+
                                     tsig = Some(ts);
                                 }
                                 Err(_) => {}
