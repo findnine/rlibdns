@@ -312,6 +312,7 @@ impl Message {
 
 
                 let mut signed_payload = context.to_bytes();
+                signed_payload.extend_from_slice(&pack_fqdn(tsig.owner()));
 
                 signed_payload.extend_from_slice(&RRClasses::Any.code().to_be_bytes());
                 signed_payload.extend_from_slice(&0u32.to_be_bytes());

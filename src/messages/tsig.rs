@@ -129,7 +129,7 @@ impl FromWireLen for TSig {
 impl ToWire for TSig {
 
     fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
-        context.write_name(&self.owner, true)?;
+        context.write_name(&self.owner, false)?;
 
         RRTypes::TSig.code().to_wire(context)?;
 
