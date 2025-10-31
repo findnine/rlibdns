@@ -42,6 +42,10 @@ impl TSig {
         &self.data
     }
 
+    pub fn data_mut(&mut self) -> &mut TSigRRData {
+        &mut self.data
+    }
+
     pub fn set_signed_payload(&mut self, signed_payload: &[u8]) {
         self.signed_payload = signed_payload.to_vec();
     }
@@ -52,7 +56,13 @@ impl TSig {
 
     pub fn verify(&self, key: &Key) -> bool {
         let calc = hmac::<Sha256>(key.secret(), &self.signed_payload);
-        self.data.mac().len() == calc.len() && self.data.mac().iter().zip(calc).fold(0u8, |d,(a,b)| d | (a^b)) == 0
+        self.data.mac().as_ref().unwrap().len() == calc.len() &&
+            self.data.mac().as_ref().unwrap().iter().zip(calc).fold(0u8, |d,(a,b)| d | (a^b)) == 0
+    }
+
+    pub fn sign(&mut self, key: &Key) {
+        let hmac = hmac::<Sha256>(key.secret(), &self.signed_payload);
+        self.data.set_mac(hmac.as_slice());
     }
 }
 

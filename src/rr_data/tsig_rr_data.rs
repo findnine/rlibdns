@@ -13,7 +13,7 @@ pub struct TSigRRData {
     algorithm: Option<Algorithms>,
     time_signed: u64,
     fudge: u16,
-    mac: Vec<u8>,
+    mac: Option<Vec<u8>>,
     original_id: u16,
     error: u16,
     data: Vec<u8>
@@ -26,7 +26,7 @@ impl Default for TSigRRData {
             algorithm: None,
             time_signed: 0,
             fudge: 0,
-            mac: Vec::new(),
+            mac: None,
             original_id: 0,
             error: 0,
             data: Vec::new()
@@ -64,7 +64,7 @@ impl RRData for TSigRRData {
             algorithm: Some(algorithm),
             time_signed,
             fudge,
-            mac,
+            mac: Some(mac),
             original_id,
             error,
             data
@@ -87,8 +87,10 @@ impl RRData for TSigRRData {
         ]);
         buf.extend_from_slice(&self.fudge.to_be_bytes());
 
-        buf.extend_from_slice(&(self.mac.len() as u16).to_be_bytes());
-        buf.extend_from_slice(&self.mac);
+        buf.extend_from_slice(&(self.mac.as_ref()
+            .ok_or_else(|| RRDataError("mac param was not set".to_string()))?.len() as u16).to_be_bytes());
+        buf.extend_from_slice(&self.mac.as_ref()
+            .ok_or_else(|| RRDataError("mac param was not set".to_string()))?);
 
         buf.extend_from_slice(&self.original_id.to_be_bytes());
         buf.extend_from_slice(&self.error.to_be_bytes());
@@ -122,12 +124,12 @@ impl RRData for TSigRRData {
 
 impl TSigRRData {
 
-    pub fn new(algorithm: Algorithms, time_signed: u64, fudge: u16, mac: &[u8], original_id: u16, error: u16, data: &[u8]) -> Self {
+    pub fn new(algorithm: Algorithms, time_signed: u64, fudge: u16, original_id: u16, error: u16, data: &[u8]) -> Self {
         Self {
             algorithm: Some(algorithm),
             time_signed,
             fudge,
-            mac: mac.to_vec(),
+            mac: None,
             original_id,
             error,
             data: data.to_vec()
@@ -159,10 +161,10 @@ impl TSigRRData {
     }
 
     pub fn set_mac(&mut self, mac: &[u8]) {
-        self.mac = mac.to_vec();
+        self.mac = Some(mac.to_vec());
     }
 
-    pub fn mac(&self) -> &[u8] {
+    pub fn mac(&self) -> Option<&Vec<u8>> {
         self.mac.as_ref()
     }
 
@@ -219,7 +221,7 @@ impl FromWireLen for TSigRRData {
             algorithm: Some(algorithm),
             time_signed,
             fudge,
-            mac,
+            mac: Some(mac),
             original_id,
             error,
             data
@@ -243,8 +245,10 @@ impl ToWire for TSigRRData {
         ])?;
         self.fudge.to_wire(context)?;
 
-        (self.mac.len() as u16).to_wire(context)?;
-        context.write(&self.mac)?;
+        (self.mac.as_ref()
+            .ok_or_else(|| WireError::Format("mac param was not set".to_string()))?.len() as u16).to_wire(context)?;
+        context.write(&self.mac.as_ref()
+            .ok_or_else(|| WireError::Format("mac param was not set".to_string()))?)?;
 
         self.original_id.to_wire(context)?;
         self.error.to_wire(context)?;
@@ -260,7 +264,7 @@ impl fmt::Display for TSigRRData {
         write!(f, "{} {} {} {} {} {} {}", format!("{}.", self.algorithm.as_ref().unwrap()),
                self.time_signed,
                self.fudge,
-               hex::encode(&self.mac),
+               hex::encode(&self.mac.as_ref().unwrap()),
                self.original_id,
                self.error,
                hex::encode(&self.data))

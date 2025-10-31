@@ -14,7 +14,8 @@ use crate::messages::tsig::TSig;
 use crate::messages::wire::{FromWire, FromWireContext, FromWireLen, ToWire, ToWireContext, WireError};
 use crate::rr_data::tsig_rr_data::TSigRRData;
 use crate::utils::fqdn_utils::pack_fqdn;
-
+use crate::utils::hash::hmac::hmac;
+use crate::utils::hash::sha256::Sha256;
 /*
                                1  1  1  1  1  1
  0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
@@ -218,7 +219,7 @@ impl Message {
         })
     }
 
-    pub fn to_bytes_with_sig(&self, max_payload_len: usize, key: &Key) -> Vec<u8> {
+    pub fn to_bytes_with_sig(&mut self, max_payload_len: usize, key: &Key) -> Vec<u8> {
         let max_payload_len = match self.edns.as_ref() {
             Some(edns) => edns.payload_size() as usize,
             None => max_payload_len
@@ -287,23 +288,6 @@ impl Message {
                     count += 1;
                 }
 
-                if let Some(tsig) = self.tsig.as_ref() {
-                    let checkpoint = context.pos();
-                    if let Err(_) = {
-                        //SIGN...
-
-
-                        //0u8.to_wire(&mut context).unwrap();
-                        //RRTypes::Opt.code().to_wire(&mut context).unwrap();
-                        tsig.to_wire(&mut context)
-                    } {
-                        truncated = true;
-                        context.rollback(checkpoint);
-                        break 'ar;
-                    }
-                    count += 1;
-                }
-
                 context.patch(10..12, &count.to_be_bytes()).unwrap();
             }
         }
@@ -319,6 +303,56 @@ impl Message {
             (if self.checking_disabled { 0x0010 } else { 0 }) |  // CD bit
             (self.response_code.code() as u16 & 0x000F);  // RCODE
         context.patch(2..4, &flags.to_be_bytes()).unwrap();
+
+        if !truncated {
+
+            if let Some(tsig) = self.tsig.as_mut() {
+                let checkpoint = context.pos();
+
+
+
+                let mut signed_payload = context.to_bytes();
+
+                signed_payload.extend_from_slice(&RRClasses::Any.code().to_be_bytes());
+                signed_payload.extend_from_slice(&0u32.to_be_bytes());
+
+                signed_payload.extend_from_slice(&pack_fqdn(&tsig.data().algorithm().as_ref().unwrap().to_string())); //PROBABLY NO COMPRESS
+
+                signed_payload.extend_from_slice(&[
+                    ((tsig.data().time_signed() >> 40) & 0xFF) as u8,
+                    ((tsig.data().time_signed() >> 32) & 0xFF) as u8,
+                    ((tsig.data().time_signed() >> 24) & 0xFF) as u8,
+                    ((tsig.data().time_signed() >> 16) & 0xFF) as u8,
+                    ((tsig.data().time_signed() >>  8) & 0xFF) as u8,
+                    ( tsig.data().time_signed()        & 0xFF) as u8
+                ]);
+                signed_payload.extend_from_slice(&tsig.data().fudge().to_be_bytes());
+
+                signed_payload.extend_from_slice(&tsig.data().error().to_be_bytes());
+
+                signed_payload.extend_from_slice(&(tsig.data().data().len() as u16).to_be_bytes());
+                signed_payload.extend_from_slice(&tsig.data().data());
+
+                tsig.set_signed_payload(&signed_payload);
+                tsig.sign(key);
+
+
+                if let Err(_) = {
+                    //SIGN...
+
+
+                    //0u8.to_wire(&mut context).unwrap();
+                    //RRTypes::Opt.code().to_wire(&mut context).unwrap();
+                    tsig.to_wire(&mut context)
+                } {
+                    truncated = true;
+                    context.rollback(checkpoint);
+                }
+                count += 1;
+
+                context.patch(10..12, &count.to_be_bytes()).unwrap();
+            }
+        }
 
         context.into_bytes()
     }
