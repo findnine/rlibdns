@@ -485,6 +485,14 @@ impl Message {
         self.edns.as_ref()
     }
 
+    pub fn set_tsig(&mut self, tsig: TSig) {
+        self.tsig = Some(tsig);
+    }
+
+    pub fn tsig(&self) -> Option<&TSig> {
+        self.tsig.as_ref()
+    }
+
     pub fn as_ref(&self) -> &Self {
         self
     }
