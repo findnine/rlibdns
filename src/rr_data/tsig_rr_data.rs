@@ -233,7 +233,7 @@ impl ToWire for TSigRRData {
 
     fn to_wire(&self, context: &mut ToWireContext) -> Result<(), WireError> {
         context.write_name(&self.algorithm.as_ref()
-            .ok_or_else(|| WireError::Format("algorithm param was not set".to_string()))?.to_string(), true)?; //PROBABLY NO COMPRESS
+            .ok_or_else(|| WireError::Format("algorithm param was not set".to_string()))?.to_string(), false)?; //PROBABLY NO COMPRESS
 
         context.write(&[
             ((self.time_signed >> 40) & 0xFF) as u8,
