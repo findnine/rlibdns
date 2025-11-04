@@ -54,6 +54,10 @@ impl TSig {
         &self.signed_payload
     }
 
+    pub fn add_to_signed_payload(&mut self, signed_payload: &[u8]) {
+        self.signed_payload.extend_from_slice(&signed_payload);
+    }
+
     pub fn verify(&self, key: &Key) -> bool {
         let calc = hmac::<Sha256>(key.secret(), &self.signed_payload);
         self.data.mac().as_ref().unwrap().len() == calc.len() &&
