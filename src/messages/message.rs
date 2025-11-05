@@ -184,7 +184,7 @@ impl Message {
                 }
                 _ => {
                     let class = u16::from_wire(&mut context)?;
-                    let cache_flush = (class & 0x8000) != 0;
+                    let _cache_flush = (class & 0x8000) != 0;
                     let class = RRClasses::try_from(class).map_err(|e| WireError::Format(e.to_string()))?;
                     let ttl = u32::from_wire(&mut context)?;
 
