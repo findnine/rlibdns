@@ -305,7 +305,6 @@ impl Message {
         context.patch(2..4, &flags.to_be_bytes()).unwrap();
 
         if !truncated {
-
             if let Some(tsig) = self.tsig.as_mut() {
                 let checkpoint = context.pos();
 
