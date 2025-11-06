@@ -37,8 +37,6 @@ mod tests {
     
 
 
-    //WE NEED TO VERIFY NO COLLISIONS WITH SETS AND WITH ZONES IN STORE
-
     
 
 
