@@ -468,7 +468,46 @@ impl Message {
             message: self,
             position: 0,
             total,
-            context
+            context,
+            key: None
+        }
+    }
+
+    pub fn wire_chunks_with_tsig(&self, max_payload_len: usize, key: &Key) -> WireIter {
+        let max_payload_len = match self.edns.as_ref() {
+            Some(edns) => edns.payload_size() as usize,
+            None => max_payload_len
+        };
+
+        let mut context = ToWireContext::with_capacity(max_payload_len);
+
+        self.id.to_wire(&mut context).unwrap();
+        let flags = (if self.qr { 0x8000 } else { 0 }) |  // QR bit
+            ((self.op_code.code() as u16 & 0x0F) << 11) |  // Opcode
+            (if self.authoritative { 0x0400 } else { 0 }) |  // AA bit
+            //(if truncated { 0x0200 } else { 0 }) |  // TC bit
+            (if self.recursion_desired { 0x0100 } else { 0 }) |  // RD bit
+            (if self.recursion_available { 0x0080 } else { 0 }) |  // RA bit
+            //(if self.z { 0x0040 } else { 0 }) |  // Z bit (always 0)
+            (if self.authenticated_data { 0x0020 } else { 0 }) |  // AD bit
+            (if self.checking_disabled { 0x0010 } else { 0 }) |  // CD bit
+            (self.response_code.code() as u16 & 0x000F);
+        flags.to_wire(&mut context).unwrap();  // RCODE
+
+        let mut total = self.sections.iter().map(|r| r.len()).sum();
+        if self.edns.is_some() {
+            total += 1;
+        }
+        if self.tsig.is_some() {
+            total += 1;
+        }
+
+        WireIter {
+            message: self,
+            position: 0,
+            total,
+            context,
+            key: Some(key.clone())
         }
     }
 
@@ -709,6 +748,7 @@ pub struct WireIter<'a> {
     position: usize,
     total: usize,
     context: ToWireContext,
+    key: Option<Key>
 }
 
 impl<'a> Iterator for WireIter<'a> {
