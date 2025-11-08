@@ -855,6 +855,8 @@ impl<'a> Iterator for WireIter<'a> {
                     self.context.patch(10..12, &count.to_be_bytes()).unwrap();
                     self.position += count as usize;
                 }
+
+                //SOMEHOW ADD TSIG...
             }
         }
 
