@@ -213,8 +213,6 @@ impl FromWire for Edns {
         let z_flags = z & 0x7FFF;
 
         let data_length = u16::from_wire(context)?;
-        //let data_length = off+8+u16::from_be_bytes([buf[off+6], buf[off+7]]) as usize;
-        //let mut off = off+8;
         let mut options = Vec::new();
 
         let mut i = 0;
