@@ -219,6 +219,93 @@ impl Message {
         })
     }
 
+    pub fn to_bytes(&self, max_payload_len: usize) -> Vec<u8> {
+        let max_payload_len = match self.edns.as_ref() {
+            Some(edns) => edns.payload_size() as usize,
+            None => max_payload_len
+        };
+
+        let mut context = ToWireContext::with_capacity(max_payload_len);
+
+        self.id.to_wire(&mut context).unwrap();
+
+        context.skip(10).unwrap();
+
+        let mut truncated = false;
+
+        let mut count: u16 = 0;
+        for query in &self.queries {
+            let checkpoint = context.pos();
+            if let Err(_) = query.to_wire(&mut context) {
+                truncated = true;
+                context.rollback(checkpoint);
+                break;
+            }
+            count += 1;
+        }
+        context.patch(4..6, &count.to_be_bytes()).unwrap();
+
+        for i in 0..2 {
+            if !truncated {
+                count = 0;
+                for record in self.sections[i].iter() {
+                    let checkpoint = context.pos();
+                    if let Err(_) = record.to_wire(&mut context) {
+                        truncated = true;
+                        context.rollback(checkpoint);
+                        break;
+                    }
+                    count += 1;
+                }
+                context.patch(i*2+6..i*2+8, &count.to_be_bytes()).unwrap();
+            }
+        }
+
+        'ar: {
+            if !truncated {
+                count = 0;
+                if let Some(edns) = self.edns.as_ref() {
+                    let checkpoint = context.pos();
+                    if let Err(_) = {
+                        0u8.to_wire(&mut context).unwrap();
+                        RRTypes::Opt.code().to_wire(&mut context).unwrap();
+                        edns.to_wire(&mut context)
+                    } {
+                        truncated = true;
+                        context.rollback(checkpoint);
+                        break 'ar;
+                    }
+                    count += 1;
+                }
+
+                for record in self.sections[2].iter() {
+                    let checkpoint = context.pos();
+                    if let Err(_) = record.to_wire(&mut context) {
+                        truncated = true;
+                        context.rollback(checkpoint);
+                        break;
+                    }
+                    count += 1;
+                }
+                context.patch(10..12, &count.to_be_bytes()).unwrap();
+            }
+        }
+
+        let flags = (if self.qr { 0x8000 } else { 0 }) |  // QR bit
+            ((self.op_code.code() as u16 & 0x0F) << 11) |  // Opcode
+            (if self.authoritative { 0x0400 } else { 0 }) |  // AA bit
+            (if truncated { 0x0200 } else { 0 }) |  // TC bit
+            (if self.recursion_desired { 0x0100 } else { 0 }) |  // RD bit
+            (if self.recursion_available { 0x0080 } else { 0 }) |  // RA bit
+            //(if self.z { 0x0040 } else { 0 }) |  // Z bit (always 0)
+            (if self.authenticated_data { 0x0020 } else { 0 }) |  // AD bit
+            (if self.checking_disabled { 0x0010 } else { 0 }) |  // CD bit
+            (self.response_code.code() as u16 & 0x000F);  // RCODE
+        context.patch(2..4, &flags.to_be_bytes()).unwrap();
+
+        context.into_bytes()
+    }
+
     pub fn to_bytes_with_sig(&mut self, max_payload_len: usize, key: &Key) -> Vec<u8> {
         let max_payload_len = match self.edns.as_ref() {
             Some(edns) => edns.payload_size() as usize,
@@ -348,94 +435,7 @@ impl Message {
         context.into_bytes()
     }
 
-    pub fn to_bytes(&self, max_payload_len: usize) -> Vec<u8> {
-        let max_payload_len = match self.edns.as_ref() {
-            Some(edns) => edns.payload_size() as usize,
-            None => max_payload_len
-        };
-
-        let mut context = ToWireContext::with_capacity(max_payload_len);
-
-        self.id.to_wire(&mut context).unwrap();
-
-        context.skip(10).unwrap();
-
-        let mut truncated = false;
-
-        let mut count: u16 = 0;
-        for query in &self.queries {
-            let checkpoint = context.pos();
-            if let Err(_) = query.to_wire(&mut context) {
-                truncated = true;
-                context.rollback(checkpoint);
-                break;
-            }
-            count += 1;
-        }
-        context.patch(4..6, &count.to_be_bytes()).unwrap();
-
-        for i in 0..2 {
-            if !truncated {
-                count = 0;
-                for record in self.sections[i].iter() {
-                    let checkpoint = context.pos();
-                    if let Err(_) = record.to_wire(&mut context) {
-                        truncated = true;
-                        context.rollback(checkpoint);
-                        break;
-                    }
-                    count += 1;
-                }
-                context.patch(i*2+6..i*2+8, &count.to_be_bytes()).unwrap();
-            }
-        }
-
-        'ar: {
-            if !truncated {
-                count = 0;
-                if let Some(edns) = self.edns.as_ref() {
-                    let checkpoint = context.pos();
-                    if let Err(_) = {
-                        0u8.to_wire(&mut context).unwrap();
-                        RRTypes::Opt.code().to_wire(&mut context).unwrap();
-                        edns.to_wire(&mut context)
-                    } {
-                        truncated = true;
-                        context.rollback(checkpoint);
-                        break 'ar;
-                    }
-                    count += 1;
-                }
-
-                for record in self.sections[2].iter() {
-                    let checkpoint = context.pos();
-                    if let Err(_) = record.to_wire(&mut context) {
-                        truncated = true;
-                        context.rollback(checkpoint);
-                        break;
-                    }
-                    count += 1;
-                }
-                context.patch(10..12, &count.to_be_bytes()).unwrap();
-            }
-        }
-
-        let flags = (if self.qr { 0x8000 } else { 0 }) |  // QR bit
-            ((self.op_code.code() as u16 & 0x0F) << 11) |  // Opcode
-            (if self.authoritative { 0x0400 } else { 0 }) |  // AA bit
-            (if truncated { 0x0200 } else { 0 }) |  // TC bit
-            (if self.recursion_desired { 0x0100 } else { 0 }) |  // RD bit
-            (if self.recursion_available { 0x0080 } else { 0 }) |  // RA bit
-            //(if self.z { 0x0040 } else { 0 }) |  // Z bit (always 0)
-            (if self.authenticated_data { 0x0020 } else { 0 }) |  // AD bit
-            (if self.checking_disabled { 0x0010 } else { 0 }) |  // CD bit
-            (self.response_code.code() as u16 & 0x000F);  // RCODE
-        context.patch(2..4, &flags.to_be_bytes()).unwrap();
-
-        context.into_bytes()
-    }
-
-    pub fn wire_chunks(&self, max_payload_len: usize) -> WireIter {
+    pub fn wire_chunks(&mut self, max_payload_len: usize) -> WireIter {
         let max_payload_len = match self.edns.as_ref() {
             Some(edns) => edns.payload_size() as usize,
             None => max_payload_len
@@ -473,7 +473,7 @@ impl Message {
         }
     }
 
-    pub fn wire_chunks_with_tsig(&self, max_payload_len: usize, key: &Key) -> WireIter {
+    pub fn wire_chunks_with_tsig(&mut self, max_payload_len: usize, key: &Key) -> WireIter {
         let max_payload_len = match self.edns.as_ref() {
             Some(edns) => edns.payload_size() as usize,
             None => max_payload_len
@@ -744,7 +744,7 @@ impl fmt::Display for Message {
 }
 
 pub struct WireIter<'a> {
-    message: &'a Message,
+    message: &'a mut Message,
     position: usize,
     total: usize,
     context: ToWireContext,
@@ -835,6 +835,53 @@ impl<'a> Iterator for WireIter<'a> {
                         count += 1;
                     }
 
+
+
+                    self.context.patch(10..12, &count.to_be_bytes()).unwrap();
+
+
+                    if let Some(tsig) = self.message.tsig.as_mut() {
+                        let checkpoint = self.context.pos();
+
+                        let mut signed_payload = self.context.to_bytes();
+                        signed_payload.extend_from_slice(&pack_fqdn(tsig.owner()));
+
+                        signed_payload.extend_from_slice(&RRClasses::Any.code().to_be_bytes());
+                        signed_payload.extend_from_slice(&0u32.to_be_bytes());
+
+                        signed_payload.extend_from_slice(&pack_fqdn(&tsig.data().algorithm().as_ref().unwrap().to_string())); //PROBABLY NO COMPRESS
+
+                        signed_payload.extend_from_slice(&[
+                            ((tsig.data().time_signed() >> 40) & 0xFF) as u8,
+                            ((tsig.data().time_signed() >> 32) & 0xFF) as u8,
+                            ((tsig.data().time_signed() >> 24) & 0xFF) as u8,
+                            ((tsig.data().time_signed() >> 16) & 0xFF) as u8,
+                            ((tsig.data().time_signed() >>  8) & 0xFF) as u8,
+                            ( tsig.data().time_signed()        & 0xFF) as u8
+                        ]);
+                        signed_payload.extend_from_slice(&tsig.data().fudge().to_be_bytes());
+
+                        signed_payload.extend_from_slice(&tsig.data().error().to_be_bytes());
+
+                        signed_payload.extend_from_slice(&(tsig.data().data().len() as u16).to_be_bytes());
+                        signed_payload.extend_from_slice(&tsig.data().data());
+
+                        tsig.add_to_signed_payload(&signed_payload);
+                        tsig.sign(self.key.as_ref().unwrap());
+
+
+                        if let Err(_) = tsig.to_wire(&mut self.context) {
+                            truncated = true;
+                            self.context.rollback(checkpoint);
+                        }
+                        count += 1;
+
+                        self.context.patch(10..12, &count.to_be_bytes()).unwrap();
+                    }
+
+                    self.position += count as usize;
+
+                    /*
                     if let Some(tsig) = self.message.tsig.as_ref() {
                         let checkpoint = self.context.pos();
                         if let Err(_) = {
@@ -854,9 +901,7 @@ impl<'a> Iterator for WireIter<'a> {
                         }
                         count += 1;
                     }
-
-                    self.context.patch(10..12, &count.to_be_bytes()).unwrap();
-                    self.position += count as usize;
+                    */
                 }
 
                 //SOMEHOW ADD TSIG...
