@@ -847,6 +847,9 @@ impl<'a> Iterator for WireIter<'a> {
                         } {
                             truncated = true;
                             self.context.rollback(checkpoint);
+
+                            //MAYBE SET THE MAC HERE?
+
                             break 'sections;
                         }
                         count += 1;
