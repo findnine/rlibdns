@@ -880,31 +880,7 @@ impl<'a> Iterator for WireIter<'a> {
                     }
 
                     self.position += count as usize;
-
-                    /*
-                    if let Some(tsig) = self.message.tsig.as_ref() {
-                        let checkpoint = self.context.pos();
-                        if let Err(_) = {
-                            //SIGN...
-
-
-                            //0u8.to_wire(&mut context).unwrap();
-                            //RRTypes::Opt.code().to_wire(&mut context).unwrap();
-                            tsig.to_wire(&mut self.context)
-                        } {
-                            truncated = true;
-                            self.context.rollback(checkpoint);
-
-                            //MAYBE SET THE MAC HERE?
-
-                            break 'sections;
-                        }
-                        count += 1;
-                    }
-                    */
                 }
-
-                //SOMEHOW ADD TSIG...
             }
         }
 
