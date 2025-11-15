@@ -839,8 +839,6 @@ impl<'a> Iterator for WireIter<'a> {
 
                     self.context.patch(10..12, &count.to_be_bytes()).unwrap();
 
-                    println!("{:?}", self.message.tsig);
-
 
 
                     if let Some(tsig) = self.message.tsig.as_mut() {
