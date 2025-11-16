@@ -850,7 +850,7 @@ impl<'a> Iterator for WireIter<'a> {
                         signed_payload.extend_from_slice(&RRClasses::Any.code().to_be_bytes());
                         signed_payload.extend_from_slice(&0u32.to_be_bytes());
 
-                        signed_payload.extend_from_slice(&pack_fqdn(&tsig.data().algorithm().as_ref().unwrap().to_string())); //PROBABLY NO COMPRESS
+                        signed_payload.extend_from_slice(&pack_fqdn(&tsig.data().algorithm().as_ref().unwrap().to_string()));
 
                         signed_payload.extend_from_slice(&[
                             ((tsig.data().time_signed() >> 40) & 0xFF) as u8,
