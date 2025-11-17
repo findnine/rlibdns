@@ -835,11 +835,7 @@ impl<'a> Iterator for WireIter<'a> {
                         count += 1;
                     }
 
-
-
                     self.context.patch(10..12, &count.to_be_bytes()).unwrap();
-
-
 
                     if let Some(tsig) = self.message.tsig.as_mut() {
                         let checkpoint = self.context.pos();
