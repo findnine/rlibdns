@@ -49,6 +49,8 @@ mod tests {
     //APPARENTLY TCP MULTI PART / CHUNK SHOULD NOT REPEAT QUERY EACH MESSAGE...
     // IS THIS ACCURATE????
 
+    //TEST TSIG - CHUNKING
+
 
 
     #[test]
