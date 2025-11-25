@@ -1,5 +1,5 @@
 use std::fmt;
-use std::fmt::{Display, Formatter};
+use std::fmt::Formatter;
 use crate::messages::inter::rr_classes::RRClasses;
 use crate::messages::inter::rr_types::RRTypes;
 use crate::messages::wire::{FromWire, FromWireContext, ToWire, ToWireContext, WireError};
@@ -15,7 +15,7 @@ pub struct RRQuery {
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct RRQueryError(pub String);
 
-impl Display for RRQueryError {
+impl fmt::Display for RRQueryError {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0)
