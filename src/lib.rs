@@ -24,16 +24,9 @@ mod tests {
     //CLEAN UP JNL & ZONER READERS
 
 
-
-
     //COMPLETE NSEC3 WIRING
     //COMPLETE NSEC WIRING
     //COMPLETE SSHFP WIRING
-
-
-
-
-    
 
 
     //NEVER PANIC
