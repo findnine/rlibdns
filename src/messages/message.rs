@@ -930,6 +930,7 @@ impl<'a> Iterator for WireIter<'a> {
 }
 */
 
+
 pub struct WireIter<'a> {
     message: &'a mut Message,
     position: usize,
