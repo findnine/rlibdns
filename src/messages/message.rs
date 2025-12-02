@@ -469,7 +469,8 @@ impl Message {
             position: 0,
             total,
             context,
-            key: None
+            key: None,
+            msg_index: 0
         }
     }
 
@@ -507,7 +508,8 @@ impl Message {
             position: 0,
             total,
             context,
-            key: Some(key.clone())
+            key: Some(key.clone()),
+            msg_index: 0
         }
     }
 
@@ -744,7 +746,6 @@ impl fmt::Display for Message {
 }
 
 
-/*
 pub struct WireIter<'a> {
     message: &'a mut Message,
     position: usize,
@@ -754,6 +755,7 @@ pub struct WireIter<'a> {
     msg_index: usize, // 0 = first message, increments per chunk
 }
 
+/*
 impl<'a> Iterator for WireIter<'a> {
 
     type Item = Vec<u8>;
@@ -930,7 +932,188 @@ impl<'a> Iterator for WireIter<'a> {
 }
 */
 
+impl<'a> Iterator for WireIter<'a> {
+    type Item = Vec<u8>;
 
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.position >= self.total {
+            return None;
+        }
+
+        // 0 = first message
+        let is_first_message = self.msg_index == 0;
+
+        // Reset header counts (QD/AN/NS/AR) and reuse id/opcode/flags already in context
+        self.context.rollback(4);
+        self.context.write(&[0; 8]).unwrap();
+
+        let mut truncated = false;
+
+        // ----- QDSECTION -----
+        let mut count: u16 = 0;
+        for query in &self.message.queries {
+            let checkpoint = self.context.pos();
+            if let Err(_) = query.to_wire(&mut self.context) {
+                truncated = true;
+                self.context.rollback(checkpoint);
+                self.context.patch(4..6, &count.to_be_bytes()).unwrap();
+                break;
+            }
+            count += 1;
+        }
+        self.context.patch(4..6, &count.to_be_bytes()).unwrap();
+
+        // ----- ANSWER + AUTHORITY -----
+        'sections: {
+            if !truncated {
+                let mut total = 0usize;
+                for i in 0..2 {
+                    let before = total;
+                    total += self.message.sections[i].len();
+
+                    if self.position < total {
+                        count = 0;
+                        for record in &self.message.sections[i][self.position - before..] {
+                            let checkpoint = self.context.pos();
+                            if let Err(_) = record.to_wire(&mut self.context) {
+                                self.context.rollback(checkpoint);
+                                // ANCOUNT / NSCOUNT
+                                self.context
+                                    .patch(i * 2 + 6..i * 2 + 8, &count.to_be_bytes())
+                                    .unwrap();
+                                self.position += count as usize;
+                                break 'sections;
+                            }
+                            count += 1;
+                        }
+                        self.context
+                            .patch(i * 2 + 6..i * 2 + 8, &count.to_be_bytes())
+                            .unwrap();
+                        self.position += count as usize;
+                    }
+                }
+
+                // ----- ADDITIONAL (EDNS + other records) -----
+                let before = total;
+                total += self.total - before; // total now == self.total
+
+                if self.position < total {
+                    count = 0;
+                    let start = self.position - before;
+
+                    // 1) EDNS OPT (if present)
+                    if let Some(edns) = self.message.edns.as_ref() {
+                        let checkpoint = self.context.pos();
+                        if let Err(_) = (|| {
+                            0u8.to_wire(&mut self.context).unwrap();
+                            RRTypes::Opt.code().to_wire(&mut self.context).unwrap();
+                            edns.to_wire(&mut self.context)
+                        })() {
+                            self.context.rollback(checkpoint);
+                            self.context.patch(10..12, &count.to_be_bytes()).unwrap();
+                            self.position += count as usize;
+                            break 'sections;
+                        }
+                        count += 1;
+                    }
+
+                    // 2) Other additional records (section 2)
+                    let addl_len = self.message.sections[2].len();
+                    if start < addl_len {
+                        for record in &self.message.sections[2][start..] {
+                            let checkpoint = self.context.pos();
+                            if let Err(_) = record.to_wire(&mut self.context) {
+                                self.context.rollback(checkpoint);
+                                self.context.patch(10..12, &count.to_be_bytes()).unwrap();
+                                self.position += count as usize;
+                                break 'sections;
+                            }
+                            count += 1;
+                        }
+                    }
+
+                    // At this point:
+                    // - self.position is still "records before additional in this chunk"
+                    // - count = edns + other additional records we wrote in this chunk
+                    let pos_after_addl = self.position + count as usize;
+                    let is_last_message = pos_after_addl >= self.total;
+
+                    // ARCOUNT before TSIG (EDNS + other additionals)
+                    self.context.patch(10..12, &count.to_be_bytes()).unwrap();
+
+                    // 3) TSIG: only on FIRST and LAST messages
+                    if let Some(tsig) = self.message.tsig.as_mut() {
+                        if is_first_message || is_last_message {
+                            let checkpoint = self.context.pos();
+
+                            // Build signed payload from current message bytes (without this TSIG)
+                            let mut signed_payload = self.context.to_bytes();
+                            signed_payload.extend_from_slice(&pack_fqdn(tsig.owner()));
+                            signed_payload
+                                .extend_from_slice(&RRClasses::Any.code().to_be_bytes());
+                            signed_payload.extend_from_slice(&0u32.to_be_bytes());
+
+                            signed_payload.extend_from_slice(&pack_fqdn(
+                                &tsig
+                                    .data()
+                                    .algorithm()
+                                    .as_ref()
+                                    .unwrap()
+                                    .to_string(),
+                            ));
+
+                            signed_payload.extend_from_slice(&[
+                                ((tsig.data().time_signed() >> 40) & 0xFF) as u8,
+                                ((tsig.data().time_signed() >> 32) & 0xFF) as u8,
+                                ((tsig.data().time_signed() >> 24) & 0xFF) as u8,
+                                ((tsig.data().time_signed() >> 16) & 0xFF) as u8,
+                                ((tsig.data().time_signed() >> 8) & 0xFF) as u8,
+                                (tsig.data().time_signed() & 0xFF) as u8,
+                            ]);
+
+                            signed_payload
+                                .extend_from_slice(&tsig.data().fudge().to_be_bytes());
+                            signed_payload
+                                .extend_from_slice(&tsig.data().error().to_be_bytes());
+                            signed_payload.extend_from_slice(
+                                &(tsig.data().data().len() as u16).to_be_bytes(),
+                            );
+                            signed_payload.extend_from_slice(&tsig.data().data());
+
+                            tsig.add_to_signed_payload(&signed_payload);
+                            tsig.sign(self.key.as_ref().unwrap());
+
+                            if let Err(e) = tsig.to_wire(&mut self.context) {
+                                truncated = true;
+                                eprintln!("TSIG to_wire failed in chunk {}: {:?}", self.msg_index, e);
+                                self.context.rollback(checkpoint);
+                                // NOTE: we do NOT increment count here, TSIG not written
+                            } else {
+                                // TSIG successfully written -> ARCOUNT++
+                                count += 1;
+                                self.context
+                                    .patch(10..12, &count.to_be_bytes())
+                                    .unwrap();
+                            }
+                        }
+                    }
+
+                    // Now we've written:
+                    // - edns, additional records, and maybe TSIG
+                    // So "position" has advanced by "count" records in this chunk
+                    self.position += count as usize;
+                }
+            }
+        }
+
+        // Increment message index for next chunk
+        self.msg_index += 1;
+
+        Some(self.context.to_bytes())
+    }
+}
+
+/*
 pub struct WireIter<'a> {
     message: &'a mut Message,
     position: usize,
@@ -1071,4 +1254,4 @@ impl<'a> Iterator for WireIter<'a> {
 
         Some(self.context.to_bytes())
     }
-}
+}*/
