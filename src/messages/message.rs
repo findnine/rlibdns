@@ -751,7 +751,7 @@ pub struct WireIter<'a> {
     total: usize,
     context: ToWireContext,
     key: Option<Key>,
-    msg_index: usize
+    msg_index: usize //- uneeded?
 }
 
 impl<'a> Iterator for WireIter<'a> {
