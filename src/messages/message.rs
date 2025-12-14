@@ -469,8 +469,7 @@ impl Message {
             position: 0,
             total,
             context,
-            key: None,
-            msg_index: 0
+            key: None
         }
     }
 
@@ -508,8 +507,7 @@ impl Message {
             position: 0,
             total,
             context,
-            key: Some(key.clone()),
-            msg_index: 0
+            key: Some(key.clone())
         }
     }
 
@@ -750,8 +748,7 @@ pub struct WireIter<'a> {
     position: usize,
     total: usize,
     context: ToWireContext,
-    key: Option<Key>,
-    msg_index: usize //- uneeded?
+    key: Option<Key>
 }
 
 impl<'a> Iterator for WireIter<'a> {
@@ -762,6 +759,8 @@ impl<'a> Iterator for WireIter<'a> {
         if self.position >= self.total {
             return None;
         }
+
+        let first_message = self.position == 0;
 
         self.context.rollback(4);
         self.context.write(&[0; 8]).unwrap();
@@ -796,6 +795,8 @@ impl<'a> Iterator for WireIter<'a> {
                                 self.context.rollback(checkpoint);
                                 self.context.patch(i*2+6..i*2+8, &count.to_be_bytes()).unwrap();
                                 self.position += count as usize;
+
+                                println!("QUICK BREAK - AN / AUT");
                                 break 'sections;
                             }
                             count += 1;
@@ -822,6 +823,7 @@ impl<'a> Iterator for WireIter<'a> {
                             self.context.rollback(checkpoint);
                             self.context.patch(10..12, &count.to_be_bytes()).unwrap();
                             self.position += count as usize;
+                            println!("QUICK BREAK - EDNS");
                             break 'sections;
                         }
                         count += 1;
@@ -833,12 +835,16 @@ impl<'a> Iterator for WireIter<'a> {
                             self.context.rollback(checkpoint);
                             self.context.patch(10..12, &count.to_be_bytes()).unwrap();
                             self.position += count as usize;
+                            println!("QUICK BREAK - ADD");
                             break 'sections;
                         }
                         count += 1;
                     }
 
                     self.context.patch(10..12, &count.to_be_bytes()).unwrap();
+
+
+
 
                     if let Some(tsig) = self.message.tsig.as_mut() {
                         let checkpoint = self.context.pos();
@@ -877,12 +883,15 @@ impl<'a> Iterator for WireIter<'a> {
                         count += 1;
 
                         self.context.patch(10..12, &count.to_be_bytes()).unwrap();
+                        println!("COMPLETE - TSIG");
                     }
 
                     self.position += count as usize;
                 }
             }
         }
+
+        println!("PUSHING NOW");
 
         Some(self.context.to_bytes())
     }
