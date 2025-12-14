@@ -901,7 +901,7 @@ impl<'a> Iterator for WireIter<'a> {
 
         if let Some(tsig) = self.message.tsig.as_mut() {
             let checkpoint = self.context.pos();
-            rollbacks.push(checkpoint);
+            //rollbacks.push(checkpoint);
 
             let mut signed_payload = self.context.to_bytes();
             signed_payload.extend_from_slice(&pack_fqdn(tsig.owner()));
