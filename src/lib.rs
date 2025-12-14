@@ -41,7 +41,6 @@ mod tests {
     //TEST TSIG - CHUNKING - COMPLETE TSIG from_wire_len
 
 
-
     #[test]
     fn encode_and_decode() {
         ////QUERY
