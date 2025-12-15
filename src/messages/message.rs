@@ -941,7 +941,6 @@ impl<'a> Iterator for WireIter<'a> {
         }
 
 
-
         println!("PUSHING NOW  {:?}", rollbacks);
 
         Some(self.context.to_bytes())
