@@ -930,6 +930,7 @@ impl<'a> Iterator for WireIter<'a> {
             tsig.sign(self.key.as_ref().unwrap());
 
 
+
             if let Err(_) = tsig.to_wire(&mut self.context) {
                 truncated = true;
                 self.context.rollback(checkpoint);
