@@ -926,11 +926,8 @@ impl<'a> Iterator for WireIter<'a> {
             signed_payload.extend_from_slice(&(tsig.data().data().len() as u16).to_be_bytes());
             signed_payload.extend_from_slice(&tsig.data().data());
 
-            tsig.add_to_signed_payload(&signed_payload);
+            tsig.set_signed_payload(&signed_payload);
             tsig.sign(self.key.as_ref().unwrap());
-
-
-
 
             if let Err(_) = tsig.to_wire(&mut self.context) {
                 truncated = true;
