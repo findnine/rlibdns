@@ -939,7 +939,6 @@ impl<'a> Iterator for WireIter<'a> {
             println!("COMPLETE - TSIG");
         }
 
-
         println!("PUSHING NOW  {:?}", rollbacks);
 
         Some(self.context.to_bytes())
