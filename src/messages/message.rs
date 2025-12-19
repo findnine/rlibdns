@@ -418,7 +418,7 @@ impl Message {
                 signed_payload.extend_from_slice(&(tsig.data().data().len() as u16).to_be_bytes());
                 signed_payload.extend_from_slice(&tsig.data().data());
 
-                tsig.add_to_signed_payload(&signed_payload);
+                tsig.set_signed_payload(&signed_payload);
                 tsig.sign(key);
 
 
