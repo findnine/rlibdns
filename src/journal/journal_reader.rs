@@ -132,6 +132,7 @@ impl JournalReader {
         let source_serial = u32::from_be_bytes([buf[36], buf[37], buf[38], buf[39]]);
         let flags = buf[40];
 
+
         // ===== 2) OPTIONAL INDEX =====
         // Each index entry is 8 bytes: [serial(4) | offset(4)]
         //reader.seek(SeekFrom::Current((index_size as i64) * 8))
