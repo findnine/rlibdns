@@ -134,7 +134,6 @@ impl JournalReader {
 
 
 
-
         // ===== 2) OPTIONAL INDEX =====
         // Each index entry is 8 bytes: [serial(4) | offset(4)]
         //reader.seek(SeekFrom::Current((index_size as i64) * 8))
