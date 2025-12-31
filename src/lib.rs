@@ -35,7 +35,6 @@ mod tests {
     //DONT USE UNWRAPS - MODIFY ALL ENUMS DOING IT - THEN CHANGE io::Result for from_bytes on Message to our own Result
 
 
-
     //APPARENTLY TCP MULTI PART / CHUNK SHOULD NOT REPEAT QUERY EACH MESSAGE...
     // IS THIS ACCURATE????
 
